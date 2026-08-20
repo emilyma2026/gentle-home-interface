@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Noto+Sans+SC:wght@400;500;700;900&display=swap" rel="stylesheet">
 <title>守护助手 · 阿尔茨海默双端伴侣</title>
 <style>
 :root{
@@ -20,7 +21,7 @@
   --amber:#C08A2E; --amber-soft:#FBF0DA;
   --warm:#C2703A; --warm-soft:#FAEFE7;
   --red:#C4585C; --red-soft:#FAE7E6;
-  --sans:"Noto Sans SC","PingFang SC","Microsoft YaHei","Source Han Sans SC",-apple-system,system-ui,sans-serif;
+  --sans:"Baloo 2","Noto Sans SC","PingFang SC","Microsoft YaHei","Source Han Sans SC",-apple-system,system-ui,sans-serif;
   --r-lg:22px; --r-md:16px; --r-sm:11px;
   --sh-card:0 2px 10px rgba(94,63,38,.06), 0 12px 28px rgba(94,63,38,.07);
 }
@@ -49,12 +50,12 @@ input,textarea,select{font:inherit}
 .island{position:absolute; top:22px; left:50%; background:#2A1D14; transform:translateX(-50%);
   width:110px; height:30px; border-radius:99px; z-index:3}
 .screen{position:relative; width:390px; height:844px; border-radius:46px; overflow:hidden;
-  background:var(--paper); display:flex; flex-direction:column}
+  background:radial-gradient(60% 30% at 8% 2%, rgba(250,214,178,.55), rgba(250,214,178,0) 60%), radial-gradient(70% 40% at 100% 100%, rgba(205,220,190,.40), rgba(205,220,190,0) 60%), var(--paper); display:flex; flex-direction:column}
 .statusbar{flex:0 0 auto; height:50px; display:flex; align-items:center;
   justify-content:space-between; padding:0 26px; font-size:13.5px; font-weight:700}
 .statusbar .sigs{display:flex; align-items:center; gap:4px}
 .statusbar svg{width:16px; height:11px; fill:currentColor}
-.view{flex:1 1 auto; min-height:0; overflow-y:auto; display:flex; flex-direction:column;
+.view{background:transparent; flex:1 1 auto; min-height:0; overflow-y:auto; display:flex; flex-direction:column;
   justify-content:safe center; gap:2px; padding:10px 22px 28px}
 .view::-webkit-scrollbar{width:0}
 .view.pad0{padding-left:0; padding-right:0}
@@ -349,50 +350,66 @@ input,textarea,select{font:inherit}
 /* 视口不够高时手机框自适应，保证分屏演示一屏放得下 */
 
 
-/* ================= 重新设计：入口（暖色 · 满屏） ================= */
-.entry{flex:1 1 auto; display:flex; flex-direction:column; margin:0 -22px -26px; min-height:0}
-.entry-hero{position:relative; padding:26px 24px 34px; overflow:hidden;
-  background:linear-gradient(160deg,#FBE7D2 0%, #F7DCC9 45%, #F3D3C6 100%)}
-.entry-hero::before,.entry-hero::after{content:""; position:absolute; border-radius:50%;
-  background:rgba(255,255,255,.45)}
-.entry-hero::before{width:190px; height:190px; right:-58px; top:-72px}
-.entry-hero::after{width:120px; height:120px; left:-46px; bottom:-58px; background:rgba(194,112,58,.10)}
-.entry-brand{position:relative; display:flex; align-items:center; gap:10px; margin-bottom:26px}
-.entry-brand .logo{width:40px; height:40px; border-radius:13px; display:grid; place-items:center;
-  background:#fff; box-shadow:0 6px 16px rgba(140,84,44,.16)}
-.entry-brand .logo svg{width:22px; height:22px; fill:none; stroke:var(--warm); stroke-width:1.8;
-  stroke-linecap:round; stroke-linejoin:round}
-.entry-brand b{display:block; font-size:15px; font-weight:800; letter-spacing:.01em}
-.entry-brand small{display:block; color:var(--ink-2); font-size:11px; opacity:.75}
-.entry-hero h1{position:relative; margin:0 0 10px; font-size:31px; line-height:1.24; font-weight:800;
-  letter-spacing:-.02em; color:#4A2E1B}
-.entry-hero p{position:relative; margin:0; max-width:19em; color:#6B4A33; font-size:14px; line-height:1.65}
-.entry-body{flex:1 1 auto; display:flex; flex-direction:column; gap:12px;
-  padding:20px 22px 22px; margin-top:-18px; border-radius:28px 28px 0 0; background:var(--paper);
-  box-shadow:0 -8px 24px rgba(120,74,40,.06)}
-.entry-eyebrow{margin:0 0 2px; color:var(--warm); font-size:11px; font-weight:800; letter-spacing:.09em;
-  text-transform:uppercase}
-.pick{display:flex; align-items:center; gap:14px; width:100%; padding:18px 18px; text-align:left;
-  border-radius:24px; background:var(--card); border:1px solid rgba(194,112,58,.10);
-  box-shadow:0 10px 26px rgba(120,74,40,.07); transition:transform .16s, box-shadow .16s}
-.pick:active{transform:scale(.99)}
-.pick:hover{box-shadow:0 14px 32px rgba(120,74,40,.12)}
-.pick .face{flex:0 0 auto; width:56px; height:56px; border-radius:20px; display:grid; place-items:center;
-  font-size:27px}
-.pick.family .face{background:linear-gradient(150deg,#FBE7D2,#F7D8C2)}
-.pick.elder .face{background:linear-gradient(150deg,#F4EEDC,#EFE0C4)}
-.pick b{display:block; font-size:16.5px; margin-bottom:4px}
-.pick span{display:block; color:var(--muted); font-size:12.5px; line-height:1.55}
-.pick .go{flex:0 0 auto; margin-left:auto; color:var(--warm); font-size:19px; opacity:.55}
-.steps{margin:6px 0 0; padding:16px 18px; border-radius:24px; background:var(--card);
-  border:1px solid rgba(194,112,58,.10); box-shadow:0 10px 26px rgba(120,74,40,.05)}
-.steps h4{margin:0 0 12px; font-size:12.5px; font-weight:800; color:var(--ink-2); letter-spacing:.01em}
-.steps ol{margin:0; padding:0; list-style:none; display:grid; gap:11px}
-.steps li{display:flex; gap:11px; align-items:flex-start; font-size:12.5px; line-height:1.6; color:var(--ink-2)}
-.steps li i{flex:0 0 auto; width:22px; height:22px; border-radius:50%; display:grid; place-items:center;
-  background:var(--warm-soft); color:var(--warm); font-style:normal; font-size:11px; font-weight:800}
-.entry-note{margin:auto 0 0; padding:13px 15px; border-radius:18px; background:rgba(194,112,58,.07);
-  color:#7A5638; font-size:11.5px; line-height:1.65}
+/* ================= 入口：温暖家庭关怀主题 ================= */
+.view:has(> .entry){padding:0; background:
+  radial-gradient(70% 40% at 12% 6%, rgba(250,214,178,.85) 0%, rgba(250,214,178,0) 62%),
+  radial-gradient(60% 34% at 96% 22%, rgba(233,196,183,.75) 0%, rgba(233,196,183,0) 62%),
+  radial-gradient(80% 46% at 50% 104%, rgba(205,220,190,.60) 0%, rgba(205,220,190,0) 60%),
+  linear-gradient(180deg,#FFF8EF 0%, #FDF2E5 58%, #FBEEE2 100%)}
+.entry{flex:1 1 auto; display:flex; flex-direction:column; min-height:0;
+  padding:6px 22px 20px; gap:0}
+.entry-art{position:relative; margin:2px auto 14px; width:186px; height:186px; flex:0 0 auto}
+.entry-art::before{content:""; position:absolute; inset:-16px; border-radius:50%;
+  background:radial-gradient(circle at 50% 45%, rgba(233,168,116,.32), rgba(233,168,116,0) 70%)}
+.entry-art img{position:relative; width:100%; height:100%; object-fit:cover; border-radius:44px;
+  box-shadow:0 18px 38px rgba(150,90,48,.20), 0 0 0 6px rgba(255,255,255,.7)}
+.entry-art .badge{position:absolute; z-index:2; display:flex; align-items:center; gap:5px;
+  padding:6px 11px; border-radius:99px; background:#fff; color:#8A5A34;
+  font-size:11px; font-weight:800; box-shadow:0 8px 18px rgba(150,90,48,.16)}
+.entry-art .badge.b1{left:-24px; top:26px}
+.entry-art .badge.b2{right:-24px; bottom:-14px; max-width:190px; color:#7C5C43; font-weight:700}
+
+.entry-eyebrow{margin:0 0 8px; text-align:center; color:#B4794A; font-size:11px;
+  font-weight:800; letter-spacing:.22em; text-transform:uppercase}
+.entry-title{margin:0 0 10px; text-align:center; font-size:27px; line-height:1.26;
+  font-weight:800; letter-spacing:-.01em; color:#402A1B}
+.entry-title em{display:block; font-style:normal;
+  background:linear-gradient(96deg,#D2793F,#C2544C 60%,#A9663F);
+  -webkit-background-clip:text; background-clip:text; color:transparent}
+.entry-sub{margin:0 auto 18px; max-width:20em; text-align:center; color:#7C5C43;
+  font-size:13px; line-height:1.7}
+
+.picks{display:grid; gap:11px}
+.pick{position:relative; display:flex; align-items:center; gap:13px; width:100%;
+  padding:15px 16px; text-align:left; border-radius:26px; overflow:hidden;
+  background:linear-gradient(135deg,#FFFFFF 0%, #FFF6EC 100%);
+  box-shadow:0 12px 26px rgba(150,90,48,.10), 0 0 0 1px rgba(210,150,105,.16) inset;
+  transition:transform .16s, box-shadow .16s}
+.pick:active{transform:scale(.985)}
+.pick:hover{box-shadow:0 16px 32px rgba(150,90,48,.16), 0 0 0 1px rgba(210,150,105,.3) inset}
+.pick .face{flex:0 0 auto; width:52px; height:52px; border-radius:18px; display:grid;
+  place-items:center; font-size:25px; box-shadow:0 6px 14px rgba(150,90,48,.12)}
+.pick.family .face{background:linear-gradient(150deg,#FAD9BC,#F3BE9C)}
+.pick.elder .face{background:linear-gradient(150deg,#E3EBD3,#CFDDB9)}
+.pick b{display:block; font-size:16px; margin-bottom:3px; color:#3E2A1C}
+.pick span span, .pick > span > span{display:block; color:#8B6B52; font-size:12px; line-height:1.5}
+.pick .go{flex:0 0 auto; margin-left:auto; width:28px; height:28px; border-radius:50%;
+  display:grid; place-items:center; background:#F6E3D2; color:#B4794A; font-size:15px; font-weight:800}
+
+.steps{margin:14px 0 0; display:grid; grid-template-columns:repeat(3,1fr); gap:9px}
+.steps h4{grid-column:1/-1; margin:0 0 2px; text-align:center; font-size:11.5px;
+  font-weight:800; color:#9A7154; letter-spacing:.04em}
+.steps ol{display:contents; margin:0; padding:0; list-style:none}
+.steps li{display:flex; flex-direction:column; align-items:center; gap:7px; padding:12px 8px;
+  border-radius:20px; text-align:center; background:rgba(255,255,255,.72);
+  box-shadow:0 0 0 1px rgba(210,150,105,.14) inset;
+  color:#7C5C43; font-size:11px; line-height:1.5}
+.steps li i{width:26px; height:26px; border-radius:50%; display:grid; place-items:center;
+  background:linear-gradient(150deg,#F0BE93,#DE9366); color:#fff; font-style:normal;
+  font-size:12px; font-weight:800; box-shadow:0 5px 12px rgba(190,120,70,.28)}
+.entry-note{display:flex; align-items:center; justify-content:center; gap:6px;
+  margin:14px 0 0; padding:0; color:#A98266; font-size:11px; line-height:1.6; text-align:center}
+
 
 </style>
 </head>
@@ -825,25 +842,26 @@ function brand(){
 
 function viewEntry(){
   return '<div class="entry">'
-    + '<div class="entry-hero">'
-    +   '<div class="entry-brand"><span class="logo">'+IC.logo+'</span>'
-    +     '<span><b>'+esc(D.appName)+'</b><small>'+esc(D.appSub)+'</small></span></div>'
-    +   '<h1>'+esc(D.entryTitle)+'</h1>'
-    +   '<p>'+esc(D.entrySub)+'</p>'
+    + '<div class="entry-art">'
+    +   '<img src="hero-care.jpg" alt="" width="372" height="372">'
+    +   '<span class="badge b1">'+esc(D.appName)+'</span>'
+    +   '<span class="badge b2">'+esc(D.appSub)+'</span>'
     + '</div>'
-    + '<div class="entry-body">'
-    +   '<p class="entry-eyebrow">'+esc(D.labelEntry)+'</p>'
+    + '<p class="entry-eyebrow">'+esc(D.labelEntry)+'</p>'
+    + '<h1 class="entry-title"><em>'+esc(D.entryTitle)+'</em></h1>'
+    + '<p class="entry-sub">'+esc(D.entrySub)+'</p>'
+    + '<div class="picks">'
     +   '<button class="pick family" data-go="familyStart"><span class="face">🧑‍💼</span>'
     +     '<span><b>'+esc(D.roleFamilyT)+'</b><span>'+esc(D.roleFamilyD)+'</span></span>'
     +     '<span class="go">›</span></button>'
     +   '<button class="pick elder" data-go="elderPair"><span class="face">👵</span>'
     +     '<span><b>'+esc(D.roleElderT)+'</b><span>'+esc(D.roleElderD)+'</span></span>'
     +     '<span class="go">›</span></button>'
-    +   '<div class="steps"><h4>'+esc(D.stepsTitle)+'</h4><ol>'
-    +     D.steps.map(function(t,i){ return '<li><i>'+(i+1)+'</i><span>'+esc(t)+'</span></li>'; }).join('')
-    +   '</ol></div>'
-    +   '<p class="entry-note">'+esc(D.hintEntry)+'</p>'
     + '</div>'
+    + '<div class="steps"><h4>'+esc(D.stepsTitle)+'</h4><ol>'
+    +   D.steps.map(function(t,i){ return '<li><i>'+(i+1)+'</i><span>'+esc(t)+'</span></li>'; }).join('')
+    + '</ol></div>'
+    + '<p class="entry-note">'+esc(D.hintEntry)+'</p>'
     + '</div>';
 }
 

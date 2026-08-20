@@ -76,7 +76,7 @@ input,textarea,select{font:inherit}
 .eyebrow.warm{color:var(--warm)}
 .spacer{flex:1 1 auto; min-height:10px}
 .view::before{content:""; display:block; flex:.6 1 auto; min-height:0}
-.view.pad0::before{display:none}
+.view.pad0::before,.view:has(> .entry)::before{display:none}
 
 .card{background:var(--card); border-radius:var(--r-lg); padding:16px 17px; box-shadow:var(--sh-card)}
 .card + .card{margin-top:11px}

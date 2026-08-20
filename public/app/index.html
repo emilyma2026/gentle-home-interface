@@ -60,7 +60,7 @@ input,textarea,select{font:inherit}
 .view.pad0{padding-left:0; padding-right:0}
 
 /* 演示外壳（在手机框外，不属于产品界面） */
-.demo-chrome{position:absolute; right:14px; bottom:26px; z-index:6;
+.demo-chrome{position:absolute; right:14px; top:58px; z-index:6;
   display:flex; flex-direction:column; align-items:flex-end; gap:6px}
 .chip{padding:6px 12px; border:1px solid var(--line); border-radius:99px;
   background:rgba(255,252,248,.92); color:var(--muted); font-size:11.5px;
@@ -382,6 +382,13 @@ input,textarea,select{font:inherit}
 .pick b{display:block; font-size:16.5px; margin-bottom:4px}
 .pick span{display:block; color:var(--muted); font-size:12.5px; line-height:1.55}
 .pick .go{flex:0 0 auto; margin-left:auto; color:var(--warm); font-size:19px; opacity:.55}
+.steps{margin:6px 0 0; padding:16px 18px; border-radius:24px; background:var(--card);
+  border:1px solid rgba(194,112,58,.10); box-shadow:0 10px 26px rgba(120,74,40,.05)}
+.steps h4{margin:0 0 12px; font-size:12.5px; font-weight:800; color:var(--ink-2); letter-spacing:.01em}
+.steps ol{margin:0; padding:0; list-style:none; display:grid; gap:11px}
+.steps li{display:flex; gap:11px; align-items:flex-start; font-size:12.5px; line-height:1.6; color:var(--ink-2)}
+.steps li i{flex:0 0 auto; width:22px; height:22px; border-radius:50%; display:grid; place-items:center;
+  background:var(--warm-soft); color:var(--warm); font-style:normal; font-size:11px; font-weight:800}
 .entry-note{margin:auto 0 0; padding:13px 15px; border-radius:18px; background:rgba(194,112,58,.07);
   color:#7A5638; font-size:11.5px; line-height:1.65}
 
@@ -445,6 +452,8 @@ zh:{
   hintElder:"这台是老人的手机。她不需要操作，需要帮忙时屏幕会自己亮起来。",
 
   entryTitle:"请选择您的身份", entrySub:"不一样的界面，不一样的服务。",
+  stepsTitle:"三步就能连起来",
+  steps:["家人先建家庭，填一次老人的信息","记下六位家庭码，在老人手机上输入","之后拨号、问答、回家引导两端实时同步"],
   roleFamilyT:"我是家人", roleFamilyD:"维护家庭信息、接收提醒。设置由你来做。",
   roleElderT:"这台是老人的手机", roleElderD:"由家人代为配对，之后老人不用再操作。",
 
@@ -557,6 +566,8 @@ en:{
   hintElder:"This is the elder's phone. She never operates it; the screen wakes up when she needs help.",
 
   entryTitle:"Who is using this phone?", entrySub:"Different person, different interface.",
+  stepsTitle:"Three steps to link",
+  steps:["A family member creates the family and fills in the elder's details once","Note the six-digit code and enter it on the elder's phone","Calls, answers and homeward guidance stay in sync on both sides"],
   roleFamilyT:"I'm a family member", roleFamilyD:"Keep the family information and handle alerts. Setup happens here.",
   roleElderT:"This is the elder's phone", roleElderD:"A family member pairs it. After that she never touches it.",
 
@@ -826,6 +837,9 @@ function viewEntry(){
     +   '<button class="pick elder" data-go="elderPair"><span class="face">👵</span>'
     +     '<span><b>'+esc(D.roleElderT)+'</b><span>'+esc(D.roleElderD)+'</span></span>'
     +     '<span class="go">›</span></button>'
+    +   '<div class="steps"><h4>'+esc(D.stepsTitle)+'</h4><ol>'
+    +     D.steps.map(function(t,i){ return '<li><i>'+(i+1)+'</i><span>'+esc(t)+'</span></li>'; }).join('')
+    +   '</ol></div>'
     +   '<p class="entry-note">'+esc(D.hintEntry)+'</p>'
     + '</div>'
     + '</div>';

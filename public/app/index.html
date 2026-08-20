@@ -367,7 +367,7 @@ input,textarea,select{font:inherit}
   padding:6px 11px; border-radius:99px; background:#fff; color:#8A5A34;
   font-size:11px; font-weight:800; box-shadow:0 8px 18px rgba(150,90,48,.16)}
 .entry-art .badge.b1{left:-24px; top:26px}
-.entry-art .badge.b2{right:-20px; bottom:22px}
+.entry-art .badge.b2{right:-26px; bottom:14px; max-width:190px; color:#7C5C43; font-weight:700}
 
 .entry-eyebrow{margin:0 0 8px; text-align:center; color:#B4794A; font-size:11px;
   font-weight:800; letter-spacing:.22em; text-transform:uppercase}
@@ -844,11 +844,11 @@ function viewEntry(){
   return '<div class="entry">'
     + '<div class="entry-art">'
     +   '<img src="hero-care.jpg" alt="" width="372" height="372">'
-    +   '<span class="badge b1">💛 '+esc(D.appName)+'</span>'
-    +   '<span class="badge b2">🏠 '+esc(D.labelEntry)+'</span>'
+    +   '<span class="badge b1">'+esc(D.appName)+'</span>'
+    +   '<span class="badge b2">'+esc(D.appSub)+'</span>'
     + '</div>'
-    + '<p class="entry-eyebrow">✦ '+esc(D.appSub)+' ✦</p>'
-    + '<h1 class="entry-title">'+esc(D.entryTitle)+'<em>'+esc(D.appName)+'</em></h1>'
+    + '<p class="entry-eyebrow">'+esc(D.labelEntry)+'</p>'
+    + '<h1 class="entry-title"><em>'+esc(D.entryTitle)+'</em></h1>'
     + '<p class="entry-sub">'+esc(D.entrySub)+'</p>'
     + '<div class="picks">'
     +   '<button class="pick family" data-go="familyStart"><span class="face">🧑‍💼</span>'
@@ -861,7 +861,7 @@ function viewEntry(){
     + '<div class="steps"><h4>'+esc(D.stepsTitle)+'</h4><ol>'
     +   D.steps.map(function(t,i){ return '<li><i>'+(i+1)+'</i><span>'+esc(t)+'</span></li>'; }).join('')
     + '</ol></div>'
-    + '<p class="entry-note">🤍 '+esc(D.hintEntry)+'</p>'
+    + '<p class="entry-note">'+esc(D.hintEntry)+'</p>'
     + '</div>';
 }
 

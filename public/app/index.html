@@ -1,0 +1,1528 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>守护助手 · 阿尔茨海默双端伴侣</title>
+<style>
+:root{
+  --page:#EFE1D3; --page-2:#F7E9DA;
+  --paper:#FDF7F0;
+  --card:#FFFCF8;
+  --ink:#3A2C22;
+  --ink-2:#5C483A;
+  --muted:#9A8574;
+  --faint:#C3B2A2;
+  --line:#EFE3D6;
+  --blue:#C8794A; --blue-d:#A2582C; --blue-soft:#FAEADD;
+  --rose:#D98F80; --rose-soft:#FBE9E1;
+  --green:#7C9A63; --green-soft:#F0F4E7;
+  --amber:#C08A2E; --amber-soft:#FBF0DA;
+  --warm:#C2703A; --warm-soft:#FAEFE7;
+  --red:#C4585C; --red-soft:#FAE7E6;
+  --sans:"Noto Sans SC","PingFang SC","Microsoft YaHei","Source Han Sans SC",-apple-system,system-ui,sans-serif;
+  --r-lg:22px; --r-md:16px; --r-sm:11px;
+  --sh-card:0 2px 10px rgba(94,63,38,.06), 0 12px 28px rgba(94,63,38,.07);
+}
+*{box-sizing:border-box; -webkit-tap-highlight-color:transparent}
+html,body{margin:0; background:var(--page); color:var(--ink); font-family:var(--sans)}
+body{min-height:100vh; height:100vh; overflow:hidden; display:grid; place-items:center; padding:0;
+  background:radial-gradient(120% 100% at 50% 0%, var(--page-2) 0%, var(--page) 70%)}
+.device-label,.hint-line{display:none !important}
+p{margin:0 0 10px}
+button{font:inherit; cursor:pointer; border:0; background:none; color:inherit}
+input,textarea,select{font:inherit}
+:focus-visible{outline:2px solid var(--blue); outline-offset:2px}
+
+/* ================= 手机框 ================= */
+.device-label{display:flex; align-items:center; gap:8px; color:var(--muted);
+  font-size:12.5px; font-weight:700; letter-spacing:.02em}
+.device-label i{width:8px; height:8px; border-radius:50%; font-style:normal; background:var(--faint)}
+.device-label.family i{background:var(--blue)} .device-label.elder i{background:var(--warm)}
+
+.phone{position:relative; width:412px; height:866px; flex:0 0 auto;
+  padding:11px; border-radius:56px; background:#2A1D14;
+  transform:scale(var(--fit,1)); transform-origin:center;
+  box-shadow:0 1px 0 rgba(255,255,255,.18) inset, 0 30px 70px rgba(74,45,24,.32)}
+.phone::after{content:""; position:absolute; left:50%; bottom:16px; transform:translateX(-50%);
+  width:126px; height:5px; border-radius:99px; background:rgba(255,255,255,.35); z-index:4}
+.island{position:absolute; top:22px; left:50%; background:#2A1D14; transform:translateX(-50%);
+  width:110px; height:30px; border-radius:99px; z-index:3}
+.screen{position:relative; width:390px; height:844px; border-radius:46px; overflow:hidden;
+  background:var(--paper); display:flex; flex-direction:column}
+.statusbar{flex:0 0 auto; height:50px; display:flex; align-items:center;
+  justify-content:space-between; padding:0 26px; font-size:13.5px; font-weight:700}
+.statusbar .sigs{display:flex; align-items:center; gap:4px}
+.statusbar svg{width:16px; height:11px; fill:currentColor}
+.view{flex:1 1 auto; min-height:0; overflow-y:auto; display:flex; flex-direction:column;
+  padding:6px 22px 26px}
+.view::-webkit-scrollbar{width:0}
+.view.pad0{padding-left:0; padding-right:0}
+
+/* 演示外壳（在手机框外，不属于产品界面） */
+.demo-chrome{position:absolute; right:14px; bottom:26px; z-index:6;
+  display:flex; flex-direction:column; align-items:flex-end; gap:6px}
+.chip{padding:6px 12px; border:1px solid var(--line); border-radius:99px;
+  background:rgba(255,252,248,.92); color:var(--muted); font-size:11.5px;
+  backdrop-filter:blur(6px); box-shadow:var(--sh-card)}
+.chip:hover{border-color:var(--warm); color:var(--warm)}
+.hint-line{max-width:390px; color:var(--faint); font-size:11px; line-height:1.6; text-align:center}
+
+/* ================= 通用 ================= */
+.h1{margin:0 0 6px; font-size:26px; font-weight:800; line-height:1.28; letter-spacing:-.01em}
+.h2{margin:0 0 10px; font-size:19px; font-weight:800; line-height:1.35}
+.sub{margin:0 0 18px; color:var(--muted); font-size:13.5px; line-height:1.6}
+.eyebrow{margin:0 0 4px; color:var(--blue); font-size:11.5px; font-weight:800; letter-spacing:.05em}
+.eyebrow.warm{color:var(--warm)}
+.spacer{flex:1 1 auto; min-height:10px}
+
+.card{background:var(--card); border-radius:var(--r-lg); padding:16px 17px; box-shadow:var(--sh-card)}
+.card + .card{margin-top:11px}
+
+.btn{display:block; width:100%; padding:15px 18px; border-radius:99px; text-align:center;
+  background:var(--blue); color:#fff; font-size:15.5px; font-weight:700;
+  box-shadow:0 8px 20px rgba(200,121,74,.30); transition:transform .12s, opacity .12s}
+.btn:active{transform:scale(.985)}
+.btn.ghost{background:#fff; color:var(--ink-2); box-shadow:var(--sh-card)}
+.btn.warm{background:var(--warm); box-shadow:0 8px 20px rgba(194,112,58,.26)}
+.btn.red{background:var(--red); box-shadow:0 8px 20px rgba(201,100,107,.24)}
+.btn[disabled]{opacity:.42; box-shadow:none}
+.btn-row{display:flex; gap:9px}
+.btn-row .btn{flex:1}
+.link{display:block; width:100%; padding:11px; text-align:center; color:var(--muted); font-size:13px}
+.link:hover{color:var(--blue)}
+
+/* 身份选择 */
+.brandmark{display:flex; align-items:center; gap:11px; margin:14px 0 22px}
+.brandmark .logo{width:44px; height:44px; border-radius:14px; display:grid; place-items:center;
+  background:linear-gradient(145deg,var(--blue-soft),var(--rose-soft)); box-shadow:var(--sh-card)}
+.brandmark .logo svg{width:24px; height:24px; fill:none; stroke:var(--blue-d); stroke-width:1.7;
+  stroke-linecap:round; stroke-linejoin:round}
+.brandmark b{font-size:17px; font-weight:800}
+.brandmark span{display:block; color:var(--muted); font-size:11.5px; font-weight:400}
+.roles{display:grid; gap:12px}
+.role{display:flex; align-items:center; gap:14px; padding:18px; text-align:left;
+  border-radius:var(--r-lg); background:var(--card); box-shadow:var(--sh-card);
+  transition:transform .14s}
+.role:active{transform:scale(.99)}
+.role .face{flex:0 0 auto; width:54px; height:54px; border-radius:50%; display:grid; place-items:center;
+  font-size:27px}
+.role.elder .face{background:var(--warm-soft)}
+.role.family .face{background:var(--blue-soft)}
+.role b{display:block; font-size:16px; margin-bottom:3px}
+.role span{color:var(--muted); font-size:12.5px; line-height:1.5}
+
+/* 表单 */
+.field{margin-bottom:14px}
+.field-top{display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:6px}
+.field label{color:var(--ink-2); font-size:12.5px; font-weight:700}
+.tag{padding:2px 8px; border-radius:99px; background:var(--amber-soft);
+  color:var(--amber); font-size:10px; font-weight:800}
+.tag[hidden]{display:none}
+.field input,.field textarea,.field select{width:100%; padding:13px 15px; border:1px solid var(--line);
+  border-radius:14px; background:#fff; color:var(--ink); font-size:14.5px; line-height:1.5}
+.field textarea{min-height:66px; resize:vertical}
+.field input:focus,.field textarea:focus,.field select:focus{border-color:var(--blue); outline:none;
+  box-shadow:0 0 0 3px var(--blue-soft)}
+.field .hint{margin:6px 0 0; color:var(--faint); font-size:11px; line-height:1.5}
+.seg{display:flex; gap:7px}
+.seg button{flex:1; padding:11px 4px; border:1px solid var(--line); border-radius:13px;
+  background:#fff; color:var(--muted); font-size:13.5px}
+.seg button[aria-pressed="true"]{border-color:var(--blue); background:var(--blue-soft);
+  color:var(--blue-d); font-weight:800}
+.avatar{display:grid; place-items:center; flex:0 0 auto; border-radius:50%;
+  background:var(--rose-soft); color:var(--rose); font-weight:800}
+.av-lg{width:58px; height:58px; font-size:22px}
+.av-md{width:44px; height:44px; font-size:17px}
+.av-sm{width:34px; height:34px; font-size:13px}
+
+/* 说一句话 */
+.speak{display:flex; align-items:center; gap:12px; width:100%; padding:14px 16px; text-align:left;
+  border-radius:18px; background:linear-gradient(135deg,var(--blue-soft),var(--rose-soft));
+  margin-bottom:14px}
+.speak .mic{flex:0 0 auto; width:40px; height:40px; border-radius:50%; background:#fff;
+  display:grid; place-items:center; box-shadow:0 4px 12px rgba(43,42,46,.10)}
+.speak .mic svg{width:18px; height:18px; fill:none; stroke:var(--blue-d); stroke-width:1.9;
+  stroke-linecap:round; stroke-linejoin:round}
+.speak b{display:block; font-size:13.5px}
+.speak span{color:var(--ink-2); font-size:11.5px; opacity:.8}
+.speak.on{background:linear-gradient(135deg,#E4ECFA,#F6E4E6)}
+.filled{margin:-6px 0 14px; padding:9px 13px; border-radius:12px; background:var(--green-soft);
+  color:var(--green); font-size:11.5px; font-weight:700}
+
+/* 家庭码 */
+.codebox{margin:6px 0 18px; padding:22px; text-align:center; border-radius:var(--r-lg);
+  background:linear-gradient(150deg,var(--blue-soft),var(--rose-soft))}
+.codebox b{display:block; font-size:38px; font-weight:800; letter-spacing:.16em; color:var(--blue-d)}
+.codebox span{display:block; margin-top:6px; color:var(--ink-2); font-size:11.5px; opacity:.75}
+.codein{width:100%; padding:16px; text-align:center; border:1px solid var(--line); border-radius:16px;
+  background:#fff; font-size:26px; font-weight:800; letter-spacing:.24em; color:var(--ink)}
+.codein:focus{border-color:var(--blue); outline:none; box-shadow:0 0 0 3px var(--blue-soft)}
+.err{margin:9px 0 0; color:var(--red); font-size:12.5px}
+.recent{margin-top:16px}
+.recent .row{display:flex; align-items:center; justify-content:space-between; gap:10px;
+  padding:12px 14px; border-radius:14px; background:#fff; box-shadow:var(--sh-card); margin-bottom:8px}
+.recent .row b{font-size:13.5px} .recent .row small{display:block; color:var(--faint); font-size:11px}
+.mini{padding:6px 13px; border-radius:99px; background:var(--blue-soft); color:var(--blue-d);
+  font-size:12px; font-weight:700}
+
+/* ================= 家人端 ================= */
+.f-head{margin:0 -22px 14px; padding:16px 22px 20px;
+  background:linear-gradient(155deg,var(--blue-soft) 0%, var(--rose-soft) 100%)}
+.f-head .eyebrow{color:var(--blue-d); opacity:.85}
+.f-head .h1{font-size:23px}
+.f-head .who{display:flex; align-items:center; gap:9px; margin-top:12px}
+.f-head .who .avatar{background:#fff}
+.f-head .who b{font-size:13px} .f-head .who small{display:block; color:var(--ink-2); font-size:11px; opacity:.7}
+
+.tiles{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:12px}
+.tile{padding:14px 15px; text-align:left; border-radius:var(--r-md); background:var(--card);
+  box-shadow:var(--sh-card)}
+.tile small{display:block; color:var(--muted); font-size:11px; margin-bottom:5px}
+.tile b{font-size:14px}
+.tile.alert{background:var(--red-soft)} .tile.alert b{color:var(--red)}
+.tile.good b{color:var(--green)}
+
+.map-card{border-radius:var(--r-lg); overflow:hidden; background:var(--card); box-shadow:var(--sh-card); margin-bottom:12px}
+.map-card svg.map{display:block; width:100%; height:auto}
+.map-foot{display:flex; align-items:center; justify-content:space-between; gap:10px; padding:11px 15px}
+.map-foot small{color:var(--faint); font-size:11px}
+.map-foot b{font-size:13px}
+.map-foot b.out{color:var(--red)}
+
+.banner{display:flex; align-items:center; gap:12px; padding:14px 16px; border-radius:var(--r-md);
+  background:var(--blue-soft); margin-bottom:12px}
+.banner .wave{flex:0 0 auto}
+.banner b{display:block; font-size:13.5px; color:var(--blue-d)}
+.banner small{color:var(--ink-2); font-size:11.5px; opacity:.8}
+.banner.warn{background:var(--red-soft)} .banner.warn b{color:var(--red)}
+.banner.note{background:var(--amber-soft); display:block} .banner.note b{color:var(--amber)}
+.banner.note small{display:block; margin-top:3px}
+
+.wave{display:flex; align-items:flex-end; gap:3px; height:22px}
+.wave i{width:3px; border-radius:2px; background:var(--blue); animation:wv .9s ease-in-out infinite}
+.wave.warm i{background:var(--warm)}
+@keyframes wv{0%,100%{height:4px}50%{height:20px}}
+@media(prefers-reduced-motion:reduce){.wave i{animation:none;height:11px!important}}
+
+.confirm{border-radius:var(--r-lg); background:var(--card); box-shadow:var(--sh-card); padding:16px 17px; margin-bottom:12px}
+.confirm > b{display:block; font-size:14px; margin-bottom:3px}
+.confirm > small{display:block; color:var(--muted); font-size:11.5px; line-height:1.55; margin-bottom:12px}
+.item{padding:13px 14px; border-radius:14px; background:var(--paper); margin-bottom:9px}
+.item:last-child{margin-bottom:0}
+.chiptype{display:inline-block; margin-bottom:6px; padding:2px 9px; border-radius:99px;
+  background:var(--blue-soft); color:var(--blue-d); font-size:10px; font-weight:800}
+.chiptype.todo{background:var(--amber-soft); color:var(--amber)}
+.item p{margin:0 0 10px; font-size:13.5px; line-height:1.55}
+.item input{width:100%; padding:10px 12px; border:1px solid var(--blue); border-radius:11px;
+  background:#fff; font-size:13.5px; margin-bottom:10px}
+.acts{display:flex; flex-wrap:wrap; gap:7px}
+.acts button{padding:7px 14px; border-radius:99px; background:#fff; color:var(--muted);
+  font-size:12px; font-weight:700; box-shadow:0 1px 4px rgba(43,42,46,.07)}
+.acts button.go{background:var(--blue); color:#fff}
+.done-line{margin:0; font-size:11.5px; font-weight:700; color:var(--green)}
+.skip-line{margin:0; font-size:11.5px; font-weight:700; color:var(--faint)}
+.struck{color:var(--faint); text-decoration:line-through}
+
+.tl{margin:0}
+.tl .row{display:flex; gap:12px; padding:13px 0; border-bottom:1px solid var(--line)}
+.tl .row:last-child{border-bottom:0}
+.tl time{flex:0 0 auto; width:42px; color:var(--blue); font-size:12px; font-weight:800;
+  font-variant-numeric:tabular-nums; padding-top:1px}
+.tl p{margin:0; font-size:13.5px; line-height:1.5}
+.empty{padding:30px 18px; text-align:center; color:var(--faint); font-size:12.5px;
+  border-radius:var(--r-lg); background:var(--card); box-shadow:var(--sh-card)}
+
+.detail{padding:15px 16px; border-radius:var(--r-md); background:var(--red-soft); margin-bottom:12px}
+.detail.ok{background:var(--green-soft)}
+.detail dt{color:var(--red); font-size:11px; font-weight:800; margin-bottom:2px}
+.detail.ok dt{color:var(--green)}
+.detail dd{margin:0 0 11px; font-size:13.5px; line-height:1.5}
+.detail dd:last-child{margin-bottom:0}
+
+.person-row{display:flex; align-items:center; gap:12px; width:100%; padding:13px 14px; text-align:left;
+  border-radius:var(--r-md); background:var(--card); box-shadow:var(--sh-card); margin-bottom:9px}
+.person-row b{display:block; font-size:14px}
+.person-row small{color:var(--muted); font-size:11.5px}
+.person-row .me{margin-left:auto; padding:3px 9px; border-radius:99px;
+  background:var(--green-soft); color:var(--green); font-size:10px; font-weight:800}
+.person-row .go{margin-left:auto; color:var(--faint); font-size:17px}
+
+.tabbar{flex:0 0 auto; display:flex; padding:8px 12px 22px; background:rgba(255,255,255,.92);
+  border-top:1px solid var(--line); backdrop-filter:blur(10px)}
+.tabbar button{flex:1; display:grid; justify-items:center; gap:4px; padding:5px 0;
+  color:var(--faint); font-size:10.5px; font-weight:700; position:relative}
+.tabbar svg{width:21px; height:21px; fill:none; stroke:currentColor; stroke-width:1.7;
+  stroke-linecap:round; stroke-linejoin:round}
+.tabbar button[aria-selected="true"]{color:var(--blue-d)}
+.tabbar .dot{position:absolute; top:2px; right:calc(50% - 15px); width:7px; height:7px;
+  border-radius:50%; background:var(--red)}
+
+/* ================= 老人端 ================= */
+.screen.elder{background:#FFFCF8}
+.e-view{flex:1 1 auto; min-height:0; overflow-y:auto; display:flex; flex-direction:column; padding:8px 24px 28px}
+.e-hello{flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center;
+  text-align:center; gap:14px}
+.e-ring{width:132px; height:132px; border-radius:50%; display:grid; place-items:center;
+  background:linear-gradient(150deg,var(--warm-soft),var(--rose-soft));
+  color:var(--warm); font-size:52px; font-weight:800}
+.e-h1{margin:0; font-size:34px; font-weight:800; letter-spacing:-.01em}
+.e-copy{margin:0; color:var(--ink-2); font-size:17px; line-height:1.6}
+.e-btn{flex:0 0 auto; width:100%; margin-top:16px; padding:22px; border-radius:30px;
+  background:var(--warm); color:#fff; font-size:24px; font-weight:800;
+  box-shadow:0 12px 26px rgba(194,112,58,.3)}
+.e-btn:active{transform:scale(.99)}
+.e-btn.soft{background:#fff; color:var(--ink-2); box-shadow:var(--sh-card); font-size:19px; padding:17px}
+.e-btn.red{background:var(--red); box-shadow:0 12px 26px rgba(201,100,107,.28)}
+
+.e-call{flex:1; display:flex; flex-direction:column; text-align:center}
+.e-call .lbl{margin:14px 0 4px; color:var(--muted); font-size:14px}
+.e-call .nm{margin:0 0 20px; font-size:38px; font-weight:800}
+.pcard{text-align:left; padding:20px; border-radius:26px; background:#fff; box-shadow:var(--sh-card)}
+.pcard .top{display:flex; align-items:center; gap:14px; margin-bottom:14px}
+.pcard .top b{font-size:20px; line-height:1.35}
+.pcard p{margin:0 0 8px; color:var(--ink-2); font-size:16px; line-height:1.6}
+.pcard p:last-child{margin:0}
+.pcard .avatar{width:62px; height:62px; font-size:24px; background:var(--warm-soft); color:var(--warm)}
+.ctrl{display:flex; justify-content:space-around; margin-top:auto; padding-top:26px}
+.ctrl button{display:grid; justify-items:center; gap:8px; color:var(--muted); font-size:13px; font-weight:700}
+.ctrl i{width:70px; height:70px; border-radius:50%; display:grid; place-items:center; color:#fff}
+.ctrl svg{width:29px; height:29px; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round}
+.ctrl .no i{background:var(--red); box-shadow:0 10px 22px rgba(201,100,107,.3)}
+.ctrl .yes i{background:var(--green); box-shadow:0 10px 22px rgba(94,158,130,.3)}
+
+.audio-tag{display:inline-flex; align-items:center; gap:6px; padding:4px 11px; border-radius:99px;
+  background:var(--warm-soft); color:var(--warm); font-size:11.5px; font-weight:800}
+.subs{flex:1; min-height:0; overflow-y:auto; margin:14px 0; padding:16px; border-radius:20px; background:#fff;
+  box-shadow:var(--sh-card)}
+.subs p{margin:0 0 12px; font-size:16px; line-height:1.6; opacity:.3; transition:opacity .3s}
+.subs p:last-child{margin:0}
+.subs p.on{opacity:1; font-weight:700}
+.subs b{color:var(--warm)} .subs b.self{color:var(--blue-d)}
+
+.thread{flex:1; display:flex; flex-direction:column; gap:12px; overflow-y:auto; padding:4px 0 8px}
+.bub{max-width:92%; padding:15px 17px; border-radius:22px; font-size:17px; line-height:1.55}
+.bub.me{align-self:flex-end; background:var(--blue-soft); border-bottom-right-radius:7px}
+.bub.ai{align-self:flex-start; background:#fff; box-shadow:var(--sh-card); border-bottom-left-radius:7px}
+.bub.ai .vr{display:flex; align-items:center; gap:7px; margin-bottom:7px; color:var(--warm);
+  font-size:12px; font-weight:800}
+.bub.ai .vr svg{width:15px; height:15px; fill:none; stroke:currentColor; stroke-width:2;
+  stroke-linecap:round; stroke-linejoin:round}
+.bub.ai p{margin:0; font-size:19px; font-weight:700; line-height:1.55}
+.src{align-self:flex-start; margin:0; padding:7px 13px; border-radius:99px; background:var(--green-soft);
+  color:var(--green); font-size:12px; font-weight:700}
+.src.unk{background:#F2F0F0; color:var(--muted)}
+.asks{flex:0 0 auto; display:grid; gap:9px; margin-top:14px}
+.askbtn{padding:16px 18px; text-align:left; border-radius:22px; background:#fff;
+  box-shadow:var(--sh-card); font-size:17px; line-height:1.4}
+.askbtn:active{background:var(--warm-soft)}
+.holdbar{flex:0 0 auto; margin-top:10px; padding:14px; text-align:center; border-radius:99px;
+  border:1.5px dashed var(--warm); color:var(--warm); font-size:14px; font-weight:800}
+
+.lmk{position:relative; min-height:190px; margin:12px 0 16px; border-radius:26px; overflow:hidden;
+  display:grid; place-items:center; background:linear-gradient(150deg,var(--blue-soft),var(--rose-soft))}
+.lmk .shape{width:150px; height:88px; border:14px solid var(--warm); border-top:0; transform:skew(-8deg); opacity:.92}
+.lmk .shape.shop{border-color:var(--blue); border-radius:0 0 10px 10px; transform:none}
+.lmk .shape.home{border-color:var(--green); border-top:14px solid var(--green); border-radius:8px; transform:none}
+.lmk .nm{position:absolute; left:14px; bottom:14px; padding:6px 13px; border-radius:99px;
+  background:rgba(23,22,26,.82); color:#fff; font-size:13px; font-weight:700}
+.stepno{margin:0 0 6px; color:var(--muted); font-size:14px; font-weight:700}
+.stepcopy{margin:0 0 10px; font-size:26px; font-weight:800; line-height:1.45}
+.stepnote{margin:0; color:var(--muted); font-size:14px; line-height:1.55}
+.vr-line{display:flex; align-items:center; gap:7px; margin-bottom:8px; color:var(--warm); font-size:13px; font-weight:800}
+.vr-line svg{width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round}
+
+.devbar{flex:0 0 auto; margin-top:14px; padding-top:12px; border-top:1px dashed #E3DEDA}
+.devbar .hd{display:flex; align-items:center; justify-content:space-between; width:100%;
+  color:var(--faint); font-size:11.5px; font-weight:700}
+.devbar .bd{margin-top:11px}
+.devbar .bd[hidden]{display:none}
+.devbar .bd p{margin:0 0 10px; color:var(--faint); font-size:11px; line-height:1.55}
+.devbar .bd .btn{padding:11px; font-size:13.5px; box-shadow:none; background:#fff;
+  color:var(--ink-2); box-shadow:var(--sh-card)}
+.devdist{display:block; margin-top:10px; color:var(--muted); font-size:12px;
+  font-variant-numeric:tabular-nums; text-align:center}
+.devdist.out{color:var(--red); font-weight:800}
+
+/* 视口不够高时手机框自适应，保证分屏演示一屏放得下 */
+
+</style>
+</head>
+<body>
+
+<div class="phone">
+  <div class="island"></div>
+  <div class="screen" id="screen">
+    <div class="statusbar">
+      <span id="clock">9:41</span>
+      <span class="sigs">
+        <svg viewBox="0 0 18 12"><rect x="0" y="7" width="3" height="5" rx="1"/><rect x="4.5" y="5" width="3" height="7" rx="1"/><rect x="9" y="2.5" width="3" height="9.5" rx="1"/><rect x="13.5" y="0" width="3" height="12" rx="1" opacity=".3"/></svg>
+        <svg viewBox="0 0 18 12"><path d="M9 10.6 6.3 7.9a3.9 3.9 0 0 1 5.4 0zM9 5.4c-1.9 0-3.6.7-4.9 2L2.6 5.9A9.1 9.1 0 0 1 9 3.3c2.5 0 4.7 1 6.4 2.6l-1.5 1.5a6.9 6.9 0 0 0-4.9-2z"/></svg>
+        <svg viewBox="0 0 18 12"><rect x="0" y="2" width="14" height="8" rx="2.4" opacity=".35"/><rect x="1.4" y="3.4" width="9" height="5.2" rx="1.4"/><rect x="15" y="4.6" width="1.6" height="2.8" rx=".8" opacity=".35"/></svg>
+      </span>
+    </div>
+    <div class="view" id="view"></div>
+    <div class="demo-chrome" id="chrome"></div>
+  </div>
+</div>
+
+<p class="device-label" id="deviceLabel" hidden><i></i><span></span></p>
+<p class="hint-line" id="hintLine" hidden></p>
+
+<!--
+  真实录音接入位置：把 viewTalking() 里的 waveEl() 换成
+  <audio id="callAudio" src="assets/call.mp3" autoplay></audio>
+  再用 audio.currentTime 驱动 call.line，即可换成真实通话音频。
+-->
+
+<script>
+(function(){
+"use strict";
+
+/* =====================================================================
+   1. 文案与示例数据
+   ===================================================================== */
+var SEED = {
+  zh:{ elderName:"妈妈", address:"广州市天河区兴华路 12 号 3 栋",
+       nick:"小雨", relation:"女儿", phone:"138 0000 7612",
+       recent:"现在在广州工作，一个人住。",
+       hint:"你以前每天送她去三小上学，风雨无阻。",
+       spoken:"我是她女儿小雨，现在在广州工作，一个人住。我妈以前每天送我去三小上学，风雨无阻。" },
+  en:{ elderName:"Mom", address:"12 Xinghua Rd, Building 3, Guangzhou",
+       nick:"Yuki", relation:"Daughter", phone:"138 0000 7612",
+       recent:"Works in Guangzhou, lives on her own.",
+       hint:"You walked her to No.3 Primary School every morning, rain or shine.",
+       spoken:"I'm her daughter Yuki. I work in Guangzhou and live alone. She walked me to No.3 Primary School every morning, rain or shine." }
+};
+
+var I18N = {
+zh:{
+  appName:"守护助手", appSub:"阿尔茨海默中度早期 · 双端伴侣",
+  langBtn:"EN", resetBtn:"重置演示", exitBtn:"换个角色",
+  labelFamily:"家人端", labelElder:"老人端", labelEntry:"入口",
+
+  hintEntry:"演示用法：浏览器分屏，两个窗口都打开这一页。一个选家人端，一个选老人端，用家庭码连起来。",
+  hintFamily:"这台是家人的手机。改任何字段，老人端立刻同步。",
+  hintElder:"这台是老人的手机。她不需要操作，需要帮忙时屏幕会自己亮起来。",
+
+  entryTitle:"请选择您的身份", entrySub:"不一样的界面，不一样的服务。",
+  roleFamilyT:"我是家人", roleFamilyD:"维护家庭信息、接收提醒。设置由你来做。",
+  roleElderT:"这台是老人的手机", roleElderD:"由家人代为配对，之后老人不用再操作。",
+
+  fsTitle:"家庭", fsSub:"第一个家人创建家庭，其他家人用家庭码加入同一个家庭。",
+  fsCreateT:"创建新家庭", fsCreateD:"你是第一个使用的人，填一次老人的信息。",
+  fsJoinT:"加入已有家庭", fsJoinD:"家里已经有人建好了，用六位家庭码加进来。",
+
+  obElderTitle:"关于老人", obElderSub:"三项就够，之后随时可以改。",
+  fName:"称呼", fAddr:"家庭住址", fRange:"日常活动范围",
+  rangeHint:"超出这个范围并持续远离，系统先提醒老人，再通知你。",
+  obMeTitle:"关于你自己", obMeSub:"这些会出现在老人的来电卡片上，帮她认出你。",
+  speakT:"说一句话，我来整理", speakD:"不想打字就按这里，说完自动填进下面的字段",
+  speakOn:"正在听……", speakDone:"已经从这句话里整理出 2 个字段，可以直接改。",
+  fNick:"称呼", fRel:"关系", fPhone:"电话", fRecent:"近况", fHint:"想让她记起的事",
+  phoneHint:"只用于来电匹配，不做人脸识别。",
+  hintHint:"越久远的事越容易被记起。",
+  sampleTag:"示例",
+
+  codeTitle:"家庭码", codeSub:"其他家人和老人的手机，用这串数字加入同一个家庭。",
+  codeNote:"随时可以在「家人」页里看到",
+  joinTitle:"输入家庭码", joinSubF:"问一下家里已经在用的人。",
+  joinSubE:"请家人代为输入。老人不需要参与这一步。",
+  joinPh:"6 位数字", joinErr:"没有找到这个家庭码。",
+  recentT:"这台设备上的家庭", recentNote:"演示便捷入口，正式版只保留手动输入。",
+  useIt:"进入",
+  next:"下一步", back:"上一步", done:"完成", start:"开始",
+  goFamily:"进入家人端", goElder:"进入老人端",
+  pairedT:"配对完成", pairedD:"现在把手机交给老人。她不需要再打开任何东西，需要帮忙的时候屏幕会自己亮起来。",
+
+  tabs:["首页","今天","提醒","家人"],
+  greet:"你好", greetSub:"{elder}今天怎么样",
+  stHome:"在家，一切正常", stOut:"在活动范围外", stGuide:"正在回家 · 第 {n} 步",
+  stArrived:"已经到家", stRing:"正在呼叫", stTalk:"通话中",
+  tileToday:"今天", tileTodayV:"整体平稳", tileAlert:"提醒", tileAlertV:"暂无",
+  tileAlertOn:"1 条处理中", tileAlertDone:"已解除",
+  meIs:"你在这个家庭里是",
+  mapNote:"位置由老人的手机上报，这里只展示",
+  mapDist:"距家 {n} 米", mapHome:"家",
+  callBtn:"打给{elder}",
+  ringT:"正在呼叫{elder}", ringD:"接通后她会看到你的卡片。",
+  talkT:"通话中", talkD:"挂断之后，系统会把这通电话整理成待确认的内容。",
+  hangup:"挂断",
+  notPaired:"老人端还没有配对", notPairedD:"在老人的手机上打开这一页，用家庭码 {code} 配对。",
+
+  cfT:"通话结束，请确认", cfD:"系统从这通电话里整理出 2 条。确认之后老人问起才答得出来。",
+  tFact:"事实", tTodo:"待办",
+  factVisit:"{nick}周六下午来看{elder}", factPill:"提醒{elder}把降压药吃完",
+  aOk:"确认", aEdit:"修改", aSkip:"忽略", aCancel:"取消", aSave:"保存",
+  okLine:"已确认，已写入记忆", skipLine:"已忽略，不会用于回答",
+
+  todayT:"今天", todaySub:"整体平稳",
+  tlMorning:"起床活动正常",
+  tlCall:"与{nick}通话，整理出 2 条内容",
+  tlQa:"重复询问{rel}来访时间 {n} 次",
+  tlUnknown:"问了一个记忆里没有的问题",
+  tlGuide:"走出活动范围，开始回家引导",
+  tlHome:"回到家，引导结束",
+
+  alertT:"提醒", alertNone:"暂无提醒", alertNoneD:"{elder}在活动范围内，一切正常。",
+  alertOnT:"正在协助{elder}回家",
+  dWhy:"触发原因", dWhyV:"超出活动范围后持续远离，系统已经开始语音引导。",
+  dWhere:"当前位置", dProg:"引导进度", dProgV:"第 {n} 步 · 共 3 步",
+  alertDoneT:"{elder}已经到家", dDoneV:"三步引导全程没有中断。",
+
+  peopleT:"家人", peopleSub:"这些人会出现在老人的来电卡片上",
+  addPerson:"再加一位家人", editPerson:"编辑资料", meTag:"你",
+  pendingT:"等你补充", pendingD:"{elder}问了这个，记忆里没有：",
+  pendingOk:"我已经补上了",
+  familyCodeT:"家庭码", familyCodeD:"分享给其他家人或用来配对老人的手机",
+
+  eGreet:"你好", eGreetD:"有事就按下面的按钮跟我说。",
+  eTalk:"说话", eBack:"不问了",
+  eIncoming:"来电", eIsYour:"，是你", eAnswer:"接听", eDecline:"拒绝",
+  eOnCall:"通话中", eAudioTag:"示例音频",
+  eListening:"我在听", eEmpty:"想问什么，按一下就行。",
+  eSpeaking:"正在语音回答", eGuiding:"正在语音引导",
+  eHold:"按住说话",
+  srcFact:"来自{nick}今天确认的信息", srcTodo:"来自{nick}今天确认的待办",
+  srcUnk:"记忆里还没有，已经去问{nick}了",
+  eStep:"第 {n} 步 · 共 3 步", eArrived:"我到了",
+  eGuideNote:"到了就按下面的按钮，我再告诉你下一步。",
+  eHomeT:"你到家了", eHomeD:"已经告诉{nick}你平安到家。", eGot:"知道了",
+
+  devT:"演示控制", devOpen:"展开", devClose:"收起",
+  devD:"仅用于演示。正式版这台设备的位置由 GPS 上报，没有人需要操作它。",
+  devWalk:"模拟外出", devHome:"回到家", devDist:"距家 {n} 米",
+
+  callLines:[["her","妈，是我，{nick}。"],["me","哎，{nick}啊。"],
+             ["her","我这周六下午过来看你，你在家等我。"],["me","周六啊，好，好。"],
+             ["her","还有你那个降压药，记得吃完，别落下。"],["me","知道了知道了。"]],
+  asks:["{nick}什么时候来？","我是不是该吃药了？","我的降压药放在哪里？"],
+  ansVisit:"{nick}周六下午来看你。她一直记着呢，你不用担心。",
+  ansPill:"{nick}今天特意说了，降压药要吃完，别落下。",
+  ansUnknown:"这个我先帮你问问{nick}，等她回话我马上告诉你。",
+  ansNoConfirm:"这条{nick}还没有确认，我先帮你问问她。",
+  ansFromFact:"{text}。她一直记着呢，你不用担心。",
+  ansFromTodo:"{text}。别落下。",
+  guide:[{lm:"红色健身器材",cls:"",copy:"向前走，看到红色健身器材就停下。"},
+         {lm:"蓝色雨棚的小卖部",cls:"shop",copy:"从健身器材右转，走到蓝色雨棚的小卖部。"},
+         {lm:"你家楼下",cls:"home",copy:"小卖部旁边那条路走到头，就是你家楼下了。"}],
+  resetAsk:"清空这个家庭的全部数据？两个窗口都会回到最开始。"
+},
+en:{
+  appName:"Companion", appSub:"Early-stage Alzheimer's · two-sided care",
+  langBtn:"中文", resetBtn:"Reset demo", exitBtn:"Switch role",
+  labelFamily:"Family side", labelElder:"Elder side", labelEntry:"Start",
+
+  hintEntry:"To present: split the screen and open this page in two windows. Pick the family side in one, the elder side in the other, and link them with the family code.",
+  hintFamily:"This is the family member's phone. Edit any field and the elder side updates at once.",
+  hintElder:"This is the elder's phone. She never operates it; the screen wakes up when she needs help.",
+
+  entryTitle:"Who is using this phone?", entrySub:"Different person, different interface.",
+  roleFamilyT:"I'm a family member", roleFamilyD:"Keep the family information and handle alerts. Setup happens here.",
+  roleElderT:"This is the elder's phone", roleElderD:"A family member pairs it. After that she never touches it.",
+
+  fsTitle:"Family", fsSub:"The first person creates the family. Everyone else joins with the code.",
+  fsCreateT:"Create a new family", fsCreateD:"You're first. Fill in the elder's details once.",
+  fsJoinT:"Join an existing family", fsJoinD:"Someone at home already set it up. Use their six-digit code.",
+
+  obElderTitle:"About the elder", obElderSub:"Three things is enough. You can change them any time.",
+  fName:"Name", fAddr:"Home address", fRange:"Everyday range",
+  rangeHint:"If she goes past this and keeps moving away, the system talks to her first, then tells you.",
+  obMeTitle:"About you", obMeSub:"This is what she sees when you call, so she can recognise you.",
+  speakT:"Say it out loud instead", speakD:"Tap and talk. The fields below fill themselves in.",
+  speakOn:"Listening…", speakDone:"Two fields were pulled from that sentence. Edit them freely.",
+  fNick:"Name", fRel:"Relationship", fPhone:"Phone", fRecent:"Recent life", fHint:"Something she may remember",
+  phoneHint:"Used only to match incoming calls. No face recognition.",
+  hintHint:"Older memories last longer.",
+  sampleTag:"Sample",
+
+  codeTitle:"Family code", codeSub:"Other relatives and the elder's phone join with these digits.",
+  codeNote:"Always visible on the Family tab",
+  joinTitle:"Enter the family code", joinSubF:"Ask whoever set it up at home.",
+  joinSubE:"A family member enters it. The elder is not involved.",
+  joinPh:"6 digits", joinErr:"No family found with that code.",
+  recentT:"Families on this device", recentNote:"A demo shortcut. The real app only takes manual entry.",
+  useIt:"Open",
+  next:"Next", back:"Back", done:"Done", start:"Start",
+  goFamily:"Go to the family side", goElder:"Go to the elder side",
+  pairedT:"Paired", pairedD:"Now hand the phone to her. She never has to open anything; the screen wakes up when she needs help.",
+
+  tabs:["Home","Today","Alerts","Family"],
+  greet:"Hello", greetSub:"How {elder} is doing today",
+  stHome:"At home, all normal", stOut:"Outside her range", stGuide:"Heading home · step {n}",
+  stArrived:"Back home", stRing:"Calling", stTalk:"On a call",
+  tileToday:"Today", tileTodayV:"Calm day", tileAlert:"Alerts", tileAlertV:"None",
+  tileAlertOn:"1 in progress", tileAlertDone:"Cleared",
+  meIs:"In this family you are",
+  mapNote:"Reported by her phone. Read-only here.",
+  mapDist:"{n} m from home", mapHome:"Home",
+  callBtn:"Call {elder}",
+  ringT:"Calling {elder}", ringD:"Once she answers, your card is on her screen.",
+  talkT:"On a call", talkD:"After you hang up, the call becomes items for you to confirm.",
+  hangup:"Hang up",
+  notPaired:"The elder's phone is not paired", notPairedD:"Open this page on her phone and pair with code {code}.",
+
+  cfT:"Call ended, please confirm", cfD:"Two items came out of this call. She can only be answered with what you confirm.",
+  tFact:"Fact", tTodo:"Reminder",
+  factVisit:"{nick} is visiting {elder} on Saturday afternoon", factPill:"Remind {elder} to finish her blood pressure pills",
+  aOk:"Confirm", aEdit:"Edit", aSkip:"Ignore", aCancel:"Cancel", aSave:"Save",
+  okLine:"Confirmed and saved to memory", skipLine:"Ignored, will not be used",
+
+  todayT:"Today", todaySub:"Calm day",
+  tlMorning:"Normal morning activity",
+  tlCall:"Call with {nick}, 2 items captured",
+  tlQa:"Asked when her {rel} is visiting {n} times",
+  tlUnknown:"Asked something that is not in memory",
+  tlGuide:"Left her range, home guidance started",
+  tlHome:"Back home, guidance finished",
+
+  alertT:"Alerts", alertNone:"No alerts", alertNoneD:"{elder} is inside her range. Everything is normal.",
+  alertOnT:"Helping {elder} get home",
+  dWhy:"Why it fired", dWhyV:"She went past her range and kept moving away. Voice guidance has started.",
+  dWhere:"Current location", dProg:"Guidance progress", dProgV:"Step {n} of 3",
+  alertDoneT:"{elder} is home", dDoneV:"Three guided steps, no interruption.",
+
+  peopleT:"Family", peopleSub:"These people show up on her incoming-call card",
+  addPerson:"Add another relative", editPerson:"Edit details", meTag:"You",
+  pendingT:"Needs your input", pendingD:"{elder} asked this and it is not in memory:",
+  pendingOk:"I've added it",
+  familyCodeT:"Family code", familyCodeD:"Share it with relatives or use it to pair her phone",
+
+  eGreet:"Hello", eGreetD:"Press the button below whenever you need me.",
+  eTalk:"Talk", eBack:"Never mind",
+  eIncoming:"Incoming call", eIsYour:", your ", eAnswer:"Answer", eDecline:"Decline",
+  eOnCall:"On a call", eAudioTag:"Sample audio",
+  eListening:"I'm listening", eEmpty:"Tap anything you want to ask.",
+  eSpeaking:"Speaking the answer", eGuiding:"Guiding by voice",
+  eHold:"Hold to speak",
+  srcFact:"From what {nick} confirmed today", srcTodo:"From the reminder {nick} confirmed today",
+  srcUnk:"Not in memory yet. {nick} has been asked.",
+  eStep:"Step {n} of 3", eArrived:"I'm there",
+  eGuideNote:"Tap the button when you get there and I'll give you the next step.",
+  eHomeT:"You're home", eHomeD:"{nick} has been told you got home safely.", eGot:"Got it",
+
+  devT:"Demo control", devOpen:"Open", devClose:"Close",
+  devD:"Demo only. In the real app this device reports its own GPS position; nobody touches this.",
+  devWalk:"Simulate going out", devHome:"Back home", devDist:"{n} m from home",
+
+  callLines:[["her","Mom, it's me, {nick}."],["me","Oh, {nick}."],
+             ["her","I'm coming to see you Saturday afternoon. Wait for me at home."],["me","Saturday. Alright, alright."],
+             ["her","And finish your blood pressure pills, don't skip them."],["me","I know, I know."]],
+  asks:["When is {nick} coming?","Should I be taking my medicine?","Where are my blood pressure pills?"],
+  ansVisit:"{nick} is coming Saturday afternoon. She remembers. You don't need to worry.",
+  ansPill:"{nick} said today that your blood pressure pills should be finished, don't skip them.",
+  ansUnknown:"Let me ask {nick} about that. I'll tell you as soon as she answers.",
+  ansNoConfirm:"{nick} hasn't confirmed that yet. Let me ask her.",
+  ansFromFact:"{text}. She remembers, you don't need to worry.",
+  ansFromTodo:"{text}. Don't skip it.",
+  guide:[{lm:"Red exercise bars",cls:"",copy:"Walk straight ahead. Stop when you see the red exercise bars."},
+         {lm:"Shop with the blue awning",cls:"shop",copy:"Turn right at the bars and walk to the shop with the blue awning."},
+         {lm:"Your building",cls:"home",copy:"Follow the road past the shop to the end. That is your building."}],
+  resetAsk:"Clear all data for this family? Both windows go back to the start."
+}
+};
+
+/* =====================================================================
+   2. 数据层：localStorage + BroadcastChannel
+      两个窗口读写同一份数据。换成后端只改这一段。
+   ===================================================================== */
+var PREFIX="alz:family:", INDEX="alz:index", SROLE="alz:role", SCODE="alz:code", SME="alz:me", SLANG="alz:lang";
+function jr(k,d){ try{ var v=localStorage.getItem(k); return v?JSON.parse(v):d; }catch(e){ return d; } }
+function jw(k,v){ localStorage.setItem(k, JSON.stringify(v)); }
+function mkCode(){ var c=""; for(var i=0;i<6;i++) c+=Math.floor(Math.random()*10); return c; }
+
+var HOME={x:130,y:90}, MPP=13.33;
+
+function newFamily(code, lang){
+  var s=SEED[lang]||SEED.zh;
+  return {
+    code:code, lang:lang, rev:0,
+    setup:false, paired:false,
+    elder:{ name:s.elderName, address:s.address, radius:"800" },
+    people:[],
+    facts:[], pending:[],
+    timeline:[{t:"09:10", kind:"morning"}],
+    call:{ phase:"idle", personId:null, line:-1 },
+    lastCaller:null,
+    thread:[], askCounts:{},
+    loc:{ x:HOME.x, y:HOME.y },
+    guide:{ active:false, step:0, done:false }
+  };
+}
+
+var Store={
+  code:null, chan:null, subs:[],
+  role:function(){ return sessionStorage.getItem(SROLE); },
+  codeOf:function(){ return sessionStorage.getItem(SCODE); },
+  meId:function(){ return sessionStorage.getItem(SME); },
+  signIn:function(role,code,me){
+    sessionStorage.setItem(SROLE,role); sessionStorage.setItem(SCODE,code);
+    if(me) sessionStorage.setItem(SME,me);
+  },
+  signOut:function(){ sessionStorage.removeItem(SROLE); sessionStorage.removeItem(SCODE); sessionStorage.removeItem(SME); },
+  families:function(){ return jr(INDEX,[]); },
+  exists:function(c){ return !!jr(PREFIX+c,null); },
+  indexPut:function(code,name){
+    var l=this.families().filter(function(f){ return f.code!==code; });
+    l.unshift({code:code,name:name,at:Date.now()}); jw(INDEX,l.slice(0,5));
+  },
+  create:function(lang){
+    var c=mkCode(); while(this.exists(c)) c=mkCode();
+    jw(PREFIX+c, newFamily(c,lang)); this.indexPut(c, SEED[lang].elderName);
+    return c;
+  },
+  attach:function(code){
+    var self=this; this.code=code;
+    if(window.BroadcastChannel){
+      this.chan=new BroadcastChannel("alz:"+code);
+      this.chan.onmessage=function(){ self.emit(); };
+    }
+    window.addEventListener("storage", function(e){ if(e.key===PREFIX+code) self.emit(); });
+  },
+  get:function(){ return this.code ? jr(PREFIX+this.code,null) : null; },
+  update:function(fn){
+    var s=this.get(); if(!s) return null;
+    fn(s); s.rev=(s.rev||0)+1;
+    jw(PREFIX+this.code, s);
+    if(this.chan) this.chan.postMessage(s.rev);
+    this.emit(); return s;
+  },
+  subscribe:function(cb){ this.subs.push(cb); },
+  emit:function(){ var s=this.get(); for(var i=0;i<this.subs.length;i++) this.subs[i](s); },
+  resetFamily:function(){
+    var lang=(this.get()||{}).lang||"zh";
+    jw(PREFIX+this.code, newFamily(this.code,lang));
+    if(this.chan) this.chan.postMessage(0);
+    this.emit();
+  }
+};
+
+/* =====================================================================
+   3. 工具
+   ===================================================================== */
+function el(id){ return document.getElementById(id); }
+function fill(s,o){ return String(s).replace(/\{(\w+)\}/g,function(_,k){ return o[k]!==undefined?o[k]:"{"+k+"}"; }); }
+function initial(n){
+  n=(n||"").trim(); if(!n) return "?";
+  return /[一-龥]/.test(n) ? n.charAt(n.length-1) : n.charAt(0).toUpperCase();
+}
+function focusPerson(s){
+  if(!s || !s.people.length) return {nick:"",relation:"",recent:"",hint:""};
+  if(s.lastCaller){
+    for(var i=0;i<s.people.length;i++) if(s.people[i].id===s.lastCaller) return s.people[i];
+  }
+  return s.people[0];
+}
+function tp(str, s){
+  str=String(str);
+  if(str.indexOf("{")<0) return str;
+  s=s||St;
+  if(!s) return str;
+  var p=focusPerson(s);
+  return str.replace(/\{(nick|elder|rel|code)\}/g, function(_,k){
+    if(k==="nick") return p.nick||"";
+    if(k==="elder") return s.elder.name||"";
+    if(k==="rel") return p.relation||"";
+    return s.code||"";
+  });
+}
+function esc(v,s){
+  return tp(v,s).replace(/[&<>"]/g,function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]; });
+}
+function distOf(s){ var dx=s.loc.x-HOME.x, dy=s.loc.y-HOME.y; return Math.round(Math.sqrt(dx*dx+dy*dy)*MPP); }
+function rangeM(s){ return parseInt(s.elder.radius,10); }
+function isOut(s){ return distOf(s)>rangeM(s); }
+function clockNow(){ var d=new Date(); return d.getHours()+":"+("0"+d.getMinutes()).slice(-2); }
+function waveEl(cls){ var h='<span class="wave '+(cls||"")+'">'; for(var i=0;i<7;i++) h+='<i style="animation-delay:'+(i*.09)+'s"></i>'; return h+'</span>'; }
+
+var IC = {
+  voice:'<svg viewBox="0 0 24 24"><path d="M11 5 6 9H3v6h3l5 4zM15.5 8.5a5 5 0 0 1 0 7M18 6a8.5 8.5 0 0 1 0 12"/></svg>',
+  mic:'<svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>',
+  home:'<svg viewBox="0 0 24 24"><path d="M3 10.5 12 4l9 6.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>',
+  cal:'<svg viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="16" rx="3"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>',
+  bell:'<svg viewBox="0 0 24 24"><path d="M18 16V11a6 6 0 1 0-12 0v5l-1.5 2.5h15zM10 20a2 2 0 0 0 4 0"/></svg>',
+  users:'<svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.4"/><path d="M3 20c0-3.3 2.7-5.6 6-5.6s6 2.3 6 5.6"/><path d="M16 5.6a3.4 3.4 0 0 1 0 6.6M17.5 14.6c2.1.7 3.5 2.6 3.5 5.4"/></svg>',
+  logo:'<svg viewBox="0 0 24 24"><path d="M12 20.5S3.8 15.6 3.8 9.8A4.3 4.3 0 0 1 12 7.6a4.3 4.3 0 0 1 8.2 2.2c0 5.8-8.2 10.7-8.2 10.7z"/><path d="M7.5 12h2l1.3-2.6 1.6 4L14 12h2.5"/></svg>',
+  phoneUp:'<svg viewBox="0 0 24 24"><path d="M8 4l3 5-2 2c1 2 2 3 4 4l2-2 5 3-1 4c-8 1-15-6-15-15z"/></svg>',
+  phoneDown:'<svg viewBox="0 0 24 24"><path d="M5 15c4-4 10-4 14 0M8 13l-2-3M16 13l2-3"/></svg>'
+};
+
+/* =====================================================================
+   4. 应用状态
+   ===================================================================== */
+var App = {
+  route:"entry",       // entry familyStart obElder obMe joinCode elderPair paired family elder
+  joinAs:"family",     // 输码之后的身份
+  tab:0,
+  err:"",
+  speak:0,             // 0 未说 1 正在听 2 已填
+  qa:false, dev:false,
+  editingPerson:null,  // 正在编辑的人物 id，null 表示列表
+  addingPerson:false
+};
+var St=null, D=null, lang = localStorage.getItem(SLANG) || "zh";
+var subTimer=null, walkTimer=null, speakTimer=null, typing=false;
+
+/* =====================================================================
+   5. 视图：入口与注册
+   ===================================================================== */
+function brand(){
+  return '<div class="brandmark"><span class="logo">'+IC.logo+'</span>'
+    + '<span><b>'+esc(D.appName)+'</b><span>'+esc(D.appSub)+'</span></span></div>';
+}
+
+function viewEntry(){
+  return brand()
+    + '<p class="h1">'+esc(D.entryTitle)+'</p>'
+    + '<p class="sub">'+esc(D.entrySub)+'</p>'
+    + '<div class="roles">'
+    + '<button class="role family" data-go="familyStart"><span class="face">🧑‍💼</span>'
+    +   '<span><b>'+esc(D.roleFamilyT)+'</b><span>'+esc(D.roleFamilyD)+'</span></span></button>'
+    + '<button class="role elder" data-go="elderPair"><span class="face">👵</span>'
+    +   '<span><b>'+esc(D.roleElderT)+'</b><span>'+esc(D.roleElderD)+'</span></span></button>'
+    + '</div>';
+}
+
+function viewFamilyStart(){
+  return '<p class="eyebrow">'+esc(D.fsTitle)+'</p>'
+    + '<p class="h1">'+esc(D.fsTitle)+'</p>'
+    + '<p class="sub">'+esc(D.fsSub)+'</p>'
+    + '<div class="roles">'
+    + '<button class="role family" data-go="create"><span class="face">✨</span>'
+    +   '<span><b>'+esc(D.fsCreateT)+'</b><span>'+esc(D.fsCreateD)+'</span></span></button>'
+    + '<button class="role family" data-go="joinFamily"><span class="face">🔑</span>'
+    +   '<span><b>'+esc(D.fsJoinT)+'</b><span>'+esc(D.fsJoinD)+'</span></span></button>'
+    + '</div>'
+    + '<div class="spacer"></div>'
+    + '<button class="link" data-go="entry">'+esc(D.back)+'</button>';
+}
+
+function fieldHTML(path,label,type,opts){
+  opts=opts||{};
+  var v=getPath(path), seedKey=opts.seedKey||path.split(".").pop();
+  var isSeed = (v === SEED[St.lang][seedKey]);
+  var ctl;
+  if(type==="textarea") ctl='<textarea data-f="'+path+'">'+esc(v)+'</textarea>';
+  else ctl='<input type="text" data-f="'+path+'" value="'+esc(v)+'">';
+  return '<div class="field"><div class="field-top"><label>'+esc(label)+'</label>'
+    + '<span class="tag" '+(isSeed?"":"hidden")+'>'+esc(D.sampleTag)+'</span></div>'
+    + ctl + (opts.hint?'<p class="hint">'+esc(opts.hint)+'</p>':'') + '</div>';
+}
+function getPath(p){
+  if(p.indexOf("elder.")===0) return St.elder[p.slice(6)];
+  var per=editTarget(); return per ? per[p.slice(4)] : "";   // "per."
+}
+function setPath(s,p,v){
+  if(p.indexOf("elder.")===0){ s.elder[p.slice(6)]=v; return; }
+  var id=App.editingPerson;
+  for(var i=0;i<s.people.length;i++) if(s.people[i].id===id){ s.people[i][p.slice(4)]=v; return; }
+}
+function editTarget(){
+  for(var i=0;i<St.people.length;i++) if(St.people[i].id===App.editingPerson) return St.people[i];
+  return null;
+}
+
+function viewObElder(){
+  var r=St.elder.radius;
+  var segs=["500","800","1200"], names=["500 m","800 m","1200 m"];
+  var seg='<div class="seg">';
+  for(var i=0;i<3;i++) seg+='<button data-range="'+segs[i]+'" aria-pressed="'+(r===segs[i])+'">'+names[i]+'</button>';
+  seg+='</div>';
+  return '<p class="eyebrow">1 / 2</p><p class="h1">'+esc(D.obElderTitle)+'</p>'
+    + '<p class="sub">'+esc(D.obElderSub)+'</p>'
+    + fieldHTML("elder.name", D.fName, "text", {seedKey:"elderName"})
+    + fieldHTML("elder.address", D.fAddr, "text", {seedKey:"address"})
+    + '<div class="field"><div class="field-top"><label>'+esc(D.fRange)+'</label></div>'
+    +   seg + '<p class="hint">'+esc(D.rangeHint)+'</p></div>'
+    + '<div class="spacer"></div>'
+    + '<button class="btn" data-go="obMe">'+esc(D.next)+'</button>'
+    + '<button class="link" data-go="familyStart">'+esc(D.back)+'</button>';
+}
+
+function viewObMe(){
+  var p=editTarget()||{nick:"",relation:"",phone:"",recent:"",hint:""};
+  var speakCls = App.speak===1 ? " on" : "";
+  var speakBody = App.speak===1
+    ? '<span><b>'+esc(D.speakOn)+'</b></span>'+waveEl()
+    : '<span><b>'+esc(D.speakT)+'</b><span>'+esc(D.speakD)+'</span></span>';
+  return '<p class="eyebrow">'+(St.setup?'':'2 / 2')+'</p>'
+    + '<p class="h1">'+esc(D.obMeTitle)+'</p>'
+    + '<p class="sub">'+esc(D.obMeSub)+'</p>'
+    + '<button class="speak'+speakCls+'" data-go="speak"><span class="mic">'+IC.mic+'</span>'+speakBody+'</button>'
+    + (App.speak===2 ? '<p class="filled">✓ '+esc(D.speakDone)+'</p>' : '')
+    + '<div style="display:flex;align-items:center;gap:13px;margin-bottom:15px">'
+    +   '<span class="avatar av-lg" data-bind="av">'+esc(initial(p.nick))+'</span>'
+    +   '<p style="margin:0;color:var(--muted);font-size:11.5px;line-height:1.55">'+esc(D.phoneHint)+'</p></div>'
+    + fieldHTML("per.nick", D.fNick, "text")
+    + fieldHTML("per.relation", D.fRel, "text", {seedKey:"relation"})
+    + fieldHTML("per.phone", D.fPhone, "text", {seedKey:"phone"})
+    + fieldHTML("per.recent", D.fRecent, "textarea", {seedKey:"recent"})
+    + fieldHTML("per.hint", D.fHint, "textarea", {seedKey:"hint", hint:D.hintHint})
+    + '<div class="spacer"></div>'
+    + '<button class="btn" data-go="finishSetup">'+esc(D.done)+'</button>';
+}
+
+function viewCode(){
+  return '<p class="eyebrow">'+esc(D.codeTitle)+'</p>'
+    + '<p class="h1">'+esc(D.codeTitle)+'</p>'
+    + '<p class="sub">'+esc(D.codeSub)+'</p>'
+    + '<div class="codebox"><b>'+St.code+'</b><span>'+esc(D.codeNote)+'</span></div>'
+    + '<div class="spacer"></div>'
+    + '<button class="btn" data-go="enterFamily">'+esc(D.goFamily)+'</button>';
+}
+
+function viewJoin(){
+  var forElder = App.joinAs==="elder";
+  var h='<p class="eyebrow'+(forElder?' warm':'')+'">'+esc(forElder?D.roleElderT:D.fsJoinT)+'</p>'
+    + '<p class="h1">'+esc(D.joinTitle)+'</p>'
+    + '<p class="sub">'+esc(forElder?D.joinSubE:D.joinSubF)+'</p>'
+    + '<input class="codein" id="codeIn" inputmode="numeric" maxlength="6" placeholder="'+esc(D.joinPh)+'">'
+    + (App.err?'<p class="err">'+esc(App.err)+'</p>':'')
+    + '<div style="height:16px"></div>'
+    + '<button class="btn'+(forElder?' warm':'')+'" data-go="pair">'+esc(D.next)+'</button>';
+  var list=Store.families();
+  if(list.length){
+    h+='<div class="recent"><p class="sub" style="margin-bottom:9px">'+esc(D.recentT)+'</p>';
+    for(var i=0;i<list.length;i++){
+      h+='<div class="row"><span><b>'+esc(list[i].name)+'</b><small>'+list[i].code+'</small></span>'
+       + '<button class="mini" data-use="'+list[i].code+'">'+esc(D.useIt)+'</button></div>';
+    }
+    h+='<p class="hint" style="color:var(--faint);font-size:11px">'+esc(D.recentNote)+'</p></div>';
+  }
+  h+='<div class="spacer"></div><button class="link" data-go="entry">'+esc(D.back)+'</button>';
+  return h;
+}
+
+function viewPaired(){
+  return '<div class="e-hello"><div class="e-ring" style="background:var(--green-soft);color:var(--green)">✓</div>'
+    + '<p class="e-h1">'+esc(D.pairedT)+'</p><p class="e-copy">'+esc(D.pairedD)+'</p></div>'
+    + '<button class="e-btn" data-go="enterElder">'+esc(D.goElder)+'</button>';
+}
+
+/* =====================================================================
+   6. 视图：家人端
+   ===================================================================== */
+function riskState(){
+  if(St.guide.active) return "on";
+  for(var i=0;i<St.timeline.length;i++) if(St.timeline[i].kind==="home") return "done";
+  return "none";
+}
+function statusText(){
+  if(St.call.phase==="ringing") return D.stRing;
+  if(St.call.phase==="talking") return D.stTalk;
+  if(St.guide.active) return fill(D.stGuide,{n:St.guide.step+1});
+  if(riskState()==="done") return D.stArrived;
+  if(isOut(St)) return D.stOut;
+  return D.stHome;
+}
+function me(){
+  var id=Store.meId();
+  for(var i=0;i<St.people.length;i++) if(St.people[i].id===id) return St.people[i];
+  return St.people[0]||{nick:"",relation:""};
+}
+
+function mapSVG(){
+  var d=distOf(St), out=isOut(St), g=D.guide;
+  return '<svg class="map" viewBox="0 0 260 150" aria-label="map">'
+    + '<rect width="260" height="150" fill="#F3F1F4"/>'
+    + '<path d="M0 48H260M0 104H260M74 0V150M186 0V150" stroke="#E7E3E6" stroke-width="1.4" fill="none"/>'
+    + '<circle cx="'+HOME.x+'" cy="'+(HOME.y-15)+'" r="'+(rangeM(St)/MPP).toFixed(1)+'" fill="rgba(110,147,206,.10)" stroke="#6E93CE" stroke-width="1.3" stroke-dasharray="5 4"/>'
+    + '<circle cx="74" cy="48" r="3.2" fill="#D19A55"/><text x="80" y="51" font-size="7.5" fill="#8B8791">'+esc(g[0].lm)+'</text>'
+    + '<circle cx="186" cy="104" r="3.2" fill="#6E93CE"/><text x="192" y="107" font-size="7.5" fill="#8B8791">'+esc(g[1].lm)+'</text>'
+    + '<rect x="'+(HOME.x-6)+'" y="'+(HOME.y-21)+'" width="12" height="12" rx="3" fill="#5E9E82"/>'
+    + '<text x="'+(HOME.x+10)+'" y="'+(HOME.y-11)+'" font-size="8.5" fill="#5E9E82" font-weight="700">'+esc(D.mapHome)+'</text>'
+    + '<circle cx="'+St.loc.x.toFixed(1)+'" cy="'+(St.loc.y-15).toFixed(1)+'" r="8" fill="'+(out?"#C9646B":"#D19A55")+'" opacity=".22"/>'
+    + '<circle cx="'+St.loc.x.toFixed(1)+'" cy="'+(St.loc.y-15).toFixed(1)+'" r="5" fill="'+(out?"#C9646B":"#D19A55")+'" stroke="#fff" stroke-width="2"/>'
+    + '</svg>'
+    + '<div class="map-foot"><small>'+esc(D.mapNote)+'</small>'
+    + '<b class="'+(out?"out":"")+'">'+esc(fill(D.mapDist,{n:d}))+'</b></div>';
+}
+
+function tabHome(){
+  var rs=riskState(), m=me();
+  var h='<div class="f-head"><p class="eyebrow">'+esc(D.greet)+'</p>'
+    + '<p class="h1">'+esc(statusText())+'</p>'
+    + '<div class="who"><span class="avatar av-sm">'+esc(initial(m.nick))+'</span>'
+    + '<span><b>'+esc(m.nick)+'</b><small>'+esc(D.meIs)+' '+esc(m.relation)+'</small></span></div></div>';
+
+  if(!St.paired){
+    h+='<div class="banner note"><b>'+esc(D.notPaired)+'</b>'
+     + '<small>'+esc(fill(D.notPairedD,{code:St.code}))+'</small></div>';
+  }
+
+  h+='<div class="tiles">'
+   + '<button class="tile" data-tab="1"><small>'+esc(D.tileToday)+'</small><b>'+esc(D.tileTodayV)+'</b></button>'
+   + '<button class="tile '+(rs==="on"?"alert":(rs==="done"?"good":""))+'" data-tab="2"><small>'+esc(D.tileAlert)+'</small><b>'
+   + esc(rs==="on"?D.tileAlertOn:(rs==="done"?D.tileAlertDone:D.tileAlertV))+'</b></button></div>'
+   + '<div class="map-card">'+mapSVG()+'</div>';
+
+  if(St.call.phase==="ringing" || St.call.phase==="talking"){
+    var ring = St.call.phase==="ringing";
+    h+='<div class="banner">'+waveEl()+'<span><b>'+esc(ring?fill(D.ringT,{}):D.talkT)+'</b>'
+     + '<small>'+esc(ring?D.ringD:D.talkD)+'</small></span></div>'
+     + '<button class="btn red" data-go="hangup">'+esc(D.hangup)+'</button>';
+  } else {
+    h+='<button class="btn" data-go="call">'+esc(D.callBtn)+'</button>';
+  }
+  if(St.facts.length) h+='<div style="height:12px"></div>'+confirmCard();
+  return h;
+}
+
+function confirmCard(){
+  var h='<div class="confirm"><b>'+esc(D.cfT)+'</b><small>'+esc(D.cfD)+'</small>';
+  for(var i=0;i<St.facts.length;i++){
+    var it=St.facts[i], txt = it.text!=null ? it.text : D[it.key];
+    h+='<div class="item"><span class="chiptype'+(it.type==="todo"?" todo":"")+'">'
+     + esc(it.type==="todo"?D.tTodo:D.tFact)+'</span>';
+    if(it.status==="editing"){
+      h+='<input type="text" data-item-in="'+it.id+'" value="'+esc(txt)+'">'
+       + '<div class="acts"><button class="go" data-item-save="'+it.id+'">'+esc(D.aSave)+'</button>'
+       + '<button data-item-cancel="'+it.id+'">'+esc(D.aCancel)+'</button></div>';
+    } else if(it.status==="done"){
+      h+='<p>'+esc(txt)+'</p><p class="done-line">✓ '+esc(D.okLine)+'</p>';
+    } else if(it.status==="skip"){
+      h+='<p class="struck">'+esc(txt)+'</p><p class="skip-line">'+esc(D.skipLine)+'</p>';
+    } else {
+      h+='<p>'+esc(txt)+'</p><div class="acts">'
+       + '<button class="go" data-item-do="'+it.id+'">'+esc(D.aOk)+'</button>'
+       + '<button data-item-edit="'+it.id+'">'+esc(D.aEdit)+'</button>'
+       + '<button data-item-skip="'+it.id+'">'+esc(D.aSkip)+'</button></div>';
+    }
+    h+='</div>';
+  }
+  return h+'</div>';
+}
+
+function tabToday(){
+  var map={morning:"tlMorning",call:"tlCall",qa:"tlQa",unknown:"tlUnknown",guide:"tlGuide",home:"tlHome"};
+  var h='<div class="f-head"><p class="eyebrow">'+esc(D.todayT)+'</p><p class="h1">'+esc(D.todaySub)+'</p></div>'
+    + '<div class="card"><div class="tl">';
+  for(var i=0;i<St.timeline.length;i++){
+    var r=St.timeline[i], t=D[map[r.kind]]||"";
+    if(r.kind==="qa") t=fill(t,{n:r.n||1});
+    h+='<div class="row"><time>'+r.t+'</time><p>'+esc(t)+'</p></div>';
+  }
+  return h+'</div></div>';
+}
+
+function tabAlerts(){
+  var rs=riskState();
+  if(rs==="on"){
+    return '<div class="f-head"><p class="eyebrow">'+esc(D.alertT)+'</p><p class="h1">'+esc(D.alertOnT)+'</p></div>'
+      + '<dl class="detail"><dt>'+esc(D.dWhy)+'</dt><dd>'+esc(D.dWhyV)+'</dd>'
+      + '<dt>'+esc(D.dWhere)+'</dt><dd>'+esc(fill(D.mapDist,{n:distOf(St)}))+'</dd>'
+      + '<dt>'+esc(D.dProg)+'</dt><dd>'+esc(fill(D.dProgV,{n:Math.min(St.guide.step+1,3)}))+'</dd></dl>'
+      + '<div class="map-card">'+mapSVG()+'</div>'
+      + '<button class="btn" data-go="call">'+esc(D.callBtn)+'</button>';
+  }
+  if(rs==="done"){
+    return '<div class="f-head"><p class="eyebrow">'+esc(D.alertT)+'</p><p class="h1">'+esc(D.alertDoneT)+'</p></div>'
+      + '<dl class="detail ok"><dt>✓ '+esc(D.tileAlertDone)+'</dt><dd>'+esc(D.dDoneV)+'</dd></dl>';
+  }
+  return '<div class="f-head"><p class="eyebrow">'+esc(D.alertT)+'</p><p class="h1">'+esc(D.alertNone)+'</p></div>'
+    + '<div class="empty">'+esc(D.alertNoneD)+'</div>';
+}
+
+function tabPeople(){
+  if(App.editingPerson) return viewObMe();
+  var h='<div class="f-head"><p class="eyebrow">'+esc(D.peopleT)+'</p><p class="h1">'+esc(D.peopleT)+'</p></div>'
+    + '<p class="sub" style="margin-bottom:12px">'+esc(D.peopleSub)+'</p>';
+  for(var i=0;i<St.people.length;i++){
+    var p=St.people[i];
+    h+='<button class="person-row" data-person="'+p.id+'"><span class="avatar av-md">'+esc(initial(p.nick))+'</span>'
+     + '<span><b>'+esc(p.nick)+'</b><small>'+esc(p.relation)+'</small></span>'
+     + (p.id===Store.meId()?'<span class="me">'+esc(D.meTag)+'</span>':'<span class="go">›</span>')+'</button>';
+  }
+  h+='<button class="btn ghost" data-go="addPerson" style="margin-top:6px">'+esc(D.addPerson)+'</button>';
+
+  if(St.pending.length){
+    h+='<div class="card" style="margin-top:14px;background:var(--amber-soft);box-shadow:none">'
+     + '<b style="font-size:13.5px;color:var(--amber)">'+esc(D.pendingT)+'</b>'
+     + '<p style="margin:6px 0 8px;font-size:12.5px;color:var(--ink-2)">'+esc(D.pendingD)+'</p>';
+    for(var j=0;j<St.pending.length;j++){
+      h+='<p style="margin:0 0 8px;font-size:14px;font-weight:700">「'+esc(D.asks[St.pending[j].ask])+'」</p>';
+    }
+    h+='<div class="acts"><button class="go" data-go="clearPending">'+esc(D.pendingOk)+'</button></div></div>';
+  }
+
+  h+='<div class="card" style="margin-top:14px"><b style="font-size:13.5px">'+esc(D.familyCodeT)+'</b>'
+   + '<p style="margin:4px 0 10px;color:var(--muted);font-size:11.5px">'+esc(D.familyCodeD)+'</p>'
+   + '<div class="codebox" style="margin:0;padding:16px"><b style="font-size:30px">'+St.code+'</b></div></div>';
+  return h;
+}
+
+function tabbar(){
+  var ics=[IC.home,IC.cal,IC.bell,IC.users], h='<div class="tabbar">';
+  for(var i=0;i<4;i++){
+    var dot="";
+    if(i===2 && St.guide.active) dot='<span class="dot"></span>';
+    if(i===3 && St.pending.length) dot='<span class="dot"></span>';
+    h+='<button data-tab="'+i+'" aria-selected="'+(App.tab===i)+'">'+ics[i]+'<span>'+esc(D.tabs[i])+'</span>'+dot+'</button>';
+  }
+  return h+'</div>';
+}
+
+/* =====================================================================
+   7. 视图：老人端
+   ===================================================================== */
+function elderScreen(){
+  if(App.paired) return "paired";
+  if(St.call.phase==="ringing") return "ringing";
+  if(St.call.phase==="talking") return "talking";
+  if(St.guide.active) return "guide";
+  if(St.guide.done) return "arrived";
+  if(App.qa) return "qa";
+  return "standby";
+}
+
+function viewStandby(){
+  return '<div class="e-hello"><div class="e-ring">'+esc(initial(St.elder.name))+'</div>'
+    + '<p class="e-h1">'+esc(D.eGreet)+'</p><p class="e-copy">'+esc(D.eGreetD)+'</p></div>'
+    + '<button class="e-btn" data-go="openQa">'+esc(D.eTalk)+'</button>'
+    + devBar();
+}
+
+function callerCard(){
+  var p=focusPerson(St);
+  return '<div class="pcard"><div class="top"><span class="avatar av-lg">'+esc(initial(p.nick))+'</span>'
+    + '<b>'+esc(p.nick)+esc(D.eIsYour)+esc(p.relation)+'</b></div>'
+    + '<p>'+esc(p.recent)+'</p><p>'+esc(p.hint)+'</p></div>';
+}
+
+function viewRinging(){
+  return '<div class="e-call"><p class="lbl">'+esc(D.eIncoming)+'</p>'
+    + '<p class="nm">'+esc(focusPerson(St).nick)+'</p>'
+    + callerCard()
+    + '<div class="ctrl"><button class="no" data-go="decline"><i>'+IC.phoneDown+'</i><span>'+esc(D.eDecline)+'</span></button>'
+    + '<button class="yes" data-go="answer"><i>'+IC.phoneUp+'</i><span>'+esc(D.eAnswer)+'</span></button></div></div>';
+}
+
+function viewTalking(){
+  var p=focusPerson(St), lines="";
+  for(var i=0;i<D.callLines.length;i++){
+    var L=D.callLines[i], who = L[0]==="me" ? St.elder.name : p.nick;
+    lines+='<p class="'+(i<=St.call.line?"on":"")+'"><b class="'+(L[0]==="me"?"self":"")+'">'
+      + esc(who)+'：</b>'+esc(L[1])+'</p>';
+  }
+  return '<p class="eyebrow warm" style="margin-top:8px">'+esc(D.eOnCall)+'</p>'
+    + '<p class="e-h1" style="font-size:28px;margin-bottom:10px">'+esc(p.nick)+'</p>'
+    + '<span class="audio-tag">'+esc(D.eAudioTag)+'</span>'
+    + '<div class="subs">'+lines+'</div>'
+    + '<button class="e-btn red" data-go="hangup">'+esc(D.hangup)+'</button>';
+}
+
+function viewQa(){
+  var th="";
+  if(!St.thread.length) th='<p class="e-copy" style="margin:auto 0;text-align:center">'+esc(D.eEmpty)+'</p>';
+  for(var i=0;i<St.thread.length;i++){
+    var m=St.thread[i];
+    if(m.role==="me"){ th+='<div class="bub me">'+esc(D.asks[m.ask])+'</div>'; }
+    else {
+      var body = m.text ? fill(D[m.key],{text:m.text}) : D[m.key];
+      th+='<div class="bub ai"><div class="vr">'+IC.voice+'<span>'+esc(D.eSpeaking)+'</span></div>'
+        + '<p>'+esc(body)+'</p></div>'
+        + '<p class="src'+(m.src==="srcUnk"?" unk":"")+'">'+esc(D[m.src])+'</p>';
+    }
+  }
+  var asks="";
+  for(var k=0;k<D.asks.length;k++) asks+='<button class="askbtn" data-ask="'+k+'">'+esc(D.asks[k])+'</button>';
+  return '<p class="eyebrow warm" style="margin-top:8px">'+esc(D.eListening)+'</p>'
+    + '<div class="thread">'+th+'</div>'
+    + '<div class="asks">'+asks+'</div>'
+    + '<div class="holdbar">'+esc(D.eHold)+'</div>'
+    + '<button class="e-btn soft" data-go="closeQa">'+esc(D.eBack)+'</button>';
+}
+
+function viewGuide(){
+  var g=D.guide[Math.min(St.guide.step,2)];
+  return '<p class="stepno" style="margin-top:10px">'+esc(fill(D.eStep,{n:St.guide.step+1}))+'</p>'
+    + '<div class="lmk"><div class="shape '+g.cls+'"></div><span class="nm">'+esc(g.lm)+'</span></div>'
+    + '<div class="vr-line">'+IC.voice+'<span>'+esc(D.eGuiding)+'</span></div>'
+    + '<p class="stepcopy">'+esc(g.copy)+'</p>'
+    + '<p class="stepnote">'+esc(D.eGuideNote)+'</p>'
+    + '<div class="spacer"></div>'
+    + '<button class="e-btn" data-go="arrived">'+esc(D.eArrived)+'</button>';
+}
+
+function viewArrived(){
+  return '<div class="e-hello"><div class="e-ring" style="background:var(--green-soft);color:var(--green)">✓</div>'
+    + '<p class="e-h1">'+esc(D.eHomeT)+'</p><p class="e-copy">'+esc(D.eHomeD)+'</p></div>'
+    + '<button class="e-btn soft" data-go="ackHome">'+esc(D.eGot)+'</button>';
+}
+
+function devBar(){
+  var d=distOf(St), out=isOut(St);
+  return '<div class="devbar"><button class="hd" data-go="toggleDev"><span>'+esc(D.devT)+'</span>'
+    + '<span>'+esc(App.dev?D.devClose:D.devOpen)+'</span></button>'
+    + '<div class="bd" '+(App.dev?"":"hidden")+'><p>'+esc(D.devD)+'</p>'
+    + '<div class="btn-row"><button class="btn" data-go="walk">'+esc(D.devWalk)+'</button>'
+    + '<button class="btn" data-go="goHome">'+esc(D.devHome)+'</button></div>'
+    + '<span class="devdist '+(out?"out":"")+'">'+esc(fill(D.devDist,{n:d}))+'</span></div></div>';
+}
+
+/* =====================================================================
+   8. 渲染
+   ===================================================================== */
+function render(s){
+  if(s!==undefined) St=s;
+  if(Store.code && !St){ hardExit(); return; }
+  D = I18N[St ? St.lang : lang];
+
+  if(typing){ patchLight(); return; }
+
+  var screen=el("screen"), view=el("view"), body="", isElder=false, chrome="";
+  el("clock").textContent = clockNow();
+
+  if(App.route==="entry")            body=viewEntry();
+  else if(App.route==="familyStart") body=viewFamilyStart();
+  else if(App.route==="obElder")     body=viewObElder();
+  else if(App.route==="obMe")        body=viewObMe();
+  else if(App.route==="code")        body=viewCode();
+  else if(App.route==="join")        body=viewJoin();
+  else if(App.route==="elder"){
+    isElder=true;
+    var sc=elderScreen();
+    body = sc==="paired"?viewPaired() : sc==="ringing"?viewRinging() : sc==="talking"?viewTalking()
+         : sc==="qa"?viewQa() : sc==="guide"?viewGuide() : sc==="arrived"?viewArrived() : viewStandby();
+  }
+  else if(App.route==="family"){
+    body = (App.tab===0?tabHome() : App.tab===1?tabToday() : App.tab===2?tabAlerts() : tabPeople());
+  }
+
+  screen.classList.toggle("elder", isElder);
+  view.classList.toggle("pad0", App.route==="family");
+  view.className = (isElder ? "e-view" : "view") + (App.route==="family" ? " pad0" : "");
+  view.innerHTML = body;
+
+  /* 家人端底部 tab bar 在 view 之外 */
+  var old=screen.querySelector(".tabbar"); if(old) old.remove();
+  if(App.route==="family" && !App.editingPerson) screen.insertAdjacentHTML("beforeend", tabbar());
+
+  /* 手机框外的演示外壳 */
+  var lab=el("deviceLabel");
+  var who = App.route==="elder" ? D.labelElder : (App.route==="family"||App.route==="obElder"||App.route==="obMe"||App.route==="code" ? D.labelFamily : D.labelEntry);
+  lab.className="device-label "+(App.route==="elder"?"elder":(App.route==="family"?"family":""));
+  lab.querySelector("span").textContent = who + (St && St.code ? " · " + St.code : "");
+
+  chrome='<button class="chip" data-go="lang">'+esc(D.langBtn)+'</button>';
+  if(Store.code) chrome+='<button class="chip" data-go="reset">'+esc(D.resetBtn)+'</button>';
+  if(Store.role()) chrome+='<button class="chip" data-go="exit">'+esc(D.exitBtn)+'</button>';
+  el("chrome").innerHTML=chrome;
+  el("hintLine").textContent = App.route==="elder" ? D.hintElder
+    : (App.route==="family" ? D.hintFamily : D.hintEntry);
+
+  bindInputs();
+  var th=view.querySelector(".thread"); if(th) th.scrollTop=th.scrollHeight;
+  syncSubs();
+}
+
+function patchLight(){
+  var av=document.querySelector('[data-bind="av"]');
+  if(av){ var p=editTarget(); if(p) av.textContent=initial(p.nick); }
+}
+
+function bindInputs(){
+  var ns=el("view").querySelectorAll("[data-f]");
+  Array.prototype.forEach.call(ns,function(n){
+    n.addEventListener("input",function(){
+      var path=n.getAttribute("data-f");
+      typing=true;
+      Store.update(function(s){ setPath(s,path,n.value); });
+      typing=false;
+      var tag=n.parentNode.querySelector(".tag");
+      if(tag){
+        var k=path.split(".").pop(); if(k==="name") k="elderName";
+        tag.hidden = (n.value !== SEED[St.lang][k]);
+      }
+    });
+  });
+}
+
+/* =====================================================================
+   9. 行为
+   ===================================================================== */
+function newPerson(lang, blank){
+  var s=SEED[lang];
+  return { id:"p"+Date.now()+Math.floor(Math.random()*100),
+    nick: blank?"":s.nick, relation: blank?"":s.relation, phone: blank?"":s.phone,
+    recent: blank?"":s.recent, hint: blank?"":s.hint };
+}
+
+function syncSubs(){
+  var talking = App.route==="elder" && St && St.call.phase==="talking";
+  if(talking && !subTimer){
+    subTimer=setInterval(function(){
+      var s=Store.get();
+      if(!s || s.call.phase!=="talking"){ stopSubs(); return; }
+      if(s.call.line+1 >= I18N[s.lang].callLines.length){ stopSubs(); endCall(); return; }
+      Store.update(function(x){ x.call.line++; });
+    },2200);
+  } else if(!talking && subTimer){ stopSubs(); }
+}
+function stopSubs(){ clearInterval(subTimer); subTimer=null; }
+
+function endCall(){
+  Store.update(function(s){
+    s.call.phase="ended";
+    if(!s.facts.length) s.facts=[
+      {id:"visit",type:"fact",key:"factVisit",text:null,status:"open"},
+      {id:"pill", type:"todo",key:"factPill", text:null,status:"open"}
+    ];
+    var seen=false;
+    for(var i=0;i<s.timeline.length;i++) if(s.timeline[i].kind==="call") seen=true;
+    if(!seen) s.timeline.push({t:clockNow(),kind:"call"});
+  });
+}
+
+function setLoc(x,y){
+  Store.update(function(s){
+    s.loc.x=x; s.loc.y=y;
+    if(!s.guide.active && !s.guide.done && distOf(s)>rangeM(s)){
+      s.guide.active=true; s.guide.step=0;
+      s.timeline.push({t:clockNow(),kind:"guide"});
+    }
+  });
+}
+function autoWalk(){
+  clearInterval(walkTimer);
+  Store.update(function(s){ s.guide.done=false; s.guide.step=0; s.loc.x=HOME.x; s.loc.y=HOME.y; });
+  var i=0,n=20, from={x:HOME.x,y:HOME.y}, to={x:56,y:36};
+  walkTimer=setInterval(function(){
+    i++; var p=i/n;
+    setLoc(from.x+(to.x-from.x)*p, from.y+(to.y-from.y)*p);
+    if(i>=n) clearInterval(walkTimer);
+  },120);
+}
+function arrived(){
+  Store.update(function(s){
+    s.guide.step++;
+    if(s.guide.step>=3){
+      s.guide.active=false; s.guide.done=true;
+      s.loc.x=HOME.x; s.loc.y=HOME.y;
+      var seen=false;
+      for(var i=0;i<s.timeline.length;i++) if(s.timeline[i].kind==="home") seen=true;
+      if(!seen) s.timeline.push({t:clockNow(),kind:"home"});
+    } else {
+      s.loc.x += (HOME.x-s.loc.x)*0.42;
+      s.loc.y += (HOME.y-s.loc.y)*0.42;
+    }
+  });
+}
+
+function factById(s,id){ for(var i=0;i<s.facts.length;i++) if(s.facts[i].id===id) return s.facts[i]; return null; }
+
+function ask(i){
+  Store.update(function(s){
+    s.thread.push({role:"me",ask:i});
+    var key,src,text=null,f;
+    if(i===0){
+      f=factById(s,"visit");
+      if(f && f.status==="done"){ if(f.text){ key="ansFromFact"; text=f.text; } else key="ansVisit"; src="srcFact"; }
+      else { key="ansNoConfirm"; src="srcUnk"; }
+      s.askCounts.visit=(s.askCounts.visit||0)+1;
+      var row=null;
+      for(var k=0;k<s.timeline.length;k++) if(s.timeline[k].kind==="qa") row=s.timeline[k];
+      if(row) row.n=s.askCounts.visit; else s.timeline.push({t:clockNow(),kind:"qa",n:1});
+    } else if(i===1){
+      f=factById(s,"pill");
+      if(f && f.status==="done"){ if(f.text){ key="ansFromTodo"; text=f.text; } else key="ansPill"; src="srcTodo"; }
+      else { key="ansNoConfirm"; src="srcUnk"; }
+    } else {
+      key="ansUnknown"; src="srcUnk";
+      var dup=false;
+      for(var j=0;j<s.pending.length;j++) if(s.pending[j].ask===i) dup=true;
+      if(!dup) s.pending.push({id:"q"+Date.now(),ask:i});
+      var seen=false;
+      for(var q=0;q<s.timeline.length;q++) if(s.timeline[q].kind==="unknown") seen=true;
+      if(!seen) s.timeline.push({t:clockNow(),kind:"unknown"});
+    }
+    s.thread.push({role:"ai",key:key,src:src,text:text});
+  });
+}
+
+function setItem(id,status){
+  Store.update(function(s){ var f=factById(s,id); if(f) f.status=status; });
+}
+
+function doSpeak(){
+  if(App.speak===1) return;
+  App.speak=1; render();
+  clearTimeout(speakTimer);
+  speakTimer=setTimeout(function(){
+    var s=SEED[St.lang];
+    Store.update(function(x){
+      for(var i=0;i<x.people.length;i++) if(x.people[i].id===App.editingPerson){
+        x.people[i].recent=s.recent; x.people[i].hint=s.hint;
+        if(!x.people[i].nick) x.people[i].nick=s.nick;
+        if(!x.people[i].relation) x.people[i].relation=s.relation;
+      }
+    });
+    App.speak=2; render();
+  },1800);
+}
+
+function pair(code){
+  code=String(code||"").trim();
+  if(!Store.exists(code)){ App.err=D.joinErr; render(); return; }
+  Store.attach(code);
+  St=Store.get();
+  App.err="";
+  if(App.joinAs==="elder"){
+    Store.signIn("elder",code);
+    Store.update(function(s){ s.paired=true; });
+    App.paired=true; App.route="elder"; render();
+  } else {
+    var p=newPerson(St.lang,true);
+    Store.update(function(s){ s.people.push(p); });
+    Store.signIn("family",code,p.id);
+    App.editingPerson=p.id; App.speak=0; App.route="obMe"; render();
+  }
+}
+
+function hardExit(){
+  Store.signOut(); Store.code=null; St=null;
+  App.route="entry"; App.tab=0; App.qa=false; App.editingPerson=null; App.paired=false;
+  D=I18N[lang]; render();
+}
+
+/* =====================================================================
+   10. 事件
+   ===================================================================== */
+document.addEventListener("click", function(e){
+  var b=e.target.closest("[data-go],[data-tab],[data-ask],[data-use],[data-range],[data-person],[data-item-do],[data-item-edit],[data-item-skip],[data-item-save],[data-item-cancel]");
+  if(!b) return;
+  var g=function(n){ return b.getAttribute(n); }, id;
+
+  if(g("data-tab")!==null){ App.tab=parseInt(g("data-tab"),10); App.editingPerson=null; render(); return; }
+  if(g("data-ask")!==null){ ask(parseInt(g("data-ask"),10)); return; }
+  if((id=g("data-use"))){ pair(id); return; }
+  if((id=g("data-person"))){ App.editingPerson=id; App.speak=0; render(); return; }
+  if(g("data-range")!==null){ var r=g("data-range"); Store.update(function(s){ s.elder.radius=r; }); return; }
+  if((id=g("data-item-do"))){ setItem(id,"done"); return; }
+  if((id=g("data-item-skip"))){ setItem(id,"skip"); return; }
+  if((id=g("data-item-edit"))){ setItem(id,"editing"); return; }
+  if((id=g("data-item-cancel"))){ setItem(id,"open"); return; }
+  if((id=g("data-item-save"))){
+    var inp=document.querySelector('[data-item-in="'+id+'"]'), v=inp?inp.value:null;
+    Store.update(function(s){ var f=factById(s,id); if(f){ f.text=v; f.status="done"; } });
+    return;
+  }
+
+  switch(g("data-go")){
+    case "entry": hardExit(); break;
+    case "familyStart": App.route="familyStart"; render(); break;
+
+    case "create":
+      var code=Store.create(lang);
+      Store.attach(code); St=Store.get();
+      var p0=newPerson(lang,false);
+      Store.update(function(s){ s.people.push(p0); });
+      Store.signIn("family",code,p0.id);
+      App.editingPerson=p0.id; App.speak=0; App.route="obElder"; render();
+      break;
+    case "joinFamily": App.joinAs="family"; App.err=""; App.route="join"; render(); break;
+    case "elderPair":  App.joinAs="elder";  App.err=""; App.route="join"; render(); break;
+    case "pair": pair(el("codeIn").value); break;
+
+    case "obMe": App.route="obMe"; render(); break;
+    case "speak": doSpeak(); break;
+    case "finishSetup":
+      var first=!St.setup;
+      Store.update(function(s){ s.setup=true; });
+      Store.indexPut(St.code, St.elder.name);
+      App.editingPerson=null; App.speak=0;
+      App.route = first ? "code" : "family";
+      if(!first) App.tab=3;
+      render();
+      break;
+    case "enterFamily": App.route="family"; App.tab=0; render(); break;
+    case "enterElder": App.paired=false; render(); break;
+    case "addPerson":
+      var np=newPerson(St.lang,true);
+      Store.update(function(s){ s.people.push(np); });
+      App.editingPerson=np.id; App.speak=0; render();
+      break;
+    case "clearPending": Store.update(function(s){ s.pending=[]; }); break;
+
+    case "call":
+      App.tab=0;
+      Store.update(function(s){ s.call.phase="ringing"; s.call.line=-1;
+        s.call.personId=Store.meId(); s.lastCaller=Store.meId(); });
+      break;
+    case "answer": Store.update(function(s){ s.call.phase="talking"; s.call.line=-1; }); break;
+    case "decline": Store.update(function(s){ s.call.phase="idle"; s.call.line=-1; }); break;
+    case "hangup": stopSubs(); endCall(); break;
+
+    case "openQa": App.qa=true; render(); break;
+    case "closeQa": App.qa=false; render(); break;
+    case "arrived": arrived(); break;
+    case "ackHome": Store.update(function(s){ s.guide.done=false; }); break;
+    case "toggleDev": App.dev=!App.dev; render(); break;
+    case "walk": autoWalk(); break;
+    case "goHome": clearInterval(walkTimer); setLoc(HOME.x,HOME.y); break;
+
+    case "lang":
+      var nl = (St?St.lang:lang)==="zh" ? "en" : "zh";
+      lang=nl; localStorage.setItem(SLANG,nl);
+      if(St){
+        var old=St.lang;
+        Store.update(function(s){
+          s.lang=nl;
+          if(s.elder.name===SEED[old].elderName) s.elder.name=SEED[nl].elderName;
+          if(s.elder.address===SEED[old].address) s.elder.address=SEED[nl].address;
+          for(var i=0;i<s.people.length;i++){
+            var pp=s.people[i];
+            ["nick","relation","recent","hint"].forEach(function(k){
+              if(pp[k]===SEED[old][k]) pp[k]=SEED[nl][k];
+            });
+          }
+        });
+      } else render();
+      break;
+    case "reset":
+      if(confirm(D.resetAsk)){
+        App.tab=0; App.qa=false; App.editingPerson=null; App.speak=0; App.dev=false;
+        Store.resetFamily();
+        if(Store.role()==="family"){
+          var np2=newPerson(St.lang,false);
+          Store.update(function(s){ s.people.push(np2); });
+          Store.signIn("family",St.code,np2.id);
+          App.editingPerson=np2.id; App.route="obElder";
+        } else { App.route="elder"; }
+        render();
+      }
+      break;
+    case "exit": hardExit(); break;
+  }
+});
+
+/* =====================================================================
+   11. 启动
+   ===================================================================== */
+Store.subscribe(function(s){ render(s); });
+
+(function boot(){
+  D=I18N[lang];
+  var role=Store.role(), code=Store.codeOf();
+  if(role && code && Store.exists(code)){
+    Store.attach(code); St=Store.get();
+    App.route = role==="elder" ? "elder" : "family";
+    if(role==="family" && !St.setup) App.route="obElder";
+  }
+  render(St);
+  setInterval(function(){ var c=el("clock"); if(c) c.textContent=clockNow(); }, 20000);
+})();
+
+})();
+</script>
+<script>
+(function(){
+  function fit(){
+    var f=Math.min(1,(window.innerHeight-16)/866,(window.innerWidth-16)/412);
+    document.documentElement.style.setProperty("--fit", f.toFixed(4));
+  }
+  fit(); window.addEventListener("resize", fit);
+})();
+</script>
+</body>
+</html>

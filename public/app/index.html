@@ -26,7 +26,7 @@
 }
 *{box-sizing:border-box; -webkit-tap-highlight-color:transparent}
 html,body{margin:0; background:var(--page); color:var(--ink); font-family:var(--sans)}
-body{min-height:100vh; height:100vh; overflow:hidden; display:grid; place-items:center; padding:0;
+body{min-height:100vh; height:100vh; overflow:hidden; padding:0; position:relative;
   background:radial-gradient(120% 100% at 50% 0%, var(--page-2) 0%, var(--page) 70%)}
 .device-label,.hint-line{display:none !important}
 p{margin:0 0 10px}
@@ -40,9 +40,9 @@ input,textarea,select{font:inherit}
 .device-label i{width:8px; height:8px; border-radius:50%; font-style:normal; background:var(--faint)}
 .device-label.family i{background:var(--blue)} .device-label.elder i{background:var(--warm)}
 
-.phone{position:relative; width:412px; height:866px; flex:0 0 auto;
+.phone{position:absolute; left:50%; top:50%; width:412px; height:866px;
   padding:11px; border-radius:56px; background:#2A1D14;
-  transform:scale(var(--fit,1)); transform-origin:center;
+  transform:translate(-50%,-50%) scale(var(--fit,1)); transform-origin:center center;
   box-shadow:0 1px 0 rgba(255,255,255,.18) inset, 0 30px 70px rgba(74,45,24,.32)}
 .phone::after{content:""; position:absolute; left:50%; bottom:16px; transform:translateX(-50%);
   width:126px; height:5px; border-radius:99px; background:rgba(255,255,255,.35); z-index:4}
@@ -55,7 +55,7 @@ input,textarea,select{font:inherit}
 .statusbar .sigs{display:flex; align-items:center; gap:4px}
 .statusbar svg{width:16px; height:11px; fill:currentColor}
 .view{flex:1 1 auto; min-height:0; overflow-y:auto; display:flex; flex-direction:column;
-  padding:6px 22px 26px}
+  justify-content:safe center; gap:2px; padding:10px 22px 28px}
 .view::-webkit-scrollbar{width:0}
 .view.pad0{padding-left:0; padding-right:0}
 
@@ -75,6 +75,8 @@ input,textarea,select{font:inherit}
 .eyebrow{margin:0 0 4px; color:var(--blue); font-size:11.5px; font-weight:800; letter-spacing:.05em}
 .eyebrow.warm{color:var(--warm)}
 .spacer{flex:1 1 auto; min-height:10px}
+.view::before{content:""; display:block; flex:.6 1 auto; min-height:0}
+.view.pad0::before,.view:has(> .entry)::before{display:none}
 
 .card{background:var(--card); border-radius:var(--r-lg); padding:16px 17px; box-shadow:var(--sh-card)}
 .card + .card{margin-top:11px}
@@ -1580,10 +1582,11 @@ Store.subscribe(function(s){ render(s); });
 <script>
 (function(){
   function fit(){
-    var f=Math.min(1,(window.innerHeight-16)/866,(window.innerWidth-16)/412);
+    var f=Math.min(1,(window.innerHeight-24)/866,(window.innerWidth-24)/412);
     document.documentElement.style.setProperty("--fit", f.toFixed(4));
   }
   fit(); window.addEventListener("resize", fit);
+  if(window.visualViewport) window.visualViewport.addEventListener("resize", fit);
 })();
 </script>
 </body>

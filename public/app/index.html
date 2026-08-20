@@ -40,9 +40,9 @@ input,textarea,select{font:inherit}
 .device-label i{width:8px; height:8px; border-radius:50%; font-style:normal; background:var(--faint)}
 .device-label.family i{background:var(--blue)} .device-label.elder i{background:var(--warm)}
 
-.phone{position:relative; width:412px; height:866px; flex:0 0 auto;
+.phone{position:absolute; left:50%; top:50%; width:412px; height:866px;
   padding:11px; border-radius:56px; background:#2A1D14;
-  transform:scale(var(--fit,1)); transform-origin:center;
+  transform:translate(-50%,-50%) scale(var(--fit,1)); transform-origin:center center;
   box-shadow:0 1px 0 rgba(255,255,255,.18) inset, 0 30px 70px rgba(74,45,24,.32)}
 .phone::after{content:""; position:absolute; left:50%; bottom:16px; transform:translateX(-50%);
   width:126px; height:5px; border-radius:99px; background:rgba(255,255,255,.35); z-index:4}

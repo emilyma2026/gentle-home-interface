@@ -346,6 +346,45 @@ input,textarea,select{font:inherit}
 
 /* 视口不够高时手机框自适应，保证分屏演示一屏放得下 */
 
+
+/* ================= 重新设计：入口（暖色 · 满屏） ================= */
+.entry{flex:1 1 auto; display:flex; flex-direction:column; margin:0 -22px -26px; min-height:0}
+.entry-hero{position:relative; padding:26px 24px 34px; overflow:hidden;
+  background:linear-gradient(160deg,#FBE7D2 0%, #F7DCC9 45%, #F3D3C6 100%)}
+.entry-hero::before,.entry-hero::after{content:""; position:absolute; border-radius:50%;
+  background:rgba(255,255,255,.45)}
+.entry-hero::before{width:190px; height:190px; right:-58px; top:-72px}
+.entry-hero::after{width:120px; height:120px; left:-46px; bottom:-58px; background:rgba(194,112,58,.10)}
+.entry-brand{position:relative; display:flex; align-items:center; gap:10px; margin-bottom:26px}
+.entry-brand .logo{width:40px; height:40px; border-radius:13px; display:grid; place-items:center;
+  background:#fff; box-shadow:0 6px 16px rgba(140,84,44,.16)}
+.entry-brand .logo svg{width:22px; height:22px; fill:none; stroke:var(--warm); stroke-width:1.8;
+  stroke-linecap:round; stroke-linejoin:round}
+.entry-brand b{display:block; font-size:15px; font-weight:800; letter-spacing:.01em}
+.entry-brand small{display:block; color:var(--ink-2); font-size:11px; opacity:.75}
+.entry-hero h1{position:relative; margin:0 0 10px; font-size:31px; line-height:1.24; font-weight:800;
+  letter-spacing:-.02em; color:#4A2E1B}
+.entry-hero p{position:relative; margin:0; max-width:19em; color:#6B4A33; font-size:14px; line-height:1.65}
+.entry-body{flex:1 1 auto; display:flex; flex-direction:column; gap:12px;
+  padding:20px 22px 22px; margin-top:-18px; border-radius:28px 28px 0 0; background:var(--paper);
+  box-shadow:0 -8px 24px rgba(120,74,40,.06)}
+.entry-eyebrow{margin:0 0 2px; color:var(--warm); font-size:11px; font-weight:800; letter-spacing:.09em;
+  text-transform:uppercase}
+.pick{display:flex; align-items:center; gap:14px; width:100%; padding:18px 18px; text-align:left;
+  border-radius:24px; background:var(--card); border:1px solid rgba(194,112,58,.10);
+  box-shadow:0 10px 26px rgba(120,74,40,.07); transition:transform .16s, box-shadow .16s}
+.pick:active{transform:scale(.99)}
+.pick:hover{box-shadow:0 14px 32px rgba(120,74,40,.12)}
+.pick .face{flex:0 0 auto; width:56px; height:56px; border-radius:20px; display:grid; place-items:center;
+  font-size:27px}
+.pick.family .face{background:linear-gradient(150deg,#FBE7D2,#F7D8C2)}
+.pick.elder .face{background:linear-gradient(150deg,#F4EEDC,#EFE0C4)}
+.pick b{display:block; font-size:16.5px; margin-bottom:4px}
+.pick span{display:block; color:var(--muted); font-size:12.5px; line-height:1.55}
+.pick .go{flex:0 0 auto; margin-left:auto; color:var(--warm); font-size:19px; opacity:.55}
+.entry-note{margin:auto 0 0; padding:13px 15px; border-radius:18px; background:rgba(194,112,58,.07);
+  color:#7A5638; font-size:11.5px; line-height:1.65}
+
 </style>
 </head>
 <body>
@@ -772,14 +811,23 @@ function brand(){
 }
 
 function viewEntry(){
-  return brand()
-    + '<p class="h1">'+esc(D.entryTitle)+'</p>'
-    + '<p class="sub">'+esc(D.entrySub)+'</p>'
-    + '<div class="roles">'
-    + '<button class="role family" data-go="familyStart"><span class="face">🧑‍💼</span>'
-    +   '<span><b>'+esc(D.roleFamilyT)+'</b><span>'+esc(D.roleFamilyD)+'</span></span></button>'
-    + '<button class="role elder" data-go="elderPair"><span class="face">👵</span>'
-    +   '<span><b>'+esc(D.roleElderT)+'</b><span>'+esc(D.roleElderD)+'</span></span></button>'
+  return '<div class="entry">'
+    + '<div class="entry-hero">'
+    +   '<div class="entry-brand"><span class="logo">'+IC.logo+'</span>'
+    +     '<span><b>'+esc(D.appName)+'</b><small>'+esc(D.appSub)+'</small></span></div>'
+    +   '<h1>'+esc(D.entryTitle)+'</h1>'
+    +   '<p>'+esc(D.entrySub)+'</p>'
+    + '</div>'
+    + '<div class="entry-body">'
+    +   '<p class="entry-eyebrow">'+esc(D.labelEntry)+'</p>'
+    +   '<button class="pick family" data-go="familyStart"><span class="face">🧑‍💼</span>'
+    +     '<span><b>'+esc(D.roleFamilyT)+'</b><span>'+esc(D.roleFamilyD)+'</span></span>'
+    +     '<span class="go">›</span></button>'
+    +   '<button class="pick elder" data-go="elderPair"><span class="face">👵</span>'
+    +     '<span><b>'+esc(D.roleElderT)+'</b><span>'+esc(D.roleElderD)+'</span></span>'
+    +     '<span class="go">›</span></button>'
+    +   '<p class="entry-note">'+esc(D.hintEntry)+'</p>'
+    + '</div>'
     + '</div>';
 }
 

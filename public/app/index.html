@@ -1580,10 +1580,11 @@ Store.subscribe(function(s){ render(s); });
 <script>
 (function(){
   function fit(){
-    var f=Math.min(1,(window.innerHeight-16)/866,(window.innerWidth-16)/412);
+    var f=Math.min(1,(window.innerHeight-24)/866,(window.innerWidth-24)/412);
     document.documentElement.style.setProperty("--fit", f.toFixed(4));
   }
   fit(); window.addEventListener("resize", fit);
+  if(window.visualViewport) window.visualViewport.addEventListener("resize", fit);
 })();
 </script>
 </body>

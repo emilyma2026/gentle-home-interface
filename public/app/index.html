@@ -50,12 +50,12 @@ input,textarea,select{font:inherit}
 .island{position:absolute; top:22px; left:50%; background:#2A1D14; transform:translateX(-50%);
   width:110px; height:30px; border-radius:99px; z-index:3}
 .screen{position:relative; width:390px; height:844px; border-radius:46px; overflow:hidden;
-  background:var(--paper); display:flex; flex-direction:column}
+  background:radial-gradient(60% 30% at 8% 2%, rgba(250,214,178,.55), rgba(250,214,178,0) 60%), radial-gradient(70% 40% at 100% 100%, rgba(205,220,190,.40), rgba(205,220,190,0) 60%), var(--paper); display:flex; flex-direction:column}
 .statusbar{flex:0 0 auto; height:50px; display:flex; align-items:center;
   justify-content:space-between; padding:0 26px; font-size:13.5px; font-weight:700}
 .statusbar .sigs{display:flex; align-items:center; gap:4px}
 .statusbar svg{width:16px; height:11px; fill:currentColor}
-.view{flex:1 1 auto; min-height:0; overflow-y:auto; display:flex; flex-direction:column;
+.view{background:transparent; flex:1 1 auto; min-height:0; overflow-y:auto; display:flex; flex-direction:column;
   justify-content:safe center; gap:2px; padding:10px 22px 28px}
 .view::-webkit-scrollbar{width:0}
 .view.pad0{padding-left:0; padding-right:0}
@@ -367,7 +367,7 @@ input,textarea,select{font:inherit}
   padding:6px 11px; border-radius:99px; background:#fff; color:#8A5A34;
   font-size:11px; font-weight:800; box-shadow:0 8px 18px rgba(150,90,48,.16)}
 .entry-art .badge.b1{left:-24px; top:26px}
-.entry-art .badge.b2{right:-26px; bottom:14px; max-width:190px; color:#7C5C43; font-weight:700}
+.entry-art .badge.b2{right:-24px; bottom:-14px; max-width:190px; color:#7C5C43; font-weight:700}
 
 .entry-eyebrow{margin:0 0 8px; text-align:center; color:#B4794A; font-size:11px;
   font-weight:800; letter-spacing:.22em; text-transform:uppercase}

@@ -841,25 +841,26 @@ function brand(){
 
 function viewEntry(){
   return '<div class="entry">'
-    + '<div class="entry-hero">'
-    +   '<div class="entry-brand"><span class="logo">'+IC.logo+'</span>'
-    +     '<span><b>'+esc(D.appName)+'</b><small>'+esc(D.appSub)+'</small></span></div>'
-    +   '<h1>'+esc(D.entryTitle)+'</h1>'
-    +   '<p>'+esc(D.entrySub)+'</p>'
+    + '<div class="entry-art">'
+    +   '<img src="hero-care.jpg" alt="" width="372" height="372">'
+    +   '<span class="badge b1">💛 '+esc(D.appName)+'</span>'
+    +   '<span class="badge b2">🏠 '+esc(D.labelEntry)+'</span>'
     + '</div>'
-    + '<div class="entry-body">'
-    +   '<p class="entry-eyebrow">'+esc(D.labelEntry)+'</p>'
+    + '<p class="entry-eyebrow">✦ '+esc(D.appSub)+' ✦</p>'
+    + '<h1 class="entry-title">'+esc(D.entryTitle)+'<em>'+esc(D.appName)+'</em></h1>'
+    + '<p class="entry-sub">'+esc(D.entrySub)+'</p>'
+    + '<div class="picks">'
     +   '<button class="pick family" data-go="familyStart"><span class="face">🧑‍💼</span>'
     +     '<span><b>'+esc(D.roleFamilyT)+'</b><span>'+esc(D.roleFamilyD)+'</span></span>'
     +     '<span class="go">›</span></button>'
     +   '<button class="pick elder" data-go="elderPair"><span class="face">👵</span>'
     +     '<span><b>'+esc(D.roleElderT)+'</b><span>'+esc(D.roleElderD)+'</span></span>'
     +     '<span class="go">›</span></button>'
-    +   '<div class="steps"><h4>'+esc(D.stepsTitle)+'</h4><ol>'
-    +     D.steps.map(function(t,i){ return '<li><i>'+(i+1)+'</i><span>'+esc(t)+'</span></li>'; }).join('')
-    +   '</ol></div>'
-    +   '<p class="entry-note">'+esc(D.hintEntry)+'</p>'
     + '</div>'
+    + '<div class="steps"><h4>'+esc(D.stepsTitle)+'</h4><ol>'
+    +   D.steps.map(function(t,i){ return '<li><i>'+(i+1)+'</i><span>'+esc(t)+'</span></li>'; }).join('')
+    + '</ol></div>'
+    + '<p class="entry-note">🤍 '+esc(D.hintEntry)+'</p>'
     + '</div>';
 }
 

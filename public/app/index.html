@@ -55,6 +55,22 @@ input,textarea,select{font:inherit}
   justify-content:space-between; padding:0 26px; font-size:13.5px; font-weight:700}
 .statusbar .sigs{display:flex; align-items:center; gap:4px}
 .statusbar svg{width:16px; height:11px; fill:currentColor}
+.connection-status{position:absolute; top:43px; left:50%; z-index:7; transform:translateX(-50%);
+  display:flex; align-items:center; gap:7px; max-width:calc(100% - 36px); padding:7px 10px;
+  border:1px solid rgba(154,133,116,.22); border-radius:99px; background:rgba(255,252,248,.94);
+  color:var(--ink-2); box-shadow:0 5px 16px rgba(94,63,38,.10); backdrop-filter:blur(8px);
+  font-size:11.5px; font-weight:700; line-height:1.2; transition:opacity .18s}
+.connection-status[data-state="synced"]{padding:5px; opacity:.56; box-shadow:none; background:transparent; border-color:transparent}
+.connection-status[data-state="offline"],.connection-status[data-state="error"]{color:var(--red); border-color:rgba(196,88,92,.25)}
+.connection-status[data-state="saving"]{color:var(--blue-d)}
+.connection-dot{flex:0 0 auto; width:7px; height:7px; border-radius:50%; background:var(--amber)}
+.connection-status[data-state="synced"] .connection-dot{background:var(--green)}
+.connection-status[data-state="saving"] .connection-dot{background:var(--blue)}
+.connection-status[data-state="offline"] .connection-dot,.connection-status[data-state="error"] .connection-dot{background:var(--red)}
+.connection-retry{flex:0 0 auto; padding:3px 8px; border-radius:99px; background:var(--red-soft);
+  color:var(--red); font-size:11px; font-weight:800}
+.visually-hidden{position:absolute!important; width:1px!important; height:1px!important; padding:0!important;
+  margin:-1px!important; overflow:hidden!important; clip:rect(0,0,0,0)!important; white-space:nowrap!important; border:0!important}
 .view{background:transparent; flex:1 1 auto; min-height:0; overflow-y:auto; display:flex; flex-direction:column;
   justify-content:safe center; gap:2px; padding:10px 22px 28px}
 .view::-webkit-scrollbar{width:0}
@@ -423,6 +439,11 @@ input,textarea,select{font:inherit}
         <svg viewBox="0 0 18 12"><rect x="0" y="2" width="14" height="8" rx="2.4" opacity=".35"/><rect x="1.4" y="3.4" width="9" height="5.2" rx="1.4"/><rect x="15" y="4.6" width="1.6" height="2.8" rx=".8" opacity=".35"/></svg>
       </span>
     </div>
+    <div id="connectionStatus" class="connection-status" data-state="connecting" role="status" aria-live="polite">
+      <span class="connection-dot" aria-hidden="true"></span>
+      <span id="connectionStatusText" class="connection-copy">正在安全连接</span>
+      <button class="connection-retry" type="button" data-go="retryConnection" hidden>重试</button>
+    </div>
     <div class="view" id="view"></div>
     <div class="demo-chrome" id="chrome"></div>
   </div>
@@ -437,6 +458,9 @@ input,textarea,select{font:inherit}
   再用 audio.currentTime 驱动 call.line，即可换成真实通话音频。
 -->
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4"></script>
+<script src="/app/supabase-config.js"></script>
+<script src="/app/supabase-store.js"></script>
 <script>
 (function(){
 "use strict";
@@ -461,6 +485,9 @@ var I18N = {
 zh:{
   appName:"守护助手", appSub:"阿尔茨海默中度早期 · 双端伴侣",
   langBtn:"EN", resetBtn:"重置演示", exitBtn:"换个角色",
+  syncConnecting:"正在安全连接", syncLoading:"正在载入家庭", syncSaving:"正在同步更改",
+  syncOffline:"网络已断开，更改尚未同步", syncError:"连接失败，请重试", syncConflict:"有新的家庭更改，请再试一次",
+  syncSynced:"已同步", syncRetry:"重试",
   labelFamily:"家人端", labelElder:"老人端", labelEntry:"阿尔茨海默守护助手",
 
   hintEntry:"演示用法：浏览器分屏，两个窗口都打开这一页。一个选家人端，一个选老人端，用家庭码连起来。",
@@ -575,6 +602,9 @@ zh:{
 en:{
   appName:"Companion", appSub:"Early-stage Alzheimer's · two-sided care",
   langBtn:"中文", resetBtn:"Reset demo", exitBtn:"Switch role",
+  syncConnecting:"Connecting securely", syncLoading:"Loading family", syncSaving:"Saving changes",
+  syncOffline:"Offline — changes are not synced", syncError:"Connection failed. Please retry.", syncConflict:"Family data changed. Please try again.",
+  syncSynced:"Synced", syncRetry:"Retry",
   labelFamily:"Family side", labelElder:"Elder side", labelEntry:"Alzheimer's Care Assistant",
 
   hintEntry:"To present: split the screen and open this page in two windows. Pick the family side in one, the elder side in the other, and link them with the family code.",
@@ -689,13 +719,28 @@ en:{
 };
 
 /* =====================================================================
-   2. 数据层：localStorage + BroadcastChannel
-      两个窗口读写同一份数据。换成后端只改这一段。
+   2. 数据层：Supabase 匿名身份 + 实时同步
+      family payload 只保存在 Supabase；浏览器仅记住所选家庭和设备身份。
    ===================================================================== */
-var PREFIX="alz:family:", INDEX="alz:index", SROLE="alz:role", SCODE="alz:code", SME="alz:me", SLANG="alz:lang";
-function jr(k,d){ try{ var v=localStorage.getItem(k); return v?JSON.parse(v):d; }catch(e){ return d; } }
-function jw(k,v){ localStorage.setItem(k, JSON.stringify(v)); }
-function mkCode(){ var c=""; for(var i=0;i<6;i++) c+=Math.floor(Math.random()*10); return c; }
+var SROLE="alz:device-role", SCODE="alz:device-code", SME="alz:device-member";
+
+function sessionGet(key){
+  try{ return sessionStorage.getItem(key); }catch(_error){ return null; }
+}
+function rememberDevice(role,code,memberId){
+  try{
+    var previousCode=sessionStorage.getItem(SCODE);
+    sessionStorage.setItem(SROLE,role); sessionStorage.setItem(SCODE,code);
+    if(memberId) sessionStorage.setItem(SME,memberId);
+    else if(previousCode!==code || role!=="family") sessionStorage.removeItem(SME);
+  }catch(_error){ /* Device labels are best-effort metadata only. */ }
+}
+function clearDevice(){
+  try{
+    sessionStorage.removeItem(SROLE); sessionStorage.removeItem(SCODE); sessionStorage.removeItem(SME);
+  }catch(_error){ /* Supabase remains the family-data source of truth. */ }
+}
+function selectedMemberId(){ return sessionGet(SME); }
 
 var HOME={x:130,y:90}, MPP=13.33;
 
@@ -716,52 +761,70 @@ function newFamily(code, lang){
   };
 }
 
-var Store={
-  code:null, chan:null, subs:[],
-  role:function(){ return sessionStorage.getItem(SROLE); },
-  codeOf:function(){ return sessionStorage.getItem(SCODE); },
-  meId:function(){ return sessionStorage.getItem(SME); },
-  signIn:function(role,code,me){
-    sessionStorage.setItem(SROLE,role); sessionStorage.setItem(SCODE,code);
-    if(me) sessionStorage.setItem(SME,me);
-  },
-  signOut:function(){ sessionStorage.removeItem(SROLE); sessionStorage.removeItem(SCODE); sessionStorage.removeItem(SME); },
-  families:function(){ return jr(INDEX,[]); },
-  exists:function(c){ return !!jr(PREFIX+c,null); },
-  indexPut:function(code,name){
-    var l=this.families().filter(function(f){ return f.code!==code; });
-    l.unshift({code:code,name:name,at:Date.now()}); jw(INDEX,l.slice(0,5));
-  },
-  create:function(lang){
-    var c=mkCode(); while(this.exists(c)) c=mkCode();
-    jw(PREFIX+c, newFamily(c,lang)); this.indexPut(c, SEED[lang].elderName);
-    return c;
-  },
-  attach:function(code){
-    var self=this; this.code=code;
-    if(window.BroadcastChannel){
-      this.chan=new BroadcastChannel("alz:"+code);
-      this.chan.onmessage=function(){ self.emit(); };
-    }
-    window.addEventListener("storage", function(e){ if(e.key===PREFIX+code) self.emit(); });
-  },
-  get:function(){ return this.code ? jr(PREFIX+this.code,null) : null; },
-  update:function(fn){
-    var s=this.get(); if(!s) return null;
-    fn(s); s.rev=(s.rev||0)+1;
-    jw(PREFIX+this.code, s);
-    if(this.chan) this.chan.postMessage(s.rev);
-    this.emit(); return s;
-  },
-  subscribe:function(cb){ this.subs.push(cb); },
-  emit:function(){ var s=this.get(); for(var i=0;i<this.subs.length;i++) this.subs[i](s); },
-  resetFamily:function(){
-    var lang=(this.get()||{}).lang||"zh";
-    jw(PREFIX+this.code, newFamily(this.code,lang));
-    if(this.chan) this.chan.postMessage(0);
-    this.emit();
+var Connection={state:"connecting", authenticated:false, initFailed:false, pendingAction:false};
+var Store=null;
+
+function connectionCopy(state){
+  var copy=D||I18N[lang]||I18N.zh;
+  var keys={connecting:"syncConnecting",loading:"syncLoading",saving:"syncSaving",offline:"syncOffline",error:"syncError",synced:"syncSynced"};
+  return copy[keys[state]||"syncError"];
+}
+function protectedActionSelector(){
+  return '[data-f],[data-range],[data-ask],[data-item-do],[data-item-edit],[data-item-skip],[data-item-save],[data-item-cancel],'
+    +'[data-go="create"],[data-go="pair"],[data-go="finishSetup"],[data-go="addPerson"],[data-go="clearPending"],'
+    +'[data-go="call"],[data-go="answer"],[data-go="decline"],[data-go="hangup"],[data-go="arrived"],'
+    +'[data-go="ackHome"],[data-go="walk"],[data-go="goHome"],[data-go="reset"],[data-go="speak"]';
+}
+function syncActionAvailability(){
+  var blocked=!Connection.authenticated || Connection.initFailed || Connection.pendingAction || Connection.state==="connecting" || Connection.state==="loading";
+  var controls=document.querySelectorAll(protectedActionSelector());
+  Array.prototype.forEach.call(controls,function(control){ control.disabled=blocked; });
+}
+function setConnectionStatus(state,message,useMessage){
+  var allowed={connecting:1,loading:1,saving:1,offline:1,error:1,synced:1};
+  Connection.state=allowed[state]?state:"error";
+  var status=el("connectionStatus"), text=el("connectionStatusText"), retry=status&&status.querySelector('[data-go="retryConnection"]');
+  if(status) status.setAttribute("data-state",Connection.state);
+  if(text){
+    text.textContent=useMessage&&message?message:connectionCopy(Connection.state);
+    text.className=Connection.state==="synced"?"connection-copy visually-hidden":"connection-copy";
   }
-};
+  if(retry){
+    retry.hidden=!(Connection.initFailed && (Connection.state==="error" || Connection.state==="offline"));
+    retry.textContent=(D||I18N[lang]||I18N.zh).syncRetry;
+  }
+  syncActionAvailability();
+}
+function storeRole(){ return Store&&Store.role?Store.role():sessionGet(SROLE); }
+function reportStoreError(error){
+  var copy=D||I18N[lang]||I18N.zh;
+  if(error&&error.code==="REVISION_CONFLICT") setConnectionStatus("error",copy.syncConflict,true);
+  else if(Connection.state!=="offline") setConnectionStatus("error");
+  return null;
+}
+function persistUpdate(mutator){ return Store.update(mutator).catch(reportStoreError); }
+async function runPendingAction(action){
+  if(Connection.pendingAction) return null;
+  Connection.pendingAction=true; syncActionAvailability();
+  try{ return await action(); }
+  finally{ Connection.pendingAction=false; syncActionAvailability(); }
+}
+
+try{
+  var SupabaseClient=window.supabase.createClient(
+    window.SUPABASE_CONFIG.url,
+    window.SUPABASE_CONFIG.publishableKey
+  );
+  Store=window.createSupabaseStore({
+    client:SupabaseClient,
+    newFamily:newFamily,
+    storage:window.localStorage,
+    onStatus:setConnectionStatus
+  });
+}catch(_error){
+  Connection.initFailed=true;
+  setConnectionStatus("error");
+}
 
 /* =====================================================================
    3. 工具
@@ -826,7 +889,7 @@ var App = {
   editingPerson:null,  // 正在编辑的人物 id，null 表示列表
   addingPerson:false
 };
-var St=null, D=null, lang = localStorage.getItem(SLANG) || "zh";
+var St=null, D=null, lang="zh";
 var subTimer=null, walkTimer=null, speakTimer=null, typing=false;
 
 /* =====================================================================
@@ -950,15 +1013,6 @@ function viewJoin(){
     + (App.err?'<p class="err">'+esc(App.err)+'</p>':'')
     + '<div style="height:16px"></div>'
     + '<button class="btn'+(forElder?' warm':'')+'" data-go="pair">'+esc(D.next)+'</button>';
-  var list=Store.families();
-  if(list.length){
-    h+='<div class="recent"><p class="sub" style="margin-bottom:9px">'+esc(D.recentT)+'</p>';
-    for(var i=0;i<list.length;i++){
-      h+='<div class="row"><span><b>'+esc(list[i].name)+'</b><small>'+list[i].code+'</small></span>'
-       + '<button class="mini" data-use="'+list[i].code+'">'+esc(D.useIt)+'</button></div>';
-    }
-    h+='<p class="hint" style="color:var(--faint);font-size:11px">'+esc(D.recentNote)+'</p></div>';
-  }
   h+='<div class="spacer"></div><button class="link" data-go="entry">'+esc(D.back)+'</button>';
   return h;
 }
@@ -986,7 +1040,7 @@ function statusText(){
   return D.stHome;
 }
 function me(){
-  var id=Store.meId();
+  var id=selectedMemberId();
   for(var i=0;i<St.people.length;i++) if(St.people[i].id===id) return St.people[i];
   return St.people[0]||{nick:"",relation:""};
 }
@@ -1101,7 +1155,7 @@ function tabPeople(){
     var p=St.people[i];
     h+='<button class="person-row" data-person="'+p.id+'"><span class="avatar av-md">'+esc(initial(p.nick))+'</span>'
      + '<span><b>'+esc(p.nick)+'</b><small>'+esc(p.relation)+'</small></span>'
-     + (p.id===Store.meId()?'<span class="me">'+esc(D.meTag)+'</span>':'<span class="go">›</span>')+'</button>';
+     + (p.id===selectedMemberId()?'<span class="me">'+esc(D.meTag)+'</span>':'<span class="go">›</span>')+'</button>';
   }
   h+='<button class="btn ghost" data-go="addPerson" style="margin-top:6px">'+esc(D.addPerson)+'</button>';
 
@@ -1235,7 +1289,6 @@ function devBar(){
    ===================================================================== */
 function render(s){
   if(s!==undefined) St=s;
-  if(Store.code && !St){ hardExit(); return; }
   D = I18N[St ? St.lang : lang];
 
   if(typing){ patchLight(); return; }
@@ -1275,8 +1328,8 @@ function render(s){
   lab.querySelector("span").textContent = who + (St && St.code ? " · " + St.code : "");
 
   chrome='<button class="chip" data-go="lang">'+esc(D.langBtn)+'</button>';
-  if(Store.code) chrome+='<button class="chip" data-go="reset">'+esc(D.resetBtn)+'</button>';
-  if(Store.role()) chrome+='<button class="chip" data-go="exit">'+esc(D.exitBtn)+'</button>';
+  if(St&&St.code) chrome+='<button class="chip" data-go="reset">'+esc(D.resetBtn)+'</button>';
+  if(storeRole()) chrome+='<button class="chip" data-go="exit">'+esc(D.exitBtn)+'</button>';
   el("chrome").innerHTML=chrome;
   el("hintLine").textContent = App.route==="elder" ? D.hintElder
     : (App.route==="family" ? D.hintFamily : D.hintEntry);
@@ -1284,6 +1337,7 @@ function render(s){
   bindInputs();
   var th=view.querySelector(".thread"); if(th) th.scrollTop=th.scrollHeight;
   syncSubs();
+  setConnectionStatus(Connection.state);
 }
 
 function patchLight(){
@@ -1297,7 +1351,7 @@ function bindInputs(){
     n.addEventListener("input",function(){
       var path=n.getAttribute("data-f");
       typing=true;
-      Store.update(function(s){ setPath(s,path,n.value); });
+      persistUpdate(function(s){ setPath(s,path,n.value); });
       typing=false;
       var tag=n.parentNode.querySelector(".tag");
       if(tag){
@@ -1325,14 +1379,14 @@ function syncSubs(){
       var s=Store.get();
       if(!s || s.call.phase!=="talking"){ stopSubs(); return; }
       if(s.call.line+1 >= I18N[s.lang].callLines.length){ stopSubs(); endCall(); return; }
-      Store.update(function(x){ x.call.line++; });
+      persistUpdate(function(x){ x.call.line++; });
     },2200);
   } else if(!talking && subTimer){ stopSubs(); }
 }
 function stopSubs(){ clearInterval(subTimer); subTimer=null; }
 
 function endCall(){
-  Store.update(function(s){
+  persistUpdate(function(s){
     s.call.phase="ended";
     if(!s.facts.length) s.facts=[
       {id:"visit",type:"fact",key:"factVisit",text:null,status:"open"},
@@ -1345,7 +1399,7 @@ function endCall(){
 }
 
 function setLoc(x,y){
-  Store.update(function(s){
+  persistUpdate(function(s){
     s.loc.x=x; s.loc.y=y;
     if(!s.guide.active && !s.guide.done && distOf(s)>rangeM(s)){
       s.guide.active=true; s.guide.step=0;
@@ -1355,7 +1409,7 @@ function setLoc(x,y){
 }
 function autoWalk(){
   clearInterval(walkTimer);
-  Store.update(function(s){ s.guide.done=false; s.guide.step=0; s.loc.x=HOME.x; s.loc.y=HOME.y; });
+  persistUpdate(function(s){ s.guide.done=false; s.guide.step=0; s.loc.x=HOME.x; s.loc.y=HOME.y; });
   var i=0,n=20, from={x:HOME.x,y:HOME.y}, to={x:56,y:36};
   walkTimer=setInterval(function(){
     i++; var p=i/n;
@@ -1364,7 +1418,7 @@ function autoWalk(){
   },120);
 }
 function arrived(){
-  Store.update(function(s){
+  persistUpdate(function(s){
     s.guide.step++;
     if(s.guide.step>=3){
       s.guide.active=false; s.guide.done=true;
@@ -1382,7 +1436,7 @@ function arrived(){
 function factById(s,id){ for(var i=0;i<s.facts.length;i++) if(s.facts[i].id===id) return s.facts[i]; return null; }
 
 function ask(i){
-  Store.update(function(s){
+  persistUpdate(function(s){
     s.thread.push({role:"me",ask:i});
     var key,src,text=null,f;
     if(i===0){
@@ -1411,7 +1465,7 @@ function ask(i){
 }
 
 function setItem(id,status){
-  Store.update(function(s){ var f=factById(s,id); if(f) f.status=status; });
+  persistUpdate(function(s){ var f=factById(s,id); if(f) f.status=status; });
 }
 
 function doSpeak(){
@@ -1420,7 +1474,7 @@ function doSpeak(){
   clearTimeout(speakTimer);
   speakTimer=setTimeout(function(){
     var s=SEED[St.lang];
-    Store.update(function(x){
+    persistUpdate(function(x){
       for(var i=0;i<x.people.length;i++) if(x.people[i].id===App.editingPerson){
         x.people[i].recent=s.recent; x.people[i].hint=s.hint;
         if(!x.people[i].nick) x.people[i].nick=s.nick;
@@ -1431,75 +1485,87 @@ function doSpeak(){
   },1800);
 }
 
-function pair(code){
+async function pair(code){
   code=String(code||"").trim();
-  if(!Store.exists(code)){ App.err=D.joinErr; render(); return; }
-  Store.attach(code);
-  St=Store.get();
-  App.err="";
-  if(App.joinAs==="elder"){
-    Store.signIn("elder",code);
-    Store.update(function(s){ s.paired=true; });
-    App.paired=true; App.route="elder"; render();
-  } else {
-    var p=newPerson(St.lang,true);
-    Store.update(function(s){ s.people.push(p); });
-    Store.signIn("family",code,p.id);
-    App.editingPerson=p.id; App.speak=0; App.route="obMe"; render();
-  }
+  if(!/^\d{6}$/.test(code)){ App.err=D.joinErr; render(); return; }
+  await runPendingAction(async function(){
+    try{
+      await Store.attach(code,App.joinAs);
+      St=Store.get();
+      App.err="";
+      var role=storeRole()||App.joinAs;
+      if(role==="elder"){
+        rememberDevice("elder",code,null);
+        App.paired=true; App.route="elder"; render();
+      } else {
+        var p=newPerson(St.lang,true);
+        await persistUpdate(function(s){ s.people.push(p); });
+        rememberDevice("family",code,p.id);
+        App.editingPerson=p.id; App.speak=0; App.route="obMe"; render();
+      }
+    }catch(error){
+      if(error&&error.code==="FAMILY_NOT_FOUND") App.err=D.joinErr;
+      else reportStoreError(error);
+      render();
+    }
+  });
 }
 
-function hardExit(){
-  Store.signOut(); Store.code=null; St=null;
+async function hardExit(){
   App.route="entry"; App.tab=0; App.qa=false; App.editingPerson=null; App.paired=false;
+  clearDevice(); St=null;
+  try{ if(Store) await Store.signOut(); }catch(error){ reportStoreError(error); }
   D=I18N[lang]; render();
 }
 
 /* =====================================================================
    10. 事件
    ===================================================================== */
-document.addEventListener("click", function(e){
-  var b=e.target.closest("[data-go],[data-tab],[data-ask],[data-use],[data-range],[data-person],[data-item-do],[data-item-edit],[data-item-skip],[data-item-save],[data-item-cancel]");
-  if(!b) return;
+document.addEventListener("click", async function(e){
+  var b=e.target.closest("[data-go],[data-tab],[data-ask],[data-range],[data-person],[data-item-do],[data-item-edit],[data-item-skip],[data-item-save],[data-item-cancel]");
+  if(!b || b.disabled) return;
   var g=function(n){ return b.getAttribute(n); }, id;
 
   if(g("data-tab")!==null){ App.tab=parseInt(g("data-tab"),10); App.editingPerson=null; render(); return; }
   if(g("data-ask")!==null){ ask(parseInt(g("data-ask"),10)); return; }
-  if((id=g("data-use"))){ pair(id); return; }
   if((id=g("data-person"))){ App.editingPerson=id; App.speak=0; render(); return; }
-  if(g("data-range")!==null){ var r=g("data-range"); Store.update(function(s){ s.elder.radius=r; }); return; }
+  if(g("data-range")!==null){ var r=g("data-range"); persistUpdate(function(s){ s.elder.radius=r; }); return; }
   if((id=g("data-item-do"))){ setItem(id,"done"); return; }
   if((id=g("data-item-skip"))){ setItem(id,"skip"); return; }
   if((id=g("data-item-edit"))){ setItem(id,"editing"); return; }
   if((id=g("data-item-cancel"))){ setItem(id,"open"); return; }
   if((id=g("data-item-save"))){
     var inp=document.querySelector('[data-item-in="'+id+'"]'), v=inp?inp.value:null;
-    Store.update(function(s){ var f=factById(s,id); if(f){ f.text=v; f.status="done"; } });
+    persistUpdate(function(s){ var f=factById(s,id); if(f){ f.text=v; f.status="done"; } });
     return;
   }
 
   switch(g("data-go")){
-    case "entry": hardExit(); break;
+    case "entry": await hardExit(); break;
     case "familyStart": App.route="familyStart"; render(); break;
 
     case "create":
-      var code=Store.create(lang);
-      Store.attach(code); St=Store.get();
-      var p0=newPerson(lang,false);
-      Store.update(function(s){ s.people.push(p0); });
-      Store.signIn("family",code,p0.id);
-      App.editingPerson=p0.id; App.speak=0; App.route="obElder"; render();
+      await runPendingAction(async function(){
+        try{
+          var code=await Store.create(lang);
+          if(!code) return;
+          St=Store.get();
+          var p0=newPerson(lang,false);
+          await persistUpdate(function(s){ s.people.push(p0); });
+          rememberDevice("family",code,p0.id);
+          App.editingPerson=p0.id; App.speak=0; App.route="obElder"; render();
+        }catch(error){ reportStoreError(error); render(); }
+      });
       break;
     case "joinFamily": App.joinAs="family"; App.err=""; App.route="join"; render(); break;
     case "elderPair":  App.joinAs="elder";  App.err=""; App.route="join"; render(); break;
-    case "pair": pair(el("codeIn").value); break;
+    case "pair": await pair(el("codeIn").value); break;
 
     case "obMe": App.route="obMe"; render(); break;
     case "speak": doSpeak(); break;
     case "finishSetup":
       var first=!St.setup;
-      Store.update(function(s){ s.setup=true; });
-      Store.indexPut(St.code, St.elder.name);
+      await persistUpdate(function(s){ s.setup=true; });
       App.editingPerson=null; App.speak=0;
       App.route = first ? "code" : "family";
       if(!first) App.tab=3;
@@ -1509,34 +1575,34 @@ document.addEventListener("click", function(e){
     case "enterElder": App.paired=false; render(); break;
     case "addPerson":
       var np=newPerson(St.lang,true);
-      Store.update(function(s){ s.people.push(np); });
+      persistUpdate(function(s){ s.people.push(np); });
       App.editingPerson=np.id; App.speak=0; render();
       break;
-    case "clearPending": Store.update(function(s){ s.pending=[]; }); break;
+    case "clearPending": persistUpdate(function(s){ s.pending=[]; }); break;
 
     case "call":
       App.tab=0;
-      Store.update(function(s){ s.call.phase="ringing"; s.call.line=-1;
-        s.call.personId=Store.meId(); s.lastCaller=Store.meId(); });
+      persistUpdate(function(s){ s.call.phase="ringing"; s.call.line=-1;
+        s.call.personId=selectedMemberId(); s.lastCaller=selectedMemberId(); });
       break;
-    case "answer": Store.update(function(s){ s.call.phase="talking"; s.call.line=-1; }); break;
-    case "decline": Store.update(function(s){ s.call.phase="idle"; s.call.line=-1; }); break;
+    case "answer": persistUpdate(function(s){ s.call.phase="talking"; s.call.line=-1; }); break;
+    case "decline": persistUpdate(function(s){ s.call.phase="idle"; s.call.line=-1; }); break;
     case "hangup": stopSubs(); endCall(); break;
 
     case "openQa": App.qa=true; render(); break;
     case "closeQa": App.qa=false; render(); break;
     case "arrived": arrived(); break;
-    case "ackHome": Store.update(function(s){ s.guide.done=false; }); break;
+    case "ackHome": persistUpdate(function(s){ s.guide.done=false; }); break;
     case "toggleDev": App.dev=!App.dev; render(); break;
     case "walk": autoWalk(); break;
     case "goHome": clearInterval(walkTimer); setLoc(HOME.x,HOME.y); break;
 
     case "lang":
       var nl = (St?St.lang:lang)==="zh" ? "en" : "zh";
-      lang=nl; localStorage.setItem(SLANG,nl);
+      lang=nl;
       if(St){
         var old=St.lang;
-        Store.update(function(s){
+        persistUpdate(function(s){
           s.lang=nl;
           if(s.elder.name===SEED[old].elderName) s.elder.name=SEED[nl].elderName;
           if(s.elder.address===SEED[old].address) s.elder.address=SEED[nl].address;
@@ -1552,34 +1618,65 @@ document.addEventListener("click", function(e){
     case "reset":
       if(confirm(D.resetAsk)){
         App.tab=0; App.qa=false; App.editingPerson=null; App.speak=0; App.dev=false;
-        Store.resetFamily();
-        if(Store.role()==="family"){
-          var np2=newPerson(St.lang,false);
-          Store.update(function(s){ s.people.push(np2); });
-          Store.signIn("family",St.code,np2.id);
-          App.editingPerson=np2.id; App.route="obElder";
-        } else { App.route="elder"; }
-        render();
+        try{
+          await Store.resetFamily();
+          if(storeRole()==="family"){
+            var np2=newPerson(St.lang,false);
+            await persistUpdate(function(s){ s.people.push(np2); });
+            rememberDevice("family",St.code,np2.id);
+            App.editingPerson=np2.id; App.route="obElder";
+          } else { App.route="elder"; }
+          render();
+        }catch(error){ reportStoreError(error); }
       }
       break;
-    case "exit": hardExit(); break;
+    case "retryConnection": await connectAndRestore(); break;
+    case "exit": await hardExit(); break;
   }
 });
 
 /* =====================================================================
    11. 启动
    ===================================================================== */
-Store.subscribe(function(s){ render(s); });
+if(Store) Store.subscribe(function(s){ render(s); });
+
+async function connectAndRestore(){
+  if(Connection.pendingAction) return;
+  Connection.initFailed=false;
+  Connection.authenticated=false;
+  setConnectionStatus("connecting");
+  render(St);
+  try{
+    if(!Store) throw new Error("Supabase client unavailable");
+    await Store.initialize();
+    Connection.authenticated=true;
+    var restored=await Store.restoreSelection();
+    St=restored;
+    if(St){
+      lang=St.lang||lang;
+      var role=storeRole();
+      var member=sessionGet(SCODE)===St.code?selectedMemberId():null;
+      rememberDevice(role,St.code,role==="family"?member:null);
+      App.route=role==="elder"?"elder":"family";
+      if(role==="family"&&!St.setup) App.route="obElder";
+    }else{
+      clearDevice();
+      App.route="entry"; App.editingPerson=null; App.paired=false;
+      setConnectionStatus("synced");
+    }
+    render(St);
+  }catch(error){
+    Connection.initFailed=true;
+    setConnectionStatus(navigator.onLine===false?"offline":"error");
+    render(St);
+  }
+}
 
 (function boot(){
   D=I18N[lang];
-  var role=Store.role(), code=Store.codeOf();
-  if(role && code && Store.exists(code)){
-    Store.attach(code); St=Store.get();
-    App.route = role==="elder" ? "elder" : "family";
-    if(role==="family" && !St.setup) App.route="obElder";
-  }
   render(St);
+  connectAndRestore();
+  window.addEventListener("offline",function(){ setConnectionStatus("offline"); });
   setInterval(function(){ var c=el("clock"); if(c) c.textContent=clockNow(); }, 20000);
 })();
 

@@ -146,3 +146,46 @@ test("profile form centers a neutral add-photo placeholder without the old expla
   assert.equal(placeholderStyles["margin-right"], "auto");
   assert.equal(placeholderStyles.background, "#E8E3DE");
 });
+
+test("entry loads the pinned Supabase browser runtime and adapter before the application", () => {
+  const externalScripts = [...appSource.matchAll(/<script\s+src="([^"]+)"[^>]*><\/script>/g)].map(
+    (match) => match[1],
+  );
+
+  assert.deepEqual(externalScripts, [
+    "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4",
+    "/app/supabase-config.js",
+    "/app/supabase-store.js",
+  ]);
+  assert.ok(appSource.indexOf(externalScripts[2]) < appSource.indexOf("(function(){"));
+});
+
+test("entry uses the Supabase store without a local family-state fallback", () => {
+  assert.match(appSource, /window\.createSupabaseStore\s*\(/);
+  assert.doesNotMatch(appSource, /数据层：localStorage \+ BroadcastChannel/);
+  assert.doesNotMatch(appSource, /new BroadcastChannel\s*\(/);
+  assert.doesNotMatch(appSource, /alz:family:/);
+});
+
+test("entry exposes accessible connection states and an initialization retry", () => {
+  assert.match(appSource, /id="connectionStatus"[^>]*role="status"[^>]*aria-live="polite"/);
+  for (const state of ["connecting", "loading", "saving", "offline", "error", "synced"]) {
+    assert.match(appSource, new RegExp(`(?:"|')${state}(?:"|')`));
+  }
+  assert.match(appSource, /data-go="retryConnection"/);
+});
+
+test("entry keeps initialization retry available when the first connection is offline", () => {
+  assert.match(
+    appSource,
+    /Connection\.initFailed\s*&&\s*\(Connection\.state==="error"\s*\|\|\s*Connection\.state==="offline"\)/,
+  );
+});
+
+test("entry awaits asynchronous family lifecycle actions", () => {
+  assert.match(appSource, /document\.addEventListener\("click",\s*async function/);
+  assert.match(appSource, /await Store\.create\(lang\)/);
+  assert.match(appSource, /await Store\.attach\(code,/);
+  assert.match(appSource, /await Store\.resetFamily\(\)/);
+  assert.match(appSource, /await Store\.signOut\(\)/);
+});

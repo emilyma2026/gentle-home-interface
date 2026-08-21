@@ -675,6 +675,76 @@ test("an older deferred restore cannot clear or overwrite a newer creation", asy
   });
 });
 
+test("an empty-cache restore cannot invalidate an in-flight creation", async () => {
+  const rpcStarted = deferred();
+  const rpcResult = deferred();
+  const payload = familyState("123456");
+  const statuses = [];
+  const fake = fakeSupabase({
+    userId: "race-create-first",
+    existingSession: true,
+    rpcResults: {
+      create_family: () => {
+        rpcStarted.resolve();
+        return rpcResult.promise;
+      },
+    },
+  });
+  const { storage, store } = createStore(fake, statuses, {
+    newFamily: (code, lang) => familyState(code, lang),
+  });
+
+  const creation = store.create("zh");
+  await rpcStarted.promise;
+  assert.equal(await store.restoreSelection(), null);
+  rpcResult.resolve([{ family_id: FAMILY_A_ID, family_code: "123456", revision: 0, payload }]);
+
+  assert.equal(await creation, "123456");
+  assert.strictEqual(store.get(), payload);
+  assert.equal(store.role(), "family");
+  assert.equal(storage.get("alz:family-id"), FAMILY_A_ID);
+  assert.equal(storage.get("alz:code"), "123456");
+  assert.equal(storage.get("alz:role"), "family");
+  assert.deepEqual(statuses.at(-1), ["synced"]);
+});
+
+test("an empty-cache restore cannot invalidate an in-flight join", async () => {
+  const rpcStarted = deferred();
+  const rpcResult = deferred();
+  const payload = familyState("123456", "zh", { paired: true, rev: 1 });
+  const statuses = [];
+  const fake = fakeSupabase({
+    userId: "race-join-first",
+    existingSession: true,
+    rpcResults: {
+      join_family: () => {
+        rpcStarted.resolve();
+        return rpcResult.promise;
+      },
+    },
+    tableResults: {
+      family_members: {
+        data: { family_id: FAMILY_A_ID, role: "elder", families: { code: "123456" } },
+        error: null,
+      },
+    },
+  });
+  const { storage, store } = createStore(fake, statuses);
+
+  const joining = store.attach("123456", "elder");
+  await rpcStarted.promise;
+  assert.equal(await store.restoreSelection(), null);
+  rpcResult.resolve({ family_id: FAMILY_A_ID, family_code: "123456", revision: 1, payload });
+
+  assert.strictEqual(await joining, payload);
+  assert.strictEqual(store.get(), payload);
+  assert.equal(store.role(), "elder");
+  assert.equal(storage.get("alz:family-id"), FAMILY_A_ID);
+  assert.equal(storage.get("alz:code"), "123456");
+  assert.equal(storage.get("alz:role"), "elder");
+  assert.deepEqual(statuses.at(-1), ["synced"]);
+});
+
 test("a selection storage failure does not discard newly created server state", async () => {
   const payload = familyState("123456");
   const values = new Map();

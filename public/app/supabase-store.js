@@ -56,7 +56,8 @@
     let selectedRole = null;
     let channel = null;
     let initialization = null;
-    let lifecycleGeneration = 0;
+    let mutationGeneration = 0;
+    let activeMutations = 0;
     const subscribers = [];
 
     function readSelection(key) {
@@ -186,32 +187,37 @@
     }
 
     async function create(lang) {
-      const operation = ++lifecycleGeneration;
-      await initialize();
-      if (operation !== lifecycleGeneration) return null;
-      onStatus("loading");
-
-      let result;
+      const operation = ++mutationGeneration;
+      activeMutations += 1;
       try {
-        result = await client.rpc("create_family", {
-          initial_payload: newFamily("", lang),
-          requested_role: "family",
-        });
-      } catch (_error) {
-        result = { data: null, error: true };
-      }
-      if (operation !== lifecycleGeneration) return null;
+        await initialize();
+        if (operation !== mutationGeneration) return null;
+        onStatus("loading");
 
-      const row = singleRow(result.data);
-      if (result.error || !isRpcRow(row)) {
-        const error = backendError();
-        onStatus("error", error.message);
-        throw error;
-      }
+        let result;
+        try {
+          result = await client.rpc("create_family", {
+            initial_payload: newFamily("", lang),
+            requested_role: "family",
+          });
+        } catch (_error) {
+          result = { data: null, error: true };
+        }
+        if (operation !== mutationGeneration) return null;
 
-      adopt(row, "family");
-      onStatus("synced");
-      return row.family_code;
+        const row = singleRow(result.data);
+        if (result.error || !isRpcRow(row)) {
+          const error = backendError();
+          onStatus("error", error.message);
+          throw error;
+        }
+
+        adopt(row, "family");
+        onStatus("synced");
+        return row.family_code;
+      } finally {
+        activeMutations -= 1;
+      }
     }
 
     async function attach(code, selectedRole) {
@@ -221,60 +227,66 @@
       }
       if (!isFamilyRole(selectedRole)) throw backendError();
 
-      const operation = ++lifecycleGeneration;
-      await initialize();
-      if (operation !== lifecycleGeneration) return state;
-      onStatus("loading");
-
-      let result;
+      const operation = ++mutationGeneration;
+      activeMutations += 1;
       try {
-        result = await client.rpc("join_family", {
-          family_code: normalizedCode,
-          requested_role: selectedRole,
-        });
-      } catch (_error) {
-        result = { data: null, error: true };
-      }
-      if (operation !== lifecycleGeneration) return state;
+        await initialize();
+        if (operation !== mutationGeneration) return state;
+        onStatus("loading");
 
-      if (result.error) {
-        const error = backendError();
-        onStatus("error", error.message);
-        throw error;
-      }
+        let result;
+        try {
+          result = await client.rpc("join_family", {
+            family_code: normalizedCode,
+            requested_role: selectedRole,
+          });
+        } catch (_error) {
+          result = { data: null, error: true };
+        }
+        if (operation !== mutationGeneration) return state;
 
-      const row = singleRow(result.data);
-      if (!row) {
-        const error = lifecycleError("FAMILY_NOT_FOUND", "Family not found.");
-        onStatus("error", error.message);
-        throw error;
-      }
-      if (!isRpcRow(row)) {
-        const error = backendError();
-        onStatus("error", error.message);
-        throw error;
-      }
+        if (result.error) {
+          const error = backendError();
+          onStatus("error", error.message);
+          throw error;
+        }
 
-      const membershipResult = await readMembership(row.family_id, row.family_code);
-      if (operation !== lifecycleGeneration) return state;
-      const { membership, valid } = validMembership(
-        membershipResult,
-        row.family_id,
-        row.family_code,
-      );
-      if (!valid) {
-        const error = backendError();
-        onStatus("error", error.message);
-        throw error;
-      }
+        const row = singleRow(result.data);
+        if (!row) {
+          const error = lifecycleError("FAMILY_NOT_FOUND", "Family not found.");
+          onStatus("error", error.message);
+          throw error;
+        }
+        if (!isRpcRow(row)) {
+          const error = backendError();
+          onStatus("error", error.message);
+          throw error;
+        }
 
-      adopt(row, membership.role);
-      onStatus("synced");
-      return state;
+        const membershipResult = await readMembership(row.family_id, row.family_code);
+        if (operation !== mutationGeneration) return state;
+        const { membership, valid } = validMembership(
+          membershipResult,
+          row.family_id,
+          row.family_code,
+        );
+        if (!valid) {
+          const error = backendError();
+          onStatus("error", error.message);
+          throw error;
+        }
+
+        adopt(row, membership.role);
+        onStatus("synced");
+        return state;
+      } finally {
+        activeMutations -= 1;
+      }
     }
 
     async function restoreSelection() {
-      const operation = ++lifecycleGeneration;
+      const operation = mutationGeneration;
+      if (activeMutations > 0) return state;
       const cachedFamilyId = readSelection(FAMILY_ID_KEY);
       const cachedCode = readSelection(FAMILY_CODE_KEY);
       const cachedRole = readSelection(FAMILY_ROLE_KEY);
@@ -285,11 +297,11 @@
       }
 
       await initialize();
-      if (operation !== lifecycleGeneration) return state;
+      if (operation !== mutationGeneration) return state;
       onStatus("loading");
 
       const membershipResult = await readMembership(cachedFamilyId, cachedCode);
-      if (operation !== lifecycleGeneration) return state;
+      if (operation !== mutationGeneration) return state;
 
       if (membershipResult.error) {
         const error = backendError();
@@ -314,7 +326,7 @@
       } catch (_error) {
         stateResult = { data: null, error: true };
       }
-      if (operation !== lifecycleGeneration) return state;
+      if (operation !== mutationGeneration) return state;
 
       const row = singleRow(stateResult.data);
       const restoredRow = row && { ...row, family_code: cachedCode };

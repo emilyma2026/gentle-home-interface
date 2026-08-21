@@ -58,7 +58,7 @@ input,textarea,select{font:inherit}
 .view{background:transparent; flex:1 1 auto; min-height:0; overflow-y:auto; display:flex; flex-direction:column;
   justify-content:safe center; gap:2px; padding:10px 22px 28px}
 .view::-webkit-scrollbar{width:0}
-.view.pad0{padding-left:0; padding-right:0}
+.view.pad0{padding-left:22px; padding-right:22px; justify-content:flex-start}
 
 /* 演示外壳（在手机框外，不属于产品界面） */
 .demo-chrome{position:absolute; right:14px; top:58px; z-index:6;
@@ -77,7 +77,7 @@ input,textarea,select{font:inherit}
 .eyebrow.warm{color:var(--warm)}
 .spacer{flex:1 1 auto; min-height:10px}
 .view::before{content:""; display:block; flex:.6 1 auto; min-height:0}
-.view.pad0::before,.view:has(> .entry)::before{display:none}
+.view.pad0::before,.view:has(> .entry)::before,.view:has(> .family-start)::before{display:none}
 
 .card{background:var(--card); border-radius:var(--r-lg); padding:16px 17px; box-shadow:var(--sh-card)}
 .card + .card{margin-top:11px}
@@ -114,6 +114,18 @@ input,textarea,select{font:inherit}
 .role.family .face{background:var(--blue-soft)}
 .role b{display:block; font-size:16px; margin-bottom:3px}
 .role span{color:var(--muted); font-size:12.5px; line-height:1.5}
+.role > span{min-width:0}
+.role > span > span{display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+
+.family-start{min-height:100%; display:flex; flex-direction:column; padding:18px 0 4px}
+.family-start-head{margin-bottom:30px}
+.family-start-head .sub{margin-bottom:0}
+.family-start .roles{flex:1 1 auto; grid-template-rows:repeat(2,minmax(120px,1fr));
+  min-height:264px; max-height:340px; gap:16px}
+.family-start .role{min-height:120px; padding:24px 20px; border-radius:26px}
+.family-start .role .face{width:64px; height:64px; font-size:31px}
+.family-start .role b{font-size:18px}
+.family-start .link{margin-top:18px}
 
 /* 表单 */
 .field{margin-bottom:14px}
@@ -138,6 +150,9 @@ input,textarea,select{font:inherit}
 .av-lg{width:58px; height:58px; font-size:22px}
 .av-md{width:44px; height:44px; font-size:17px}
 .av-sm{width:34px; height:34px; font-size:13px}
+.avatar-picker{width:72px; height:72px; display:grid; place-items:center; border-radius:50%;
+  margin-left:auto; margin-right:auto; margin-bottom:22px; background:#E8E3DE; color:#928A82;
+  font-size:34px; font-weight:500; line-height:1}
 
 /* 说一句话 */
 .speak{display:flex; align-items:center; gap:12px; width:100%; padding:14px 16px; text-align:left;
@@ -356,23 +371,18 @@ input,textarea,select{font:inherit}
   radial-gradient(60% 34% at 96% 22%, rgba(233,196,183,.75) 0%, rgba(233,196,183,0) 62%),
   radial-gradient(80% 46% at 50% 104%, rgba(205,220,190,.60) 0%, rgba(205,220,190,0) 60%),
   linear-gradient(180deg,#FFF8EF 0%, #FDF2E5 58%, #FBEEE2 100%)}
-.entry{flex:1 1 auto; display:flex; flex-direction:column; min-height:0;
-  padding:6px 22px 20px; gap:0}
+.entry{flex:1 1 auto; display:flex; flex-direction:column; min-height:100%;
+  padding-top:36px; padding-right:22px; padding-bottom:20px; padding-left:22px;
+  justify-content:safe center; gap:0}
 .entry-art{position:relative; margin:2px auto 14px; width:186px; height:186px; flex:0 0 auto}
 .entry-art::before{content:""; position:absolute; inset:-16px; border-radius:50%;
   background:radial-gradient(circle at 50% 45%, rgba(233,168,116,.32), rgba(233,168,116,0) 70%)}
 .entry-art img{position:relative; width:100%; height:100%; object-fit:cover; border-radius:44px;
   box-shadow:0 18px 38px rgba(150,90,48,.20), 0 0 0 6px rgba(255,255,255,.7)}
-.entry-art .badge{position:absolute; z-index:2; display:flex; align-items:center; gap:5px;
-  padding:6px 11px; border-radius:99px; background:#fff; color:#8A5A34;
-  font-size:11px; font-weight:800; box-shadow:0 8px 18px rgba(150,90,48,.16)}
-.entry-art .badge.b1{left:-24px; top:26px}
-.entry-art .badge.b2{right:-24px; bottom:-14px; max-width:190px; color:#7C5C43; font-weight:700}
-
-.entry-eyebrow{margin:0 0 8px; text-align:center; color:#B4794A; font-size:11px;
-  font-weight:800; letter-spacing:.22em; text-transform:uppercase}
-.entry-title{margin:0 0 10px; text-align:center; font-size:27px; line-height:1.26;
-  font-weight:800; letter-spacing:-.01em; color:#402A1B}
+.entry-eyebrow{margin:0 0 10px; text-align:center; color:#B4794A; font-size:21px;
+  font-weight:800; letter-spacing:.04em}
+.entry-title{margin:0 0 10px; text-align:center; font-size:17px; line-height:1.35;
+  font-weight:700; letter-spacing:.01em; color:#6F5441}
 .entry-title em{display:block; font-style:normal;
   background:linear-gradient(96deg,#D2793F,#C2544C 60%,#A9663F);
   -webkit-background-clip:text; background-clip:text; color:transparent}
@@ -392,24 +402,11 @@ input,textarea,select{font:inherit}
 .pick.family .face{background:linear-gradient(150deg,#FAD9BC,#F3BE9C)}
 .pick.elder .face{background:linear-gradient(150deg,#E3EBD3,#CFDDB9)}
 .pick b{display:block; font-size:16px; margin-bottom:3px; color:#3E2A1C}
-.pick span span, .pick > span > span{display:block; color:#8B6B52; font-size:12px; line-height:1.5}
+.pick-copy{min-width:0; flex:1 1 auto}
+.pick-copy span{display:block; color:#8B6B52; font-size:12px; line-height:1.5;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
 .pick .go{flex:0 0 auto; margin-left:auto; width:28px; height:28px; border-radius:50%;
   display:grid; place-items:center; background:#F6E3D2; color:#B4794A; font-size:15px; font-weight:800}
-
-.steps{margin:14px 0 0; display:grid; grid-template-columns:repeat(3,1fr); gap:9px}
-.steps h4{grid-column:1/-1; margin:0 0 2px; text-align:center; font-size:11.5px;
-  font-weight:800; color:#9A7154; letter-spacing:.04em}
-.steps ol{display:contents; margin:0; padding:0; list-style:none}
-.steps li{display:flex; flex-direction:column; align-items:center; gap:7px; padding:12px 8px;
-  border-radius:20px; text-align:center; background:rgba(255,255,255,.72);
-  box-shadow:0 0 0 1px rgba(210,150,105,.14) inset;
-  color:#7C5C43; font-size:11px; line-height:1.5}
-.steps li i{width:26px; height:26px; border-radius:50%; display:grid; place-items:center;
-  background:linear-gradient(150deg,#F0BE93,#DE9366); color:#fff; font-style:normal;
-  font-size:12px; font-weight:800; box-shadow:0 5px 12px rgba(190,120,70,.28)}
-.entry-note{display:flex; align-items:center; justify-content:center; gap:6px;
-  margin:14px 0 0; padding:0; color:#A98266; font-size:11px; line-height:1.6; text-align:center}
-
 
 </style>
 </head>
@@ -464,7 +461,7 @@ var I18N = {
 zh:{
   appName:"守护助手", appSub:"阿尔茨海默中度早期 · 双端伴侣",
   langBtn:"EN", resetBtn:"重置演示", exitBtn:"换个角色",
-  labelFamily:"家人端", labelElder:"老人端", labelEntry:"入口",
+  labelFamily:"家人端", labelElder:"老人端", labelEntry:"阿尔茨海默守护助手",
 
   hintEntry:"演示用法：浏览器分屏，两个窗口都打开这一页。一个选家人端，一个选老人端，用家庭码连起来。",
   hintFamily:"这台是家人的手机。改任何字段，老人端立刻同步。",
@@ -473,12 +470,12 @@ zh:{
   entryTitle:"请选择您的身份", entrySub:"不一样的界面，不一样的服务。",
   stepsTitle:"三步就能连起来",
   steps:["家人先建家庭，填一次老人的信息","记下六位家庭码，在老人手机上输入","之后拨号、问答、回家引导两端实时同步"],
-  roleFamilyT:"我是家人", roleFamilyD:"维护家庭信息、接收提醒。设置由你来做。",
-  roleElderT:"这台是老人的手机", roleElderD:"由家人代为配对，之后老人不用再操作。",
+  roleFamilyT:"家人端", roleFamilyD:"管理信息与提醒",
+  roleElderT:"老人端", roleElderD:"配对后安心使用",
 
   fsTitle:"家庭", fsSub:"第一个家人创建家庭，其他家人用家庭码加入同一个家庭。",
-  fsCreateT:"创建新家庭", fsCreateD:"你是第一个使用的人，填一次老人的信息。",
-  fsJoinT:"加入已有家庭", fsJoinD:"家里已经有人建好了，用六位家庭码加进来。",
+  fsCreateT:"创建家庭", fsCreateD:"首次使用，填写老人信息",
+  fsJoinT:"加入家庭", fsJoinD:"输入六位家庭码",
 
   obElderTitle:"关于老人", obElderSub:"三项就够，之后随时可以改。",
   fName:"称呼", fAddr:"家庭住址", fRange:"日常活动范围",
@@ -487,7 +484,7 @@ zh:{
   speakT:"说一句话，我来整理", speakD:"不想打字就按这里，说完自动填进下面的字段",
   speakOn:"正在听……", speakDone:"已经从这句话里整理出 2 个字段，可以直接改。",
   fNick:"称呼", fRel:"关系", fPhone:"电话", fRecent:"近况", fHint:"想让她记起的事",
-  phoneHint:"只用于来电匹配，不做人脸识别。",
+  addPhoto:"添加照片",
   hintHint:"越久远的事越容易被记起。",
   sampleTag:"示例",
 
@@ -578,7 +575,7 @@ zh:{
 en:{
   appName:"Companion", appSub:"Early-stage Alzheimer's · two-sided care",
   langBtn:"中文", resetBtn:"Reset demo", exitBtn:"Switch role",
-  labelFamily:"Family side", labelElder:"Elder side", labelEntry:"Start",
+  labelFamily:"Family side", labelElder:"Elder side", labelEntry:"Alzheimer's Care Assistant",
 
   hintEntry:"To present: split the screen and open this page in two windows. Pick the family side in one, the elder side in the other, and link them with the family code.",
   hintFamily:"This is the family member's phone. Edit any field and the elder side updates at once.",
@@ -587,12 +584,12 @@ en:{
   entryTitle:"Who is using this phone?", entrySub:"Different person, different interface.",
   stepsTitle:"Three steps to link",
   steps:["A family member creates the family and fills in the elder's details once","Note the six-digit code and enter it on the elder's phone","Calls, answers and homeward guidance stay in sync on both sides"],
-  roleFamilyT:"I'm a family member", roleFamilyD:"Keep the family information and handle alerts. Setup happens here.",
-  roleElderT:"This is the elder's phone", roleElderD:"A family member pairs it. After that she never touches it.",
+  roleFamilyT:"Family", roleFamilyD:"Manage info and alerts",
+  roleElderT:"Elder", roleElderD:"Ready after pairing",
 
   fsTitle:"Family", fsSub:"The first person creates the family. Everyone else joins with the code.",
-  fsCreateT:"Create a new family", fsCreateD:"You're first. Fill in the elder's details once.",
-  fsJoinT:"Join an existing family", fsJoinD:"Someone at home already set it up. Use their six-digit code.",
+  fsCreateT:"Create family", fsCreateD:"First time: add elder details",
+  fsJoinT:"Join family", fsJoinD:"Enter the six-digit code",
 
   obElderTitle:"About the elder", obElderSub:"Three things is enough. You can change them any time.",
   fName:"Name", fAddr:"Home address", fRange:"Everyday range",
@@ -601,7 +598,7 @@ en:{
   speakT:"Say it out loud instead", speakD:"Tap and talk. The fields below fill themselves in.",
   speakOn:"Listening…", speakDone:"Two fields were pulled from that sentence. Edit them freely.",
   fNick:"Name", fRel:"Relationship", fPhone:"Phone", fRecent:"Recent life", fHint:"Something she may remember",
-  phoneHint:"Used only to match incoming calls. No face recognition.",
+  addPhoto:"Add photo",
   hintHint:"Older memories last longer.",
   sampleTag:"Sample",
 
@@ -843,40 +840,33 @@ function brand(){
 function viewEntry(){
   return '<div class="entry">'
     + '<div class="entry-art">'
-    +   '<img src="hero-care.jpg" alt="" width="372" height="372">'
-    +   '<span class="badge b1">'+esc(D.appName)+'</span>'
-    +   '<span class="badge b2">'+esc(D.appSub)+'</span>'
+    +   '<img src="hero-care-centered.png" alt="" width="372" height="372">'
     + '</div>'
     + '<p class="entry-eyebrow">'+esc(D.labelEntry)+'</p>'
     + '<h1 class="entry-title"><em>'+esc(D.entryTitle)+'</em></h1>'
     + '<p class="entry-sub">'+esc(D.entrySub)+'</p>'
     + '<div class="picks">'
     +   '<button class="pick family" data-go="familyStart"><span class="face">🧑‍💼</span>'
-    +     '<span><b>'+esc(D.roleFamilyT)+'</b><span>'+esc(D.roleFamilyD)+'</span></span>'
+    +     '<span class="pick-copy"><b>'+esc(D.roleFamilyT)+'</b><span>'+esc(D.roleFamilyD)+'</span></span>'
     +     '<span class="go">›</span></button>'
     +   '<button class="pick elder" data-go="elderPair"><span class="face">👵</span>'
-    +     '<span><b>'+esc(D.roleElderT)+'</b><span>'+esc(D.roleElderD)+'</span></span>'
+    +     '<span class="pick-copy"><b>'+esc(D.roleElderT)+'</b><span>'+esc(D.roleElderD)+'</span></span>'
     +     '<span class="go">›</span></button>'
     + '</div>'
-    + '<div class="steps"><h4>'+esc(D.stepsTitle)+'</h4><ol>'
-    +   D.steps.map(function(t,i){ return '<li><i>'+(i+1)+'</i><span>'+esc(t)+'</span></li>'; }).join('')
-    + '</ol></div>'
-    + '<p class="entry-note">'+esc(D.hintEntry)+'</p>'
     + '</div>';
 }
 
 function viewFamilyStart(){
-  return '<p class="eyebrow">'+esc(D.fsTitle)+'</p>'
+  return '<section class="family-start"><div class="family-start-head"><p class="eyebrow">'+esc(D.fsTitle)+'</p>'
     + '<p class="h1">'+esc(D.fsTitle)+'</p>'
-    + '<p class="sub">'+esc(D.fsSub)+'</p>'
+    + '<p class="sub">'+esc(D.fsSub)+'</p></div>'
     + '<div class="roles">'
     + '<button class="role family" data-go="create"><span class="face">✨</span>'
     +   '<span><b>'+esc(D.fsCreateT)+'</b><span>'+esc(D.fsCreateD)+'</span></span></button>'
     + '<button class="role family" data-go="joinFamily"><span class="face">🔑</span>'
     +   '<span><b>'+esc(D.fsJoinT)+'</b><span>'+esc(D.fsJoinD)+'</span></span></button>'
     + '</div>'
-    + '<div class="spacer"></div>'
-    + '<button class="link" data-go="entry">'+esc(D.back)+'</button>';
+    + '<button class="link" data-go="entry">'+esc(D.back)+'</button></section>';
 }
 
 function fieldHTML(path,label,type,opts){
@@ -932,9 +922,7 @@ function viewObMe(){
     + '<p class="sub">'+esc(D.obMeSub)+'</p>'
     + '<button class="speak'+speakCls+'" data-go="speak"><span class="mic">'+IC.mic+'</span>'+speakBody+'</button>'
     + (App.speak===2 ? '<p class="filled">✓ '+esc(D.speakDone)+'</p>' : '')
-    + '<div style="display:flex;align-items:center;gap:13px;margin-bottom:15px">'
-    +   '<span class="avatar av-lg" data-bind="av">'+esc(initial(p.nick))+'</span>'
-    +   '<p style="margin:0;color:var(--muted);font-size:11.5px;line-height:1.55">'+esc(D.phoneHint)+'</p></div>'
+    + '<div class="avatar-picker" role="img" aria-label="'+esc(D.addPhoto)+'">+</div>'
     + fieldHTML("per.nick", D.fNick, "text")
     + fieldHTML("per.relation", D.fRel, "text", {seedKey:"relation"})
     + fieldHTML("per.phone", D.fPhone, "text", {seedKey:"phone"})

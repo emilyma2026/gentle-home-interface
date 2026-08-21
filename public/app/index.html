@@ -808,6 +808,7 @@ function persistUpdate(mutator){
     throw error;
   });
 }
+function queueUpdate(mutator){ void persistUpdate(mutator).catch(function(){}); }
 async function runPendingAction(action){
   if(Connection.pendingAction) return null;
   Connection.pendingAction=true; syncActionAvailability();
@@ -1356,7 +1357,7 @@ function bindInputs(){
     n.addEventListener("input",function(){
       var path=n.getAttribute("data-f");
       typing=true;
-      persistUpdate(function(s){ setPath(s,path,n.value); });
+      queueUpdate(function(s){ setPath(s,path,n.value); });
       typing=false;
       var tag=n.parentNode.querySelector(".tag");
       if(tag){
@@ -1384,14 +1385,14 @@ function syncSubs(){
       var s=Store.get();
       if(!s || s.call.phase!=="talking"){ stopSubs(); return; }
       if(s.call.line+1 >= I18N[s.lang].callLines.length){ stopSubs(); endCall(); return; }
-      persistUpdate(function(x){ x.call.line++; });
+      queueUpdate(function(x){ x.call.line++; });
     },2200);
   } else if(!talking && subTimer){ stopSubs(); }
 }
 function stopSubs(){ clearInterval(subTimer); subTimer=null; }
 
 function endCall(){
-  persistUpdate(function(s){
+  queueUpdate(function(s){
     s.call.phase="ended";
     if(!s.facts.length) s.facts=[
       {id:"visit",type:"fact",key:"factVisit",text:null,status:"open"},
@@ -1404,7 +1405,7 @@ function endCall(){
 }
 
 function setLoc(x,y){
-  persistUpdate(function(s){
+  queueUpdate(function(s){
     s.loc.x=x; s.loc.y=y;
     if(!s.guide.active && !s.guide.done && distOf(s)>rangeM(s)){
       s.guide.active=true; s.guide.step=0;
@@ -1414,7 +1415,7 @@ function setLoc(x,y){
 }
 function autoWalk(){
   clearInterval(walkTimer);
-  persistUpdate(function(s){ s.guide.done=false; s.guide.step=0; s.loc.x=HOME.x; s.loc.y=HOME.y; });
+  queueUpdate(function(s){ s.guide.done=false; s.guide.step=0; s.loc.x=HOME.x; s.loc.y=HOME.y; });
   var i=0,n=20, from={x:HOME.x,y:HOME.y}, to={x:56,y:36};
   walkTimer=setInterval(function(){
     i++; var p=i/n;
@@ -1423,7 +1424,7 @@ function autoWalk(){
   },120);
 }
 function arrived(){
-  persistUpdate(function(s){
+  queueUpdate(function(s){
     s.guide.step++;
     if(s.guide.step>=3){
       s.guide.active=false; s.guide.done=true;
@@ -1441,7 +1442,7 @@ function arrived(){
 function factById(s,id){ for(var i=0;i<s.facts.length;i++) if(s.facts[i].id===id) return s.facts[i]; return null; }
 
 function ask(i){
-  persistUpdate(function(s){
+  queueUpdate(function(s){
     s.thread.push({role:"me",ask:i});
     var key,src,text=null,f;
     if(i===0){
@@ -1470,7 +1471,7 @@ function ask(i){
 }
 
 function setItem(id,status){
-  persistUpdate(function(s){ var f=factById(s,id); if(f) f.status=status; });
+  queueUpdate(function(s){ var f=factById(s,id); if(f) f.status=status; });
 }
 
 function doSpeak(){
@@ -1479,7 +1480,7 @@ function doSpeak(){
   clearTimeout(speakTimer);
   speakTimer=setTimeout(function(){
     var s=SEED[St.lang];
-    persistUpdate(function(x){
+    queueUpdate(function(x){
       for(var i=0;i<x.people.length;i++) if(x.people[i].id===App.editingPerson){
         x.people[i].recent=s.recent; x.people[i].hint=s.hint;
         if(!x.people[i].nick) x.people[i].nick=s.nick;
@@ -1535,14 +1536,14 @@ document.addEventListener("click", async function(e){
   if(g("data-tab")!==null){ App.tab=parseInt(g("data-tab"),10); App.editingPerson=null; render(); return; }
   if(g("data-ask")!==null){ ask(parseInt(g("data-ask"),10)); return; }
   if((id=g("data-person"))){ App.editingPerson=id; App.speak=0; render(); return; }
-  if(g("data-range")!==null){ var r=g("data-range"); persistUpdate(function(s){ s.elder.radius=r; }); return; }
+  if(g("data-range")!==null){ var r=g("data-range"); queueUpdate(function(s){ s.elder.radius=r; }); return; }
   if((id=g("data-item-do"))){ setItem(id,"done"); return; }
   if((id=g("data-item-skip"))){ setItem(id,"skip"); return; }
   if((id=g("data-item-edit"))){ setItem(id,"editing"); return; }
   if((id=g("data-item-cancel"))){ setItem(id,"open"); return; }
   if((id=g("data-item-save"))){
     var inp=document.querySelector('[data-item-in="'+id+'"]'), v=inp?inp.value:null;
-    persistUpdate(function(s){ var f=factById(s,id); if(f){ f.text=v; f.status="done"; } });
+    queueUpdate(function(s){ var f=factById(s,id); if(f){ f.text=v; f.status="done"; } });
     return;
   }
 
@@ -1581,24 +1582,24 @@ document.addEventListener("click", async function(e){
     case "enterElder": App.paired=false; render(); break;
     case "addPerson":
       var np=newPerson(St.lang,true);
-      persistUpdate(function(s){ s.people.push(np); });
+      queueUpdate(function(s){ s.people.push(np); });
       App.editingPerson=np.id; App.speak=0; render();
       break;
-    case "clearPending": persistUpdate(function(s){ s.pending=[]; }); break;
+    case "clearPending": queueUpdate(function(s){ s.pending=[]; }); break;
 
     case "call":
       App.tab=0;
-      persistUpdate(function(s){ s.call.phase="ringing"; s.call.line=-1;
+      queueUpdate(function(s){ s.call.phase="ringing"; s.call.line=-1;
         s.call.personId=selectedMemberId(); s.lastCaller=selectedMemberId(); });
       break;
-    case "answer": persistUpdate(function(s){ s.call.phase="talking"; s.call.line=-1; }); break;
-    case "decline": persistUpdate(function(s){ s.call.phase="idle"; s.call.line=-1; }); break;
+    case "answer": queueUpdate(function(s){ s.call.phase="talking"; s.call.line=-1; }); break;
+    case "decline": queueUpdate(function(s){ s.call.phase="idle"; s.call.line=-1; }); break;
     case "hangup": stopSubs(); endCall(); break;
 
     case "openQa": App.qa=true; render(); break;
     case "closeQa": App.qa=false; render(); break;
     case "arrived": arrived(); break;
-    case "ackHome": persistUpdate(function(s){ s.guide.done=false; }); break;
+    case "ackHome": queueUpdate(function(s){ s.guide.done=false; }); break;
     case "toggleDev": App.dev=!App.dev; render(); break;
     case "walk": autoWalk(); break;
     case "goHome": clearInterval(walkTimer); setLoc(HOME.x,HOME.y); break;
@@ -1608,7 +1609,7 @@ document.addEventListener("click", async function(e){
       lang=nl;
       if(St){
         var old=St.lang;
-        persistUpdate(function(s){
+        queueUpdate(function(s){
           s.lang=nl;
           if(s.elder.name===SEED[old].elderName) s.elder.name=SEED[nl].elderName;
           if(s.elder.address===SEED[old].address) s.elder.address=SEED[nl].address;

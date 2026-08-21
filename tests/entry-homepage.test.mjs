@@ -18,6 +18,9 @@ const viewProfileSource = appSource.slice(profileStart, profileEnd);
 const persistUpdateStart = appSource.indexOf("function persistUpdate(");
 const persistUpdateEnd = appSource.indexOf("async function runPendingAction", persistUpdateStart);
 const persistUpdateSource = appSource.slice(persistUpdateStart, persistUpdateEnd);
+const queueUpdateStart = appSource.indexOf("function queueUpdate(");
+const queueUpdateEnd = appSource.indexOf("async function runPendingAction", queueUpdateStart);
+const queueUpdateSource = appSource.slice(queueUpdateStart, queueUpdateEnd);
 const pairStart = appSource.indexOf("async function pair(code){");
 const pairEnd = appSource.indexOf("async function hardExit(){", pairStart);
 const pairSource = appSource.slice(pairStart, pairEnd);
@@ -250,4 +253,32 @@ test("persistUpdate reports a failed write and keeps the returned promise reject
 
   await assert.rejects(update, (error) => error === failure);
   assert.equal(reported, failure);
+});
+
+test("fire-and-forget updates explicitly consume already-reported rejections", () => {
+  assert.ok(queueUpdateStart >= 0, "expected a fire-and-forget update wrapper");
+  let rejectionHandler = null;
+  const context = {
+    persistUpdate: () => ({
+      catch(handler) {
+        rejectionHandler = handler;
+      },
+    }),
+  };
+
+  const result = vm.runInNewContext(`${queueUpdateSource}\nqueueUpdate(() => {});`, context);
+  const behaviorSource = appSource.slice(
+    appSource.indexOf("function bindInputs(){"),
+    appSource.indexOf(
+      "/* =====================================================================\n   11. 启动",
+    ),
+  );
+  const unsafeCalls = behaviorSource
+    .split(/\r?\n/)
+    .filter((line) => line.includes("persistUpdate(") && !line.includes("await persistUpdate("));
+
+  assert.equal(result, undefined);
+  assert.equal(typeof rejectionHandler, "function");
+  assert.doesNotThrow(() => rejectionHandler(new Error("already reported")));
+  assert.deepEqual(unsafeCalls, []);
 });

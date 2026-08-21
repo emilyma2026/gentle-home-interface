@@ -18,6 +18,10 @@
     return lifecycleError("BACKEND_ERROR", BACKEND_MESSAGE);
   }
 
+  function revisionConflictError() {
+    return lifecycleError("REVISION_CONFLICT", BACKEND_MESSAGE);
+  }
+
   function singleRow(data) {
     return Array.isArray(data) ? data[0] || null : data || null;
   }
@@ -48,9 +52,29 @@
     );
   }
 
+  function isStateRow(row, expectedFamilyId, expectedCode) {
+    return Boolean(
+      row &&
+      row.family_id === expectedFamilyId &&
+      Number.isInteger(row.revision) &&
+      row.revision >= 0 &&
+      row.payload &&
+      typeof row.payload === "object" &&
+      !Array.isArray(row.payload) &&
+      row.payload.code === expectedCode,
+    );
+  }
+
+  function isRevisionConflict(error) {
+    return Boolean(
+      error && (error.code === "REVISION_CONFLICT" || error.message === "REVISION_CONFLICT"),
+    );
+  }
+
   function createSupabaseStore({ client, newFamily, onStatus, storage }) {
     let user = null;
     let state = null;
+    let confirmedState = null;
     let familyId = null;
     let revision = -1;
     let selectedRole = null;
@@ -58,6 +82,9 @@
     let initialization = null;
     let mutationGeneration = 0;
     let activeMutations = 0;
+    let writeQueue = Promise.resolve();
+    let optimisticWrite = 0;
+    let pendingWrites = 0;
     const subscribers = [];
 
     function readSelection(key) {
@@ -103,9 +130,11 @@
 
     function clearSelection() {
       clearCachedSelection();
+      removeRealtimeChannel();
       familyId = null;
       revision = -1;
       state = null;
+      confirmedState = null;
       selectedRole = null;
     }
 
@@ -117,9 +146,83 @@
       familyId = row.family_id;
       revision = Number(row.revision);
       state = row.payload;
+      confirmedState = row.payload;
       selectedRole = role;
       cacheSelection(familyId, row.family_code, role);
       emit();
+    }
+
+    function removeRealtimeChannel() {
+      const previousChannel = channel;
+      channel = null;
+      if (!previousChannel) return;
+
+      try {
+        if (client.removeChannel) {
+          const removal = client.removeChannel(previousChannel);
+          if (removal && typeof removal.catch === "function") removal.catch(() => {});
+        } else if (previousChannel.unsubscribe) {
+          previousChannel.unsubscribe();
+        }
+      } catch (_error) {
+        // A stale channel is guarded by generation and identity checks below.
+      }
+    }
+
+    function subscribeToFamily(selectedFamilyId, selectedCode, operation) {
+      removeRealtimeChannel();
+
+      try {
+        const nextChannel = client.channel(`family-state:${selectedFamilyId}`);
+        nextChannel.on(
+          "postgres_changes",
+          {
+            event: "UPDATE",
+            schema: "public",
+            table: "family_states",
+            filter: `family_id=eq.${selectedFamilyId}`,
+          },
+          (event) => {
+            if (
+              operation !== mutationGeneration ||
+              selectedFamilyId !== familyId ||
+              channel !== nextChannel
+            ) {
+              return;
+            }
+
+            const row = event && event.new;
+            if (!isStateRow(row, selectedFamilyId, selectedCode)) return;
+            const nextRevision = Number(row.revision);
+            if (nextRevision <= revision) return;
+
+            revision = nextRevision;
+            state = row.payload;
+            confirmedState = row.payload;
+            emit();
+            if (pendingWrites === 0) onStatus("synced");
+          },
+        );
+        channel = nextChannel;
+        nextChannel.subscribe((status) => {
+          if (
+            operation !== mutationGeneration ||
+            selectedFamilyId !== familyId ||
+            channel !== nextChannel
+          ) {
+            return;
+          }
+          if (status === "CHANNEL_ERROR" || status === "TIMED_OUT" || status === "CLOSED") {
+            onStatus("offline", BACKEND_MESSAGE);
+          }
+        });
+      } catch (_error) {
+        onStatus("offline", BACKEND_MESSAGE);
+      }
+    }
+
+    function startRealtime(row, operation) {
+      subscribeToFamily(row.family_id, row.family_code, operation);
     }
 
     async function readMembership(selectedFamilyId, selectedCode) {
@@ -214,6 +317,7 @@
 
         adopt(row, "family");
         onStatus("synced");
+        startRealtime(row, operation);
         return row.family_code;
       } finally {
         activeMutations -= 1;
@@ -278,6 +382,7 @@
 
         adopt(row, membership.role);
         onStatus("synced");
+        startRealtime(row, operation);
         return state;
       } finally {
         activeMutations -= 1;
@@ -338,7 +443,236 @@
 
       adopt(restoredRow, cachedRole);
       onStatus("synced");
+      startRealtime(restoredRow, operation);
       return state;
+    }
+
+    async function callReplace(targetFamilyId, expectedRevision, nextPayload) {
+      try {
+        return {
+          offline: false,
+          result: await client.rpc("replace_family_state", {
+            target_family_id: targetFamilyId,
+            expected_revision: expectedRevision,
+            next_payload: nextPayload,
+          }),
+        };
+      } catch (_error) {
+        return { offline: true, result: { data: null, error: true } };
+      }
+    }
+
+    async function readFamilyState(targetFamilyId, selectedCode) {
+      let result;
+      try {
+        result = await client
+          .from("family_states")
+          .select("family_id, revision, payload")
+          .eq("family_id", targetFamilyId)
+          .maybeSingle();
+      } catch (_error) {
+        return { offline: true, row: null };
+      }
+
+      const row = singleRow(result.data);
+      if (result.error || !isStateRow(row, targetFamilyId, selectedCode)) {
+        return { offline: false, row: null };
+      }
+      return { offline: false, row };
+    }
+
+    function reportWriteFailure(operation, status, error) {
+      if (operation === mutationGeneration) onStatus(status, error.message);
+      return error;
+    }
+
+    function acceptWrite(row, targetFamilyId, operation, writeNumber, expectedRevision) {
+      if (
+        !isRpcRow(row) ||
+        row.family_id !== targetFamilyId ||
+        Number(row.revision) <= expectedRevision
+      ) {
+        throw backendError();
+      }
+
+      if (operation === mutationGeneration && targetFamilyId === familyId) {
+        const acceptedRevision = Number(row.revision);
+        if (acceptedRevision >= revision) {
+          revision = acceptedRevision;
+          confirmedState = row.payload;
+          if (writeNumber === optimisticWrite) {
+            state = row.payload;
+            emit();
+          }
+        }
+      }
+      return row.payload;
+    }
+
+    async function persistUpdate({
+      draft,
+      mutator,
+      operation,
+      selectedCode,
+      startingRevision,
+      targetFamilyId,
+      writeNumber,
+    }) {
+      const expectedRevision =
+        operation === mutationGeneration && targetFamilyId === familyId
+          ? revision
+          : startingRevision;
+      let nextPayload = draft;
+      if (
+        operation === mutationGeneration &&
+        targetFamilyId === familyId &&
+        confirmedState &&
+        expectedRevision !== startingRevision
+      ) {
+        nextPayload = structuredClone(confirmedState);
+        mutator(nextPayload);
+      }
+      const firstAttempt = await callReplace(targetFamilyId, expectedRevision, nextPayload);
+
+      if (!firstAttempt.result.error) {
+        try {
+          return acceptWrite(
+            singleRow(firstAttempt.result.data),
+            targetFamilyId,
+            operation,
+            writeNumber,
+            expectedRevision,
+          );
+        } catch (_error) {
+          throw reportWriteFailure(operation, "error", backendError());
+        }
+      }
+
+      if (!isRevisionConflict(firstAttempt.result.error)) {
+        throw reportWriteFailure(
+          operation,
+          firstAttempt.offline ? "offline" : "error",
+          backendError(),
+        );
+      }
+
+      const freshResult = await readFamilyState(targetFamilyId, selectedCode);
+      if (!freshResult.row || Number(freshResult.row.revision) <= expectedRevision) {
+        throw reportWriteFailure(
+          operation,
+          freshResult.offline ? "offline" : "error",
+          backendError(),
+        );
+      }
+
+      const freshRow = freshResult.row;
+      if (operation === mutationGeneration && targetFamilyId === familyId) {
+        revision = Number(freshRow.revision);
+        confirmedState = freshRow.payload;
+      }
+      const rebasedDraft = structuredClone(freshRow.payload);
+      mutator(rebasedDraft);
+      const retry = await callReplace(targetFamilyId, Number(freshRow.revision), rebasedDraft);
+
+      if (!retry.result.error) {
+        try {
+          return acceptWrite(
+            singleRow(retry.result.data),
+            targetFamilyId,
+            operation,
+            writeNumber,
+            Number(freshRow.revision),
+          );
+        } catch (_error) {
+          if (operation === mutationGeneration && targetFamilyId === familyId) {
+            revision = Number(freshRow.revision);
+            state = freshRow.payload;
+            confirmedState = freshRow.payload;
+            emit();
+          }
+          throw reportWriteFailure(operation, "error", backendError());
+        }
+      }
+
+      if (operation === mutationGeneration && targetFamilyId === familyId) {
+        revision = Number(freshRow.revision);
+        state = freshRow.payload;
+        confirmedState = freshRow.payload;
+        emit();
+      }
+
+      const retryError = isRevisionConflict(retry.result.error)
+        ? revisionConflictError()
+        : backendError();
+      throw reportWriteFailure(operation, retry.offline ? "offline" : "error", retryError);
+    }
+
+    function update(mutator) {
+      if (!state || !familyId || typeof mutator !== "function") {
+        const error = backendError();
+        onStatus("error", error.message);
+        return Promise.reject(error);
+      }
+
+      const operation = mutationGeneration;
+      const targetFamilyId = familyId;
+      const selectedCode = state.code;
+      const startingRevision = revision;
+      const draft = structuredClone(state);
+      mutator(draft);
+      const writeNumber = ++optimisticWrite;
+
+      state = draft;
+      pendingWrites += 1;
+      onStatus("saving");
+      emit();
+
+      const persistence = writeQueue.then(() =>
+        persistUpdate({
+          draft,
+          mutator,
+          operation,
+          selectedCode,
+          startingRevision,
+          targetFamilyId,
+          writeNumber,
+        }),
+      );
+      writeQueue = persistence.catch(() => {});
+
+      return persistence.then(
+        (acceptedState) => {
+          pendingWrites -= 1;
+          if (
+            operation === mutationGeneration &&
+            targetFamilyId === familyId &&
+            pendingWrites === 0
+          ) {
+            onStatus("synced");
+          }
+          return acceptedState;
+        },
+        (error) => {
+          pendingWrites -= 1;
+          throw error;
+        },
+      );
+    }
+
+    function resetFamily() {
+      if (!state || !familyId) return update(null);
+      const freshState = newFamily(state.code, state.lang || "zh");
+      return update((draft) => {
+        Object.keys(draft).forEach((key) => delete draft[key]);
+        Object.assign(draft, structuredClone(freshState));
+      });
+    }
+
+    async function signOut() {
+      mutationGeneration += 1;
+      clearSelection();
+      emit();
+      onStatus("synced");
     }
 
     return {
@@ -346,6 +680,9 @@
       create,
       attach,
       restoreSelection,
+      update,
+      resetFamily,
+      signOut,
       get: () => state,
       role: () => selectedRole,
       subscribe: (subscriber) => subscribers.push(subscriber),

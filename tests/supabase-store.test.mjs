@@ -13,16 +13,26 @@ function fakeSupabase({
   existingSession,
   getSessionError = null,
   authErrors = [],
+  rpcHandlers = {},
   rpcResults = {},
   rpcErrors = {},
   tableResults = {},
 }) {
   const user = { id: userId, is_anonymous: true };
-  const calls = { getSession: 0, signInAnonymously: 0, rpc: [], from: [] };
+  const calls = {
+    getSession: 0,
+    signInAnonymously: 0,
+    rpc: [],
+    from: [],
+    channel: [],
+    removeChannel: [],
+  };
+  const channels = [];
   const pendingAuthErrors = [...authErrors];
 
   return {
     calls,
+    channels,
     auth: {
       async getSession() {
         calls.getSession += 1;
@@ -38,6 +48,7 @@ function fakeSupabase({
     },
     async rpc(name, parameters) {
       calls.rpc.push({ name, parameters });
+      if (rpcHandlers[name]) return rpcHandlers[name](parameters);
       const configuredResult = rpcResults[name];
       return {
         data:
@@ -76,12 +87,45 @@ function fakeSupabase({
 
       return builder;
     },
+    channel(name) {
+      const realtimeChannel = {
+        name,
+        binding: null,
+        handler: null,
+        statusHandler: null,
+        unsubscribeCalls: 0,
+        on(type, filter, handler) {
+          realtimeChannel.binding = { type, filter };
+          realtimeChannel.handler = handler;
+          return realtimeChannel;
+        },
+        subscribe(handler) {
+          realtimeChannel.statusHandler = handler;
+          return realtimeChannel;
+        },
+        unsubscribe() {
+          realtimeChannel.unsubscribeCalls += 1;
+        },
+        emitChange(row) {
+          return realtimeChannel.handler({ new: row });
+        },
+        emitStatus(status, error) {
+          return realtimeChannel.statusHandler(status, error);
+        },
+      };
+      channels.push(realtimeChannel);
+      calls.channel.push({ name });
+      return realtimeChannel;
+    },
+    async removeChannel(realtimeChannel) {
+      calls.removeChannel.push(realtimeChannel);
+    },
   };
 }
 
 function createStore(client, statuses = [], options = {}) {
   const source = readFileSync(storePath, "utf8");
-  const context = { window: {} };
+  const context = { structuredClone, window: {} };
   vm.runInNewContext(source, context, { filename: "supabase-store.js" });
 
   const calls = { newFamily: 0 };
@@ -130,6 +174,41 @@ function deferred() {
     reject = rejectPromise;
   });
   return { promise, reject, resolve };
+}
+
+async function attachedStore({
+  payload = familyState("123456"),
+  revision = 0,
+  statuses = [],
+  rpcHandlers = {},
+  rpcErrors = {},
+  tableResults = {},
+  newFamily,
+} = {}) {
+  const fake = fakeSupabase({
+    userId: "attached-user",
+    existingSession: true,
+    rpcHandlers,
+    rpcErrors,
+    rpcResults: {
+      join_family: {
+        family_id: FAMILY_A_ID,
+        family_code: "123456",
+        revision,
+        payload,
+      },
+    },
+    tableResults: {
+      family_members: {
+        data: { family_id: FAMILY_A_ID, role: "family", families: { code: "123456" } },
+        error: null,
+      },
+      ...tableResults,
+    },
+  });
+  const created = createStore(fake, statuses, { newFamily });
+  await created.store.attach("123456", "family");
+  return { ...created, fake, statuses };
 }
 
 test("public configuration exposes only the project URL and publishable key", () => {
@@ -776,4 +855,608 @@ test("a selection storage failure does not discard newly created server state", 
   assert.strictEqual(store.get(), payload);
   assert.equal(store.role(), "family");
   assert.deepEqual([...values.entries()], []);
+});
+
+test("update notifies optimistically and reconciles the server acknowledgement", async () => {
+  const statuses = [];
+  const rpcStarted = deferred();
+  const rpcResult = deferred();
+  const initialPayload = familyState("123456", "zh", { rev: 4 });
+  const acceptedPayload = familyState("123456", "zh", {
+    rev: 5,
+    elder: { ...initialPayload.elder, name: "王奶奶", address: "服务端确认地址" },
+  });
+  const { fake, store } = await attachedStore({
+    payload: initialPayload,
+    revision: 4,
+    statuses,
+    rpcHandlers: {
+      replace_family_state: (parameters) => {
+        rpcStarted.resolve(parameters);
+        return rpcResult.promise;
+      },
+    },
+  });
+  const notifications = [];
+  store.subscribe((nextState) => notifications.push(nextState));
+  statuses.length = 0;
+
+  const updating = store.update((draft) => {
+    draft.elder.name = "王奶奶";
+  });
+
+  assert.equal(store.get().elder.name, "王奶奶");
+  assert.equal(notifications.length, 1);
+  assert.equal(notifications[0].elder.name, "王奶奶");
+  assert.deepEqual(statuses, [["saving"]]);
+
+  const parameters = await rpcStarted.promise;
+  assert.equal(fake.calls.rpc.at(-1).name, "replace_family_state");
+  assert.equal(parameters.target_family_id, FAMILY_A_ID);
+  assert.equal(parameters.expected_revision, 4);
+  assert.equal(parameters.next_payload.elder.name, "王奶奶");
+  rpcResult.resolve({
+    data: [
+      {
+        family_id: FAMILY_A_ID,
+        family_code: "123456",
+        revision: 5,
+        payload: acceptedPayload,
+      },
+    ],
+    error: null,
+  });
+
+  assert.strictEqual(await updating, acceptedPayload);
+  assert.strictEqual(store.get(), acceptedPayload);
+  assert.strictEqual(notifications.at(-1), acceptedPayload);
+  assert.deepEqual(statuses, [["saving"], ["synced"]]);
+});
+
+test("update serializes concurrent writes against confirmed revisions", async () => {
+  const firstRpc = deferred();
+  const secondRpc = deferred();
+  let writeNumber = 0;
+  const initialPayload = familyState("123456");
+  const firstAccepted = familyState("123456", "zh", {
+    rev: 1,
+    elder: { ...initialPayload.elder, name: "王奶奶" },
+  });
+  const secondAccepted = familyState("123456", "zh", {
+    rev: 2,
+    elder: { ...initialPayload.elder, name: "王奶奶", radius: "1200" },
+  });
+  const { fake, store } = await attachedStore({
+    payload: initialPayload,
+    rpcHandlers: {
+      replace_family_state: () => (++writeNumber === 1 ? firstRpc.promise : secondRpc.promise),
+    },
+  });
+
+  const firstUpdate = store.update((draft) => {
+    draft.elder.name = "王奶奶";
+  });
+  const secondUpdate = store.update((draft) => {
+    draft.elder.radius = "1200";
+  });
+  await Promise.resolve();
+
+  let writes = fake.calls.rpc.filter(({ name }) => name === "replace_family_state");
+  assert.equal(writes.length, 1);
+  assert.equal(writes[0].parameters.expected_revision, 0);
+  firstRpc.resolve({
+    data: [
+      {
+        family_id: FAMILY_A_ID,
+        family_code: "123456",
+        revision: 1,
+        payload: firstAccepted,
+      },
+    ],
+    error: null,
+  });
+  await firstUpdate;
+  await Promise.resolve();
+
+  writes = fake.calls.rpc.filter(({ name }) => name === "replace_family_state");
+  assert.equal(writes.length, 2);
+  assert.equal(writes[1].parameters.expected_revision, 1);
+  assert.equal(writes[1].parameters.next_payload.elder.name, "王奶奶");
+  assert.equal(writes[1].parameters.next_payload.elder.radius, "1200");
+  secondRpc.resolve({
+    data: [
+      {
+        family_id: FAMILY_A_ID,
+        family_code: "123456",
+        revision: 2,
+        payload: secondAccepted,
+      },
+    ],
+    error: null,
+  });
+
+  assert.strictEqual(await secondUpdate, secondAccepted);
+  assert.strictEqual(store.get(), secondAccepted);
+});
+
+test("Realtime ignores stale revisions and accepts a newer family state", async () => {
+  const statuses = [];
+  const initialPayload = familyState("123456", "zh", { rev: 3 });
+  const { fake, store } = await attachedStore({
+    payload: initialPayload,
+    revision: 3,
+    statuses,
+  });
+  const notifications = [];
+  store.subscribe((nextState) => notifications.push(nextState));
+
+  assert.equal(fake.channels.length, 1);
+  assert.equal(fake.channels[0].binding.type, "postgres_changes");
+  assert.equal(fake.channels[0].binding.filter.event, "UPDATE");
+  assert.equal(fake.channels[0].binding.filter.schema, "public");
+  assert.equal(fake.channels[0].binding.filter.table, "family_states");
+  assert.equal(fake.channels[0].binding.filter.filter, `family_id=eq.${FAMILY_A_ID}`);
+
+  fake.channels[0].emitChange({
+    family_id: FAMILY_A_ID,
+    revision: 3,
+    payload: familyState("123456", "zh", {
+      rev: 3,
+      elder: { ...initialPayload.elder, name: "过期名字" },
+    }),
+  });
+  assert.strictEqual(store.get(), initialPayload);
+  assert.equal(notifications.length, 0);
+
+  const newerPayload = familyState("123456", "zh", {
+    rev: 4,
+    elder: { ...initialPayload.elder, name: "李奶奶" },
+  });
+  fake.channels[0].emitChange({
+    family_id: FAMILY_A_ID,
+    revision: 4,
+    payload: newerPayload,
+  });
+
+  assert.strictEqual(store.get(), newerPayload);
+  assert.strictEqual(notifications.at(-1), newerPayload);
+  assert.deepEqual(statuses.at(-1), ["synced"]);
+});
+
+test("restore establishes the scoped Realtime subscription", async () => {
+  const payload = familyState("123456", "zh", { rev: 2 });
+  const storage = new Map([
+    ["alz:family-id", FAMILY_A_ID],
+    ["alz:code", "123456"],
+    ["alz:role", "elder"],
+  ]);
+  const fake = fakeSupabase({
+    userId: "restore-realtime",
+    existingSession: true,
+    tableResults: {
+      family_members: {
+        data: { family_id: FAMILY_A_ID, role: "elder", families: { code: "123456" } },
+        error: null,
+      },
+      family_states: {
+        data: { family_id: FAMILY_A_ID, revision: 2, payload },
+        error: null,
+      },
+    },
+  });
+  const { store } = createStore(fake, [], { storage });
+
+  await store.restoreSelection();
+
+  assert.equal(fake.channels.length, 1);
+  assert.equal(fake.channels[0].binding.filter.filter, `family_id=eq.${FAMILY_A_ID}`);
+});
+
+test("Realtime channel cleanup prevents an old family event from replacing a newer attachment", async () => {
+  const firstPayload = familyState("123456", "zh", { rev: 1 });
+  const secondPayload = familyState("654321", "zh", { rev: 7 });
+  const fake = fakeSupabase({
+    userId: "family-switch",
+    existingSession: true,
+    rpcHandlers: {
+      join_family: ({ family_code }) => ({
+        data: {
+          family_id: family_code === "123456" ? FAMILY_A_ID : FAMILY_B_ID,
+          family_code,
+          revision: family_code === "123456" ? 1 : 7,
+          payload: family_code === "123456" ? firstPayload : secondPayload,
+        },
+        error: null,
+      }),
+    },
+    tableResults: {
+      family_members: ({ filters }) => {
+        const selectedId = filters.find(([column]) => column === "family_id")[1];
+        const code = selectedId === FAMILY_A_ID ? "123456" : "654321";
+        return {
+          data: { family_id: selectedId, role: "family", families: { code } },
+          error: null,
+        };
+      },
+    },
+  });
+  const { store } = createStore(fake);
+
+  await store.attach("123456", "family");
+  const oldChannel = fake.channels[0];
+  await store.attach("654321", "family");
+
+  assert.equal(fake.calls.removeChannel.length, 1);
+  assert.strictEqual(fake.calls.removeChannel[0], oldChannel);
+  assert.equal(fake.channels.length, 2);
+  oldChannel.emitChange({
+    family_id: FAMILY_A_ID,
+    revision: 99,
+    payload: familyState("123456", "zh", { rev: 99 }),
+  });
+  assert.strictEqual(store.get(), secondPayload);
+});
+
+test("update retries one revision conflict against a fresh server state", async () => {
+  const initialPayload = familyState("123456", "zh", { rev: 2 });
+  const freshPayload = familyState("123456", "zh", {
+    rev: 3,
+    elder: { ...initialPayload.elder, address: "另一台设备更新的地址" },
+  });
+  const acceptedPayload = familyState("123456", "zh", {
+    rev: 4,
+    elder: { ...freshPayload.elder, name: "王奶奶" },
+  });
+  let attempts = 0;
+  const { fake, store } = await attachedStore({
+    payload: initialPayload,
+    revision: 2,
+    rpcHandlers: {
+      replace_family_state: ({ expected_revision, next_payload }) => {
+        attempts += 1;
+        if (attempts === 1) {
+          return {
+            data: null,
+            error: { code: "40001", message: "REVISION_CONFLICT" },
+          };
+        }
+        assert.equal(expected_revision, 3);
+        assert.equal(next_payload.elder.name, "王奶奶");
+        assert.equal(next_payload.elder.address, "另一台设备更新的地址");
+        return {
+          data: [
+            {
+              family_id: FAMILY_A_ID,
+              family_code: "123456",
+              revision: 4,
+              payload: acceptedPayload,
+            },
+          ],
+          error: null,
+        };
+      },
+    },
+    tableResults: {
+      family_states: {
+        data: { family_id: FAMILY_A_ID, revision: 3, payload: freshPayload },
+        error: null,
+      },
+    },
+  });
+
+  const result = await store.update((draft) => {
+    draft.elder.name = "王奶奶";
+  });
+
+  assert.strictEqual(result, acceptedPayload);
+  assert.strictEqual(store.get(), acceptedPayload);
+  assert.equal(attempts, 2);
+  assert.deepEqual(
+    fake.calls.from.map(({ table }) => table),
+    ["family_members", "family_states"],
+  );
+});
+
+test("a queued update preserves server fields learned during an earlier conflict rebase", async () => {
+  const initialPayload = familyState("123456", "zh", { rev: 2 });
+  const freshPayload = familyState("123456", "zh", {
+    rev: 3,
+    elder: { ...initialPayload.elder, address: "另一台设备更新的地址" },
+  });
+  const firstAccepted = familyState("123456", "zh", {
+    rev: 4,
+    elder: { ...freshPayload.elder, name: "王奶奶" },
+  });
+  const finalAccepted = familyState("123456", "zh", {
+    rev: 5,
+    elder: { ...firstAccepted.elder, radius: "1200" },
+  });
+  let attempt = 0;
+  let finalWrite = null;
+  const { store } = await attachedStore({
+    payload: initialPayload,
+    revision: 2,
+    rpcHandlers: {
+      replace_family_state: (parameters) => {
+        attempt += 1;
+        if (attempt === 1) {
+          return {
+            data: null,
+            error: { code: "40001", message: "REVISION_CONFLICT" },
+          };
+        }
+        if (attempt === 2) {
+          return {
+            data: [
+              {
+                family_id: FAMILY_A_ID,
+                family_code: "123456",
+                revision: 4,
+                payload: firstAccepted,
+              },
+            ],
+            error: null,
+          };
+        }
+        finalWrite = parameters;
+        return {
+          data: [
+            {
+              family_id: FAMILY_A_ID,
+              family_code: "123456",
+              revision: 5,
+              payload: finalAccepted,
+            },
+          ],
+          error: null,
+        };
+      },
+    },
+    tableResults: {
+      family_states: {
+        data: { family_id: FAMILY_A_ID, revision: 3, payload: freshPayload },
+        error: null,
+      },
+    },
+  });
+
+  const firstUpdate = store.update((draft) => {
+    draft.elder.name = "王奶奶";
+  });
+  const secondUpdate = store.update((draft) => {
+    draft.elder.radius = "1200";
+  });
+  await Promise.all([firstUpdate, secondUpdate]);
+
+  assert.equal(finalWrite.expected_revision, 4);
+  assert.equal(finalWrite.next_payload.elder.name, "王奶奶");
+  assert.equal(finalWrite.next_payload.elder.radius, "1200");
+  assert.equal(finalWrite.next_payload.elder.address, "另一台设备更新的地址");
+  assert.strictEqual(store.get(), finalAccepted);
+});
+
+test("update rolls back to the fresh server state after a repeated revision conflict", async () => {
+  const statuses = [];
+  const initialPayload = familyState("123456", "zh", { rev: 8 });
+  const freshPayload = familyState("123456", "zh", {
+    rev: 9,
+    elder: { ...initialPayload.elder, address: "服务器上的最新地址" },
+  });
+  let attempts = 0;
+  const { store } = await attachedStore({
+    payload: initialPayload,
+    revision: 8,
+    statuses,
+    rpcHandlers: {
+      replace_family_state: () => {
+        attempts += 1;
+        return {
+          data: null,
+          error: { code: "40001", message: "REVISION_CONFLICT" },
+        };
+      },
+    },
+    tableResults: {
+      family_states: {
+        data: { family_id: FAMILY_A_ID, revision: 9, payload: freshPayload },
+        error: null,
+      },
+    },
+  });
+  const notifications = [];
+  store.subscribe((nextState) => notifications.push(nextState));
+  statuses.length = 0;
+
+  await assert.rejects(
+    store.update((draft) => {
+      draft.elder.name = "王奶奶";
+    }),
+    { code: "REVISION_CONFLICT" },
+  );
+
+  assert.equal(attempts, 2);
+  assert.strictEqual(store.get(), freshPayload);
+  assert.strictEqual(notifications.at(-1), freshPayload);
+  assert.equal(
+    statuses.some(([status]) => status === "synced"),
+    false,
+  );
+  assert.deepEqual(statuses.at(-1), ["error", "Unable to connect to your family right now."]);
+});
+
+test("update preserves optimistic input while reporting offline and backend errors", async (t) => {
+  await t.test("offline network failure", async () => {
+    const statuses = [];
+    const { store } = await attachedStore({
+      statuses,
+      rpcHandlers: {
+        replace_family_state: () => {
+          throw new TypeError("Failed to fetch");
+        },
+      },
+    });
+    statuses.length = 0;
+
+    await assert.rejects(
+      store.update((draft) => {
+        draft.elder.name = "仍然可见";
+      }),
+      { code: "BACKEND_ERROR" },
+    );
+
+    assert.equal(store.get().elder.name, "仍然可见");
+    assert.equal(
+      statuses.some(([status]) => status === "synced"),
+      false,
+    );
+    assert.deepEqual(statuses.at(-1), ["offline", "Unable to connect to your family right now."]);
+  });
+
+  await t.test("server write failure", async () => {
+    const statuses = [];
+    const { store } = await attachedStore({
+      statuses,
+      rpcHandlers: {
+        replace_family_state: () => ({
+          data: null,
+          error: { code: "42501", message: "private database detail" },
+        }),
+      },
+    });
+    statuses.length = 0;
+
+    await assert.rejects(
+      store.update((draft) => {
+        draft.elder.name = "仍然可见";
+      }),
+      { code: "BACKEND_ERROR" },
+    );
+
+    assert.equal(store.get().elder.name, "仍然可见");
+    assert.deepEqual(statuses.at(-1), ["error", "Unable to connect to your family right now."]);
+  });
+});
+
+test("Realtime disconnection reports offline without discarding family state", async () => {
+  const statuses = [];
+  const payload = familyState("123456");
+  const { fake, store } = await attachedStore({ payload, statuses });
+  statuses.length = 0;
+
+  fake.channels[0].emitStatus("CHANNEL_ERROR", new Error("socket closed"));
+
+  assert.strictEqual(store.get(), payload);
+  assert.deepEqual(statuses, [["offline", "Unable to connect to your family right now."]]);
+});
+
+test("an old update acknowledgement cannot overwrite a newer family attachment", async () => {
+  const updateStarted = deferred();
+  const updateResult = deferred();
+  const firstPayload = familyState("123456");
+  const secondPayload = familyState("654321", "zh", { rev: 5 });
+  const fake = fakeSupabase({
+    userId: "update-family-switch",
+    existingSession: true,
+    rpcHandlers: {
+      join_family: ({ family_code }) => ({
+        data: {
+          family_id: family_code === "123456" ? FAMILY_A_ID : FAMILY_B_ID,
+          family_code,
+          revision: family_code === "123456" ? 0 : 5,
+          payload: family_code === "123456" ? firstPayload : secondPayload,
+        },
+        error: null,
+      }),
+      replace_family_state: (parameters) => {
+        updateStarted.resolve(parameters);
+        return updateResult.promise;
+      },
+    },
+    tableResults: {
+      family_members: ({ filters }) => {
+        const selectedId = filters.find(([column]) => column === "family_id")[1];
+        const code = selectedId === FAMILY_A_ID ? "123456" : "654321";
+        return {
+          data: { family_id: selectedId, role: "family", families: { code } },
+          error: null,
+        };
+      },
+    },
+  });
+  const { store } = createStore(fake);
+  await store.attach("123456", "family");
+
+  const oldUpdate = store.update((draft) => {
+    draft.elder.name = "王奶奶";
+  });
+  await updateStarted.promise;
+  await store.attach("654321", "family");
+  updateResult.resolve({
+    data: [
+      {
+        family_id: FAMILY_A_ID,
+        family_code: "123456",
+        revision: 1,
+        payload: familyState("123456", "zh", { rev: 1 }),
+      },
+    ],
+    error: null,
+  });
+
+  await oldUpdate;
+  assert.strictEqual(store.get(), secondPayload);
+});
+
+test("resetFamily uses update with a fresh canonical payload and retains the family code", async () => {
+  const initialPayload = familyState("123456", "zh", {
+    rev: 6,
+    people: [{ id: "person-1", name: "小王" }],
+  });
+  let resetArguments = null;
+  const { fake, store } = await attachedStore({
+    payload: initialPayload,
+    revision: 6,
+    newFamily: (code, lang) => {
+      resetArguments = { code, lang };
+      return familyState(code, lang);
+    },
+    rpcHandlers: {
+      replace_family_state: ({ next_payload }) => ({
+        data: [
+          {
+            family_id: FAMILY_A_ID,
+            family_code: "123456",
+            revision: 7,
+            payload: { ...next_payload, rev: 7 },
+          },
+        ],
+        error: null,
+      }),
+    },
+  });
+
+  await store.resetFamily();
+
+  assert.deepEqual(resetArguments, { code: "123456", lang: "zh" });
+  assert.equal(store.get().code, "123456");
+  assert.deepEqual(store.get().people, []);
+  assert.equal(fake.calls.rpc.at(-1).name, "replace_family_state");
+});
+
+test("signOut cleans up the Realtime channel and cached family selection", async () => {
+  const { fake, storage, store } = await attachedStore();
+  const oldChannel = fake.channels[0];
+
+  await store.signOut();
+
+  assert.equal(store.get(), null);
+  assert.equal(store.role(), null);
+  assert.equal(storage.size, 0);
+  assert.strictEqual(fake.calls.removeChannel.at(-1), oldChannel);
+  oldChannel.emitChange({
+    family_id: FAMILY_A_ID,
+    revision: 99,
+    payload: familyState("123456", "zh", { rev: 99 }),
+  });
+  assert.equal(store.get(), null);
 });

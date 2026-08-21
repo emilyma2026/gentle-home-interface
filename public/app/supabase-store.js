@@ -74,18 +74,22 @@
   function createSupabaseStore({ client, newFamily, onStatus, storage }) {
     let user = null;
     let state = null;
-    let confirmedState = null;
-    let familyId = null;
-    let revision = -1;
+    let activeSelection = null;
     let selectedRole = null;
-    let channel = null;
     let initialization = null;
     let mutationGeneration = 0;
     let activeMutations = 0;
-    let writeQueue = Promise.resolve();
-    let optimisticWrite = 0;
-    let pendingWrites = 0;
+    let nextSelectionId = 0;
+    let nextOperationId = 0;
     const subscribers = [];
+
+    function reportStatus(...status) {
+      try {
+        onStatus(...status);
+      } catch (_error) {
+        // Status observers cannot change persistence or lifecycle outcomes.
+      }
+    }
 
     function readSelection(key) {
       if (!storage) return null;
@@ -130,31 +134,56 @@
 
     function clearSelection() {
       clearCachedSelection();
-      removeRealtimeChannel();
-      familyId = null;
-      revision = -1;
+      const previousSelection = activeSelection;
+      activeSelection = null;
       state = null;
-      confirmedState = null;
       selectedRole = null;
+      removeRealtimeChannel(previousSelection);
     }
 
     function emit() {
-      subscribers.forEach((subscriber) => subscriber(state));
+      [...subscribers].forEach((subscriber) => {
+        try {
+          subscriber(state);
+        } catch (_error) {
+          // Rendering observers cannot abort state reconciliation or persistence.
+        }
+      });
     }
 
-    function adopt(row, role) {
-      familyId = row.family_id;
-      revision = Number(row.revision);
-      state = row.payload;
-      confirmedState = row.payload;
-      selectedRole = role;
-      cacheSelection(familyId, row.family_code, role);
-      emit();
+    function samePayload(first, second) {
+      if (first === second) return true;
+      try {
+        return JSON.stringify(first) === JSON.stringify(second);
+      } catch (_error) {
+        return false;
+      }
     }
 
-    function removeRealtimeChannel() {
-      const previousChannel = channel;
-      channel = null;
+    function createSelection(row, role) {
+      return {
+        id: ++nextSelectionId,
+        familyId: row.family_id,
+        code: row.family_code,
+        role,
+        confirmedRevision: Number(row.revision),
+        confirmedState: row.payload,
+        operations: [],
+        writeQueue: Promise.resolve(),
+        channel: null,
+        channelHealthy: false,
+        caughtUp: false,
+        catchUpGeneration: 0,
+      };
+    }
+
+    function removeRealtimeChannel(selection) {
+      if (!selection) return;
+      const previousChannel = selection.channel;
+      selection.channel = null;
+      selection.channelHealthy = false;
+      selection.caughtUp = false;
+      selection.catchUpGeneration += 1;
       if (!previousChannel) return;
 
       try {
@@ -169,60 +198,154 @@
       }
     }
 
-    function subscribeToFamily(selectedFamilyId, selectedCode, operation) {
-      removeRealtimeChannel();
+    function adopt(row, role) {
+      const previousSelection = activeSelection;
+      const nextSelection = createSelection(row, role);
+      activeSelection = nextSelection;
+      selectedRole = role;
+      state = row.payload;
+      cacheSelection(nextSelection.familyId, nextSelection.code, role);
+      emit();
+      removeRealtimeChannel(previousSelection);
+      return nextSelection;
+    }
 
+    function operationMatchesPayload(operation, row) {
+      if (!operation.sentPayload || operation.expectedRevision + 1 !== Number(row.revision)) {
+        return false;
+      }
+      const comparablePayload = structuredClone(operation.sentPayload);
+      comparablePayload.rev = Number(row.revision);
+      return samePayload(comparablePayload, row.payload);
+    }
+
+    function coverOperationsFromRealtime(selection, row) {
+      let coveredThrough = -1;
+      selection.operations.forEach((operation) => {
+        if (operationMatchesPayload(operation, row)) coveredThrough = operation.id;
+      });
+      if (coveredThrough < 0) return;
+      selection.operations.forEach((operation) => {
+        if (operation.id <= coveredThrough) operation.covered = true;
+      });
+    }
+
+    function reconcileConfirmed(selection, row) {
+      if (!isStateRow(row, selection.familyId, selection.code)) return false;
+      const nextRevision = Number(row.revision);
+      if (nextRevision <= selection.confirmedRevision) return false;
+
+      selection.confirmedRevision = nextRevision;
+      selection.confirmedState = row.payload;
+      coverOperationsFromRealtime(selection, row);
+      return true;
+    }
+
+    function hasUnsavedOperations(selection) {
+      return selection.operations.some((operation) => !operation.covered);
+    }
+
+    function projectSelection(selection, throughOperationId = Infinity) {
+      const operations = selection.operations.filter(
+        (operation) => operation.id <= throughOperationId && !operation.covered,
+      );
+      if (operations.length === 0) return selection.confirmedState;
+
+      const draft = structuredClone(selection.confirmedState);
+      operations.forEach((operation) => operation.mutator(draft));
+      return draft;
+    }
+
+    function publishSelection(selection) {
+      if (selection !== activeSelection) return;
+      let projectedState;
       try {
-        const nextChannel = client.channel(`family-state:${selectedFamilyId}`);
+        projectedState = projectSelection(selection);
+      } catch (_error) {
+        reportStatus("error", BACKEND_MESSAGE);
+        return;
+      }
+      if (samePayload(state, projectedState)) return;
+      state = projectedState;
+      emit();
+    }
+
+    function maybeReportSynced(selection) {
+      if (
+        selection === activeSelection &&
+        selection.channelHealthy &&
+        selection.caughtUp &&
+        !hasUnsavedOperations(selection)
+      ) {
+        reportStatus("synced");
+      }
+    }
+
+    async function catchUpSelection(selection, realtimeChannel) {
+      if (selection !== activeSelection || selection.channel !== realtimeChannel) return;
+      selection.channelHealthy = true;
+      selection.caughtUp = false;
+      const catchUpOperation = ++selection.catchUpGeneration;
+      reportStatus(hasUnsavedOperations(selection) ? "saving" : "loading");
+
+      const latest = await readFamilyState(selection.familyId, selection.code);
+      if (
+        selection !== activeSelection ||
+        selection.channel !== realtimeChannel ||
+        catchUpOperation !== selection.catchUpGeneration
+      ) {
+        return;
+      }
+      if (!latest.row) {
+        reportStatus(latest.offline ? "offline" : "error", BACKEND_MESSAGE);
+        return;
+      }
+
+      reconcileConfirmed(selection, latest.row);
+      selection.caughtUp = true;
+      publishSelection(selection);
+      maybeReportSynced(selection);
+    }
+
+    function subscribeToFamily(selection) {
+      try {
+        const nextChannel = client.channel(`family-state:${selection.familyId}`);
         nextChannel.on(
           "postgres_changes",
           {
             event: "UPDATE",
             schema: "public",
             table: "family_states",
-            filter: `family_id=eq.${selectedFamilyId}`,
+            filter: `family_id=eq.${selection.familyId}`,
           },
           (event) => {
-            if (
-              operation !== mutationGeneration ||
-              selectedFamilyId !== familyId ||
-              channel !== nextChannel
-            ) {
-              return;
-            }
-
+            if (selection !== activeSelection || selection.channel !== nextChannel) return;
             const row = event && event.new;
-            if (!isStateRow(row, selectedFamilyId, selectedCode)) return;
-            const nextRevision = Number(row.revision);
-            if (nextRevision <= revision) return;
-
-            revision = nextRevision;
-            state = row.payload;
-            confirmedState = row.payload;
-            emit();
-            if (pendingWrites === 0) onStatus("synced");
+            if (!reconcileConfirmed(selection, row)) return;
+            publishSelection(selection);
+            maybeReportSynced(selection);
           },
         );
-        channel = nextChannel;
+        selection.channel = nextChannel;
         nextChannel.subscribe((status) => {
-          if (
-            operation !== mutationGeneration ||
-            selectedFamilyId !== familyId ||
-            channel !== nextChannel
-          ) {
-            return;
-          }
+          if (selection !== activeSelection || selection.channel !== nextChannel) return;
+          if (status === "SUBSCRIBED") return catchUpSelection(selection, nextChannel);
           if (status === "CHANNEL_ERROR" || status === "TIMED_OUT" || status === "CLOSED") {
-            onStatus("offline", BACKEND_MESSAGE);
+            selection.channelHealthy = false;
+            selection.caughtUp = false;
+            selection.catchUpGeneration += 1;
+            reportStatus("offline", BACKEND_MESSAGE);
           }
         });
       } catch (_error) {
-        onStatus("offline", BACKEND_MESSAGE);
+        selection.channelHealthy = false;
+        selection.caughtUp = false;
+        reportStatus("offline", BACKEND_MESSAGE);
       }
     }
 
-    function startRealtime(row, operation) {
-      subscribeToFamily(row.family_id, row.family_code, operation);
+    function startRealtime(selection) {
+      subscribeToFamily(selection);
     }
 
     async function readMembership(selectedFamilyId, selectedCode) {
@@ -264,7 +387,7 @@
     }
 
     async function initializeSession() {
-      onStatus("connecting");
+      reportStatus("connecting");
 
       try {
         const sessionResult = await client.auth.getSession();
@@ -280,10 +403,10 @@
 
         if (!user) throw new Error("Anonymous authentication did not return a user.");
 
-        onStatus("synced");
+        reportStatus("synced");
         return user;
       } catch (error) {
-        onStatus("error", errorMessage(error));
+        reportStatus("error", errorMessage(error));
         initialization = null;
         throw error;
       }
@@ -295,7 +418,7 @@
       try {
         await initialize();
         if (operation !== mutationGeneration) return null;
-        onStatus("loading");
+        reportStatus("loading");
 
         let result;
         try {
@@ -311,13 +434,12 @@
         const row = singleRow(result.data);
         if (result.error || !isRpcRow(row)) {
           const error = backendError();
-          onStatus("error", error.message);
+          reportStatus("error", error.message);
           throw error;
         }
 
-        adopt(row, "family");
-        onStatus("synced");
-        startRealtime(row, operation);
+        const selection = adopt(row, "family");
+        startRealtime(selection);
         return row.family_code;
       } finally {
         activeMutations -= 1;
@@ -336,7 +458,7 @@
       try {
         await initialize();
         if (operation !== mutationGeneration) return state;
-        onStatus("loading");
+        reportStatus("loading");
 
         let result;
         try {
@@ -351,19 +473,19 @@
 
         if (result.error) {
           const error = backendError();
-          onStatus("error", error.message);
+          reportStatus("error", error.message);
           throw error;
         }
 
         const row = singleRow(result.data);
         if (!row) {
           const error = lifecycleError("FAMILY_NOT_FOUND", "Family not found.");
-          onStatus("error", error.message);
+          reportStatus("error", error.message);
           throw error;
         }
         if (!isRpcRow(row)) {
           const error = backendError();
-          onStatus("error", error.message);
+          reportStatus("error", error.message);
           throw error;
         }
 
@@ -376,13 +498,12 @@
         );
         if (!valid) {
           const error = backendError();
-          onStatus("error", error.message);
+          reportStatus("error", error.message);
           throw error;
         }
 
-        adopt(row, membership.role);
-        onStatus("synced");
-        startRealtime(row, operation);
+        const selection = adopt(row, membership.role);
+        startRealtime(selection);
         return state;
       } finally {
         activeMutations -= 1;
@@ -403,21 +524,21 @@
 
       await initialize();
       if (operation !== mutationGeneration) return state;
-      onStatus("loading");
+      reportStatus("loading");
 
       const membershipResult = await readMembership(cachedFamilyId, cachedCode);
       if (operation !== mutationGeneration) return state;
 
       if (membershipResult.error) {
         const error = backendError();
-        onStatus("error", error.message);
+        reportStatus("error", error.message);
         throw error;
       }
 
       const { membership, valid } = validMembership(membershipResult, cachedFamilyId, cachedCode);
       if (!valid || membership.role !== cachedRole) {
         clearSelection();
-        onStatus("synced");
+        reportStatus("synced");
         return null;
       }
 
@@ -437,22 +558,21 @@
       const restoredRow = row && { ...row, family_code: cachedCode };
       if (stateResult.error || !isRpcRow(restoredRow)) {
         const error = backendError();
-        onStatus("error", error.message);
+        reportStatus("error", error.message);
         throw error;
       }
 
-      adopt(restoredRow, cachedRole);
-      onStatus("synced");
-      startRealtime(restoredRow, operation);
+      const selection = adopt(restoredRow, cachedRole);
+      startRealtime(selection);
       return state;
     }
 
-    async function callReplace(targetFamilyId, expectedRevision, nextPayload) {
+    async function callReplace(selection, expectedRevision, nextPayload) {
       try {
         return {
           offline: false,
           result: await client.rpc("replace_family_state", {
-            target_family_id: targetFamilyId,
+            target_family_id: selection.familyId,
             expected_revision: expectedRevision,
             next_payload: nextPayload,
           }),
@@ -481,186 +601,180 @@
       return { offline: false, row };
     }
 
-    function reportWriteFailure(operation, status, error) {
-      if (operation === mutationGeneration) onStatus(status, error.message);
+    function reportWriteFailure(selection, status, error) {
+      if (selection === activeSelection) reportStatus(status, error.message);
       return error;
     }
 
-    function acceptWrite(row, targetFamilyId, operation, writeNumber, expectedRevision) {
-      if (
-        !isRpcRow(row) ||
-        row.family_id !== targetFamilyId ||
-        Number(row.revision) <= expectedRevision
-      ) {
-        throw backendError();
-      }
+    function acceptedWriteRow(row, selection, expectedRevision) {
+      return Boolean(
+        isRpcRow(row) &&
+        row.family_id === selection.familyId &&
+        Number(row.revision) > expectedRevision,
+      );
+    }
 
-      if (operation === mutationGeneration && targetFamilyId === familyId) {
-        const acceptedRevision = Number(row.revision);
-        if (acceptedRevision >= revision) {
-          revision = acceptedRevision;
-          confirmedState = row.payload;
-          if (writeNumber === optimisticWrite) {
-            state = row.payload;
-            emit();
-          }
-        }
+    function settleThrough(selection, operation) {
+      selection.operations = selection.operations.filter(
+        (candidate) => candidate.id > operation.id,
+      );
+    }
+
+    function prepareAttempt(selection, operation) {
+      let nextPayload;
+      if (selection.confirmedRevision === operation.baseRevision) {
+        nextPayload = operation.optimisticDraft;
+      } else {
+        nextPayload = projectSelection(selection, operation.id);
       }
+      operation.state = "writing";
+      operation.expectedRevision = selection.confirmedRevision;
+      operation.sentPayload = nextPayload;
+      return { expectedRevision: operation.expectedRevision, nextPayload };
+    }
+
+    function acceptWrite(selection, operation, row, expectedRevision) {
+      if (!acceptedWriteRow(row, selection, expectedRevision)) throw backendError();
+      reconcileConfirmed(selection, row);
+      settleThrough(selection, operation);
+      publishSelection(selection);
+      maybeReportSynced(selection);
       return row.payload;
     }
 
-    async function persistUpdate({
-      draft,
-      mutator,
-      operation,
-      selectedCode,
-      startingRevision,
-      targetFamilyId,
-      writeNumber,
-    }) {
-      const expectedRevision =
-        operation === mutationGeneration && targetFamilyId === familyId
-          ? revision
-          : startingRevision;
-      let nextPayload = draft;
-      if (
-        operation === mutationGeneration &&
-        targetFamilyId === familyId &&
-        confirmedState &&
-        expectedRevision !== startingRevision
-      ) {
-        nextPayload = structuredClone(confirmedState);
-        mutator(nextPayload);
+    function acceptRealtimeCoveredWrite(selection, operation) {
+      settleThrough(selection, operation);
+      publishSelection(selection);
+      maybeReportSynced(selection);
+      return selection.confirmedState;
+    }
+
+    function leaveOperationUnsaved(selection, operation, status, error) {
+      operation.state = "unsaved";
+      publishSelection(selection);
+      throw reportWriteFailure(selection, status, error);
+    }
+
+    async function recoverAfterRetryFailure(selection, operation, retry) {
+      const recovery = await readFamilyState(selection.familyId, selection.code);
+      if (recovery.row) reconcileConfirmed(selection, recovery.row);
+
+      settleThrough(selection, operation);
+      publishSelection(selection);
+      const retryError = isRevisionConflict(retry.result.error)
+        ? revisionConflictError()
+        : backendError();
+      const status = retry.offline || recovery.offline ? "offline" : "error";
+      throw reportWriteFailure(selection, status, retryError);
+    }
+
+    async function persistUpdate(selection, operation) {
+      let firstPayload;
+      try {
+        firstPayload = prepareAttempt(selection, operation);
+      } catch (_error) {
+        return leaveOperationUnsaved(selection, operation, "error", backendError());
       }
-      const firstAttempt = await callReplace(targetFamilyId, expectedRevision, nextPayload);
+
+      const firstAttempt = await callReplace(
+        selection,
+        firstPayload.expectedRevision,
+        firstPayload.nextPayload,
+      );
+      if (operation.covered) return acceptRealtimeCoveredWrite(selection, operation);
 
       if (!firstAttempt.result.error) {
-        try {
-          return acceptWrite(
-            singleRow(firstAttempt.result.data),
-            targetFamilyId,
-            operation,
-            writeNumber,
-            expectedRevision,
-          );
-        } catch (_error) {
-          throw reportWriteFailure(operation, "error", backendError());
+        const row = singleRow(firstAttempt.result.data);
+        if (acceptedWriteRow(row, selection, firstPayload.expectedRevision)) {
+          return acceptWrite(selection, operation, row, firstPayload.expectedRevision);
         }
+        return leaveOperationUnsaved(selection, operation, "error", backendError());
       }
 
       if (!isRevisionConflict(firstAttempt.result.error)) {
-        throw reportWriteFailure(
+        return leaveOperationUnsaved(
+          selection,
           operation,
           firstAttempt.offline ? "offline" : "error",
           backendError(),
         );
       }
 
-      const freshResult = await readFamilyState(targetFamilyId, selectedCode);
-      if (!freshResult.row || Number(freshResult.row.revision) <= expectedRevision) {
-        throw reportWriteFailure(
+      const freshResult = await readFamilyState(selection.familyId, selection.code);
+      if (freshResult.row) reconcileConfirmed(selection, freshResult.row);
+      if (!freshResult.row || selection.confirmedRevision <= firstPayload.expectedRevision) {
+        return leaveOperationUnsaved(
+          selection,
           operation,
           freshResult.offline ? "offline" : "error",
           backendError(),
         );
       }
+      publishSelection(selection);
 
-      const freshRow = freshResult.row;
-      if (operation === mutationGeneration && targetFamilyId === familyId) {
-        revision = Number(freshRow.revision);
-        confirmedState = freshRow.payload;
+      let retryPayload;
+      try {
+        retryPayload = prepareAttempt(selection, operation);
+      } catch (_error) {
+        return leaveOperationUnsaved(selection, operation, "error", backendError());
       }
-      const rebasedDraft = structuredClone(freshRow.payload);
-      mutator(rebasedDraft);
-      const retry = await callReplace(targetFamilyId, Number(freshRow.revision), rebasedDraft);
+      const retry = await callReplace(
+        selection,
+        retryPayload.expectedRevision,
+        retryPayload.nextPayload,
+      );
+      if (operation.covered) return acceptRealtimeCoveredWrite(selection, operation);
 
       if (!retry.result.error) {
-        try {
-          return acceptWrite(
-            singleRow(retry.result.data),
-            targetFamilyId,
-            operation,
-            writeNumber,
-            Number(freshRow.revision),
-          );
-        } catch (_error) {
-          if (operation === mutationGeneration && targetFamilyId === familyId) {
-            revision = Number(freshRow.revision);
-            state = freshRow.payload;
-            confirmedState = freshRow.payload;
-            emit();
-          }
-          throw reportWriteFailure(operation, "error", backendError());
+        const row = singleRow(retry.result.data);
+        if (acceptedWriteRow(row, selection, retryPayload.expectedRevision)) {
+          return acceptWrite(selection, operation, row, retryPayload.expectedRevision);
         }
       }
 
-      if (operation === mutationGeneration && targetFamilyId === familyId) {
-        revision = Number(freshRow.revision);
-        state = freshRow.payload;
-        confirmedState = freshRow.payload;
-        emit();
-      }
-
-      const retryError = isRevisionConflict(retry.result.error)
-        ? revisionConflictError()
-        : backendError();
-      throw reportWriteFailure(operation, retry.offline ? "offline" : "error", retryError);
+      return recoverAfterRetryFailure(selection, operation, retry);
     }
 
     function update(mutator) {
-      if (!state || !familyId || typeof mutator !== "function") {
+      const selection = activeSelection;
+      if (!state || !selection || typeof mutator !== "function") {
         const error = backendError();
-        onStatus("error", error.message);
+        reportStatus("error", error.message);
         return Promise.reject(error);
       }
 
-      const operation = mutationGeneration;
-      const targetFamilyId = familyId;
-      const selectedCode = state.code;
-      const startingRevision = revision;
-      const draft = structuredClone(state);
-      mutator(draft);
-      const writeNumber = ++optimisticWrite;
+      let optimisticDraft;
+      try {
+        optimisticDraft = structuredClone(state);
+        mutator(optimisticDraft);
+      } catch (_error) {
+        const error = backendError();
+        reportStatus("error", error.message);
+        return Promise.reject(error);
+      }
 
-      state = draft;
-      pendingWrites += 1;
-      onStatus("saving");
+      const operation = {
+        id: ++nextOperationId,
+        mutator,
+        baseRevision: selection.confirmedRevision,
+        optimisticDraft,
+        covered: false,
+        state: "queued",
+        expectedRevision: -1,
+        sentPayload: null,
+      };
+      selection.operations.push(operation);
+      state = optimisticDraft;
+      reportStatus("saving");
       emit();
 
-      const persistence = writeQueue.then(() =>
-        persistUpdate({
-          draft,
-          mutator,
-          operation,
-          selectedCode,
-          startingRevision,
-          targetFamilyId,
-          writeNumber,
-        }),
-      );
-      writeQueue = persistence.catch(() => {});
-
-      return persistence.then(
-        (acceptedState) => {
-          pendingWrites -= 1;
-          if (
-            operation === mutationGeneration &&
-            targetFamilyId === familyId &&
-            pendingWrites === 0
-          ) {
-            onStatus("synced");
-          }
-          return acceptedState;
-        },
-        (error) => {
-          pendingWrites -= 1;
-          throw error;
-        },
-      );
+      const persistence = selection.writeQueue.then(() => persistUpdate(selection, operation));
+      selection.writeQueue = persistence.catch(() => {});
+      return persistence;
     }
 
     function resetFamily() {
-      if (!state || !familyId) return update(null);
+      if (!state || !activeSelection) return update(null);
       const freshState = newFamily(state.code, state.lang || "zh");
       return update((draft) => {
         Object.keys(draft).forEach((key) => delete draft[key]);
@@ -672,7 +786,7 @@
       mutationGeneration += 1;
       clearSelection();
       emit();
-      onStatus("synced");
+      reportStatus("synced");
     }
 
     return {
@@ -685,7 +799,13 @@
       signOut,
       get: () => state,
       role: () => selectedRole,
-      subscribe: (subscriber) => subscribers.push(subscriber),
+      subscribe: (subscriber) => {
+        subscribers.push(subscriber);
+        return () => {
+          const index = subscribers.indexOf(subscriber);
+          if (index >= 0) subscribers.splice(index, 1);
+        };
+      },
     };
   }
 

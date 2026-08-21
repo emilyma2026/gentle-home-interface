@@ -137,7 +137,7 @@ function createStore(client, statuses = [], options = {}) {
       if (options.newFamily) return options.newFamily(code, lang);
       throw new Error("Authentication must not create a local family.");
     },
-    onStatus: (...status) => statuses.push(status),
+    onStatus: options.onStatus ?? ((...status) => statuses.push(status)),
     storage,
   });
 
@@ -784,7 +784,7 @@ test("an empty-cache restore cannot invalidate an in-flight creation", async () 
   assert.equal(storage.get("alz:family-id"), FAMILY_A_ID);
   assert.equal(storage.get("alz:code"), "123456");
   assert.equal(storage.get("alz:role"), "family");
-  assert.deepEqual(statuses.at(-1), ["synced"]);
+  assert.deepEqual(statuses.at(-1), ["loading"]);
 });
 
 test("an empty-cache restore cannot invalidate an in-flight join", async () => {
@@ -821,7 +821,7 @@ test("an empty-cache restore cannot invalidate an in-flight join", async () => {
   assert.equal(storage.get("alz:family-id"), FAMILY_A_ID);
   assert.equal(storage.get("alz:code"), "123456");
   assert.equal(storage.get("alz:role"), "elder");
-  assert.deepEqual(statuses.at(-1), ["synced"]);
+  assert.deepEqual(statuses.at(-1), ["loading"]);
 });
 
 test("a selection storage failure does not discard newly created server state", async () => {
@@ -876,7 +876,14 @@ test("update notifies optimistically and reconciles the server acknowledgement",
         return rpcResult.promise;
       },
     },
+    tableResults: {
+      family_states: {
+        data: { family_id: FAMILY_A_ID, revision: 4, payload: initialPayload },
+        error: null,
+      },
+    },
   });
+  await fake.channels[0].emitStatus("SUBSCRIBED");
   const notifications = [];
   store.subscribe((nextState) => notifications.push(nextState));
   statuses.length = 0;
@@ -986,7 +993,14 @@ test("Realtime ignores stale revisions and accepts a newer family state", async 
     payload: initialPayload,
     revision: 3,
     statuses,
+    tableResults: {
+      family_states: {
+        data: { family_id: FAMILY_A_ID, revision: 3, payload: initialPayload },
+        error: null,
+      },
+    },
   });
+  await fake.channels[0].emitStatus("SUBSCRIBED");
   const notifications = [];
   store.subscribe((nextState) => notifications.push(nextState));
 
@@ -1459,4 +1473,572 @@ test("signOut cleans up the Realtime channel and cached family selection", async
     payload: familyState("123456", "zh", { rev: 99 }),
   });
   assert.equal(store.get(), null);
+});
+
+test("a failed update stays projected over later Realtime state until a later write saves it", async () => {
+  const statuses = [];
+  const initialPayload = familyState("123456");
+  const remotePayload = familyState("123456", "zh", {
+    rev: 1,
+    elder: { ...initialPayload.elder, address: "远端新地址" },
+  });
+  const acceptedPayload = familyState("123456", "zh", {
+    rev: 2,
+    elder: { ...remotePayload.elder, name: "未保存的本地姓名", radius: "1200" },
+  });
+  let writeAttempt = 0;
+  let laterWrite = null;
+  const { fake, store } = await attachedStore({
+    payload: initialPayload,
+    statuses,
+    rpcHandlers: {
+      replace_family_state: (parameters) => {
+        writeAttempt += 1;
+        if (writeAttempt === 1) {
+          return {
+            data: null,
+            error: { code: "503", message: "temporarily unavailable" },
+          };
+        }
+        laterWrite = parameters;
+        return {
+          data: [
+            {
+              family_id: FAMILY_A_ID,
+              family_code: "123456",
+              revision: 2,
+              payload: acceptedPayload,
+            },
+          ],
+          error: null,
+        };
+      },
+    },
+    tableResults: {
+      family_states: {
+        data: { family_id: FAMILY_A_ID, revision: 0, payload: initialPayload },
+        error: null,
+      },
+    },
+  });
+  await fake.channels[0].emitStatus("SUBSCRIBED");
+  statuses.length = 0;
+
+  await assert.rejects(
+    store.update((draft) => {
+      draft.elder.name = "未保存的本地姓名";
+    }),
+    { code: "BACKEND_ERROR" },
+  );
+  fake.channels[0].emitChange({
+    family_id: FAMILY_A_ID,
+    revision: 1,
+    payload: remotePayload,
+  });
+
+  assert.equal(store.get().elder.name, "未保存的本地姓名");
+  assert.equal(store.get().elder.address, "远端新地址");
+  assert.equal(statuses.at(-1)[0], "error");
+  assert.equal(
+    statuses.some(([status]) => status === "synced"),
+    false,
+  );
+
+  await store.update((draft) => {
+    draft.elder.radius = "1200";
+  });
+
+  assert.equal(laterWrite.expected_revision, 1);
+  assert.equal(laterWrite.next_payload.elder.name, "未保存的本地姓名");
+  assert.equal(laterWrite.next_payload.elder.address, "远端新地址");
+  assert.equal(laterWrite.next_payload.elder.radius, "1200");
+  assert.strictEqual(store.get(), acceptedPayload);
+  assert.equal(statuses.at(-1)[0], "synced");
+});
+
+test("a self Realtime event does not replay an in-flight mutator or duplicate its acknowledgement", async () => {
+  const rpcStarted = deferred();
+  const rpcResult = deferred();
+  const acceptedPayload = familyState("123456", "zh", {
+    rev: 1,
+    askCounts: { reminder: 1 },
+  });
+  const { fake, store } = await attachedStore({
+    rpcHandlers: {
+      replace_family_state: (parameters) => {
+        rpcStarted.resolve(parameters);
+        return rpcResult.promise;
+      },
+    },
+  });
+  const notifications = [];
+  store.subscribe((nextState) => notifications.push(nextState));
+
+  const updating = store.update((draft) => {
+    draft.askCounts.reminder = (draft.askCounts.reminder || 0) + 1;
+  });
+  await rpcStarted.promise;
+  fake.channels[0].emitChange({
+    family_id: FAMILY_A_ID,
+    revision: 1,
+    payload: acceptedPayload,
+  });
+
+  assert.equal(store.get().askCounts.reminder, 1);
+  assert.equal(notifications.length, 2);
+  rpcResult.resolve({
+    data: [
+      {
+        family_id: FAMILY_A_ID,
+        family_code: "123456",
+        revision: 1,
+        payload: acceptedPayload,
+      },
+    ],
+    error: null,
+  });
+  await updating;
+
+  assert.equal(store.get().askCounts.reminder, 1);
+  assert.equal(notifications.length, 2);
+});
+
+test("a repeated conflict fetches the newest state after Realtime advances during retry", async () => {
+  const retryStarted = deferred();
+  const retryResult = deferred();
+  const initialPayload = familyState("123456", "zh", { rev: 8 });
+  const firstFreshPayload = familyState("123456", "zh", { rev: 9 });
+  const realtimePayload = familyState("123456", "zh", {
+    rev: 10,
+    elder: { ...initialPayload.elder, address: "Realtime 地址" },
+  });
+  const newestPayload = familyState("123456", "zh", {
+    rev: 11,
+    elder: { ...initialPayload.elder, address: "恢复查询最新地址" },
+  });
+  let writeAttempt = 0;
+  let stateRead = 0;
+  const { fake, store } = await attachedStore({
+    payload: initialPayload,
+    revision: 8,
+    rpcHandlers: {
+      replace_family_state: () => {
+        writeAttempt += 1;
+        if (writeAttempt === 1) {
+          return { data: null, error: { code: "40001", message: "REVISION_CONFLICT" } };
+        }
+        retryStarted.resolve();
+        return retryResult.promise;
+      },
+    },
+    tableResults: {
+      family_states: () => {
+        stateRead += 1;
+        return stateRead === 1
+          ? {
+              data: { family_id: FAMILY_A_ID, revision: 9, payload: firstFreshPayload },
+              error: null,
+            }
+          : {
+              data: { family_id: FAMILY_A_ID, revision: 11, payload: newestPayload },
+              error: null,
+            };
+      },
+    },
+  });
+
+  const updating = store.update((draft) => {
+    draft.elder.name = "王奶奶";
+  });
+  await retryStarted.promise;
+  fake.channels[0].emitChange({
+    family_id: FAMILY_A_ID,
+    revision: 10,
+    payload: realtimePayload,
+  });
+  retryResult.resolve({
+    data: null,
+    error: { code: "40001", message: "REVISION_CONFLICT" },
+  });
+
+  await assert.rejects(updating, { code: "REVISION_CONFLICT" });
+  assert.equal(stateRead, 2);
+  assert.strictEqual(store.get(), newestPayload);
+  assert.equal(store.get().rev, 11);
+});
+
+test("a failed repeated-conflict recovery never regresses newer Realtime state", async () => {
+  const statuses = [];
+  const retryStarted = deferred();
+  const retryResult = deferred();
+  const initialPayload = familyState("123456", "zh", { rev: 8 });
+  const firstFreshPayload = familyState("123456", "zh", { rev: 9 });
+  const realtimePayload = familyState("123456", "zh", {
+    rev: 10,
+    elder: { ...initialPayload.elder, address: "Realtime 地址" },
+  });
+  let writeAttempt = 0;
+  let stateRead = 0;
+  const { fake, store } = await attachedStore({
+    payload: initialPayload,
+    revision: 8,
+    statuses,
+    rpcHandlers: {
+      replace_family_state: () => {
+        writeAttempt += 1;
+        if (writeAttempt === 1) {
+          return { data: null, error: { code: "40001", message: "REVISION_CONFLICT" } };
+        }
+        retryStarted.resolve();
+        return retryResult.promise;
+      },
+    },
+    tableResults: {
+      family_states: () => {
+        stateRead += 1;
+        if (stateRead === 1) {
+          return {
+            data: { family_id: FAMILY_A_ID, revision: 9, payload: firstFreshPayload },
+            error: null,
+          };
+        }
+        throw new TypeError("Failed to fetch");
+      },
+    },
+  });
+  statuses.length = 0;
+
+  const updating = store.update((draft) => {
+    draft.elder.name = "王奶奶";
+  });
+  await retryStarted.promise;
+  fake.channels[0].emitChange({
+    family_id: FAMILY_A_ID,
+    revision: 10,
+    payload: realtimePayload,
+  });
+  retryResult.resolve({
+    data: null,
+    error: { code: "40001", message: "REVISION_CONFLICT" },
+  });
+
+  await assert.rejects(updating, { code: "REVISION_CONFLICT" });
+  assert.equal(stateRead, 2);
+  assert.strictEqual(store.get(), realtimePayload);
+  assert.equal(store.get().rev, 10);
+  assert.equal(statuses.at(-1)[0], "offline");
+});
+
+test("every Realtime SUBSCRIBED status catches up missed family state before syncing", async () => {
+  const statuses = [];
+  const initialPayload = familyState("123456", "zh", { rev: 1 });
+  const missedPayload = familyState("123456", "zh", {
+    rev: 2,
+    elder: { ...initialPayload.elder, name: "断线期间的新名字" },
+  });
+  let stateRead = 0;
+  const { fake, store } = await attachedStore({
+    payload: initialPayload,
+    revision: 1,
+    statuses,
+    tableResults: {
+      family_states: () => {
+        stateRead += 1;
+        return {
+          data: {
+            family_id: FAMILY_A_ID,
+            revision: stateRead === 1 ? 1 : 2,
+            payload: stateRead === 1 ? initialPayload : missedPayload,
+          },
+          error: null,
+        };
+      },
+    },
+  });
+  statuses.length = 0;
+
+  await fake.channels[0].emitStatus("SUBSCRIBED");
+  assert.equal(stateRead, 1);
+  assert.equal(statuses.at(-1)[0], "synced");
+  fake.channels[0].emitStatus("CHANNEL_ERROR", new Error("socket closed"));
+  assert.equal(statuses.at(-1)[0], "offline");
+
+  await fake.channels[0].emitStatus("SUBSCRIBED");
+
+  assert.equal(stateRead, 2);
+  assert.strictEqual(store.get(), missedPayload);
+  assert.equal(statuses.at(-1)[0], "synced");
+});
+
+test("a failed family switch leaves the previous selection and Realtime channel active", async () => {
+  const firstPayload = familyState("123456");
+  const remotePayload = familyState("123456", "zh", {
+    rev: 1,
+    elder: { ...firstPayload.elder, name: "旧家庭仍在更新" },
+  });
+  const fake = fakeSupabase({
+    userId: "failed-switch",
+    existingSession: true,
+    rpcHandlers: {
+      join_family: ({ family_code }) =>
+        family_code === "123456"
+          ? {
+              data: {
+                family_id: FAMILY_A_ID,
+                family_code,
+                revision: 0,
+                payload: firstPayload,
+              },
+              error: null,
+            }
+          : { data: null, error: { code: "503", message: "join failed" } },
+    },
+    tableResults: {
+      family_members: {
+        data: { family_id: FAMILY_A_ID, role: "family", families: { code: "123456" } },
+        error: null,
+      },
+    },
+  });
+  const { store } = createStore(fake);
+  await store.attach("123456", "family");
+  const oldChannel = fake.channels[0];
+
+  await assert.rejects(store.attach("654321", "family"), { code: "BACKEND_ERROR" });
+  oldChannel.emitChange({
+    family_id: FAMILY_A_ID,
+    revision: 1,
+    payload: remotePayload,
+  });
+
+  assert.strictEqual(store.get(), remotePayload);
+  assert.equal(fake.calls.removeChannel.length, 0);
+});
+
+test("a hung write for one family does not block writes after selecting another family", async () => {
+  const firstWriteStarted = deferred();
+  const firstWriteResult = deferred();
+  const firstPayload = familyState("123456");
+  const secondPayload = familyState("654321", "zh", { rev: 5 });
+  const firstAccepted = familyState("123456", "zh", { rev: 1 });
+  const secondAccepted = familyState("654321", "zh", {
+    rev: 6,
+    elder: { ...secondPayload.elder, name: "第二个家庭的更新" },
+  });
+  let secondWriteStarted = false;
+  const fake = fakeSupabase({
+    userId: "partitioned-writes",
+    existingSession: true,
+    rpcHandlers: {
+      join_family: ({ family_code }) => ({
+        data: {
+          family_id: family_code === "123456" ? FAMILY_A_ID : FAMILY_B_ID,
+          family_code,
+          revision: family_code === "123456" ? 0 : 5,
+          payload: family_code === "123456" ? firstPayload : secondPayload,
+        },
+        error: null,
+      }),
+      replace_family_state: ({ target_family_id }) => {
+        if (target_family_id === FAMILY_A_ID) {
+          firstWriteStarted.resolve();
+          return firstWriteResult.promise;
+        }
+        secondWriteStarted = true;
+        return {
+          data: [
+            {
+              family_id: FAMILY_B_ID,
+              family_code: "654321",
+              revision: 6,
+              payload: secondAccepted,
+            },
+          ],
+          error: null,
+        };
+      },
+    },
+    tableResults: {
+      family_members: ({ filters }) => {
+        const selectedId = filters.find(([column]) => column === "family_id")[1];
+        const code = selectedId === FAMILY_A_ID ? "123456" : "654321";
+        return {
+          data: { family_id: selectedId, role: "family", families: { code } },
+          error: null,
+        };
+      },
+    },
+  });
+  const { store } = createStore(fake);
+  await store.attach("123456", "family");
+  const firstUpdate = store.update((draft) => {
+    draft.elder.name = "第一个家庭的更新";
+  });
+  await firstWriteStarted.promise;
+  await store.attach("654321", "family");
+  const secondUpdate = store.update((draft) => {
+    draft.elder.name = "第二个家庭的更新";
+  });
+  await Promise.resolve();
+  await Promise.resolve();
+  const startedBeforeFirstSettled = secondWriteStarted;
+
+  firstWriteResult.resolve({
+    data: [
+      {
+        family_id: FAMILY_A_ID,
+        family_code: "123456",
+        revision: 1,
+        payload: firstAccepted,
+      },
+    ],
+    error: null,
+  });
+  await Promise.allSettled([firstUpdate, secondUpdate]);
+
+  assert.equal(startedBeforeFirstSettled, true);
+  assert.strictEqual(store.get(), secondAccepted);
+});
+
+test("subscriber exceptions do not abort optimistic notification or persistence", async () => {
+  const acceptedPayload = familyState("123456", "zh", {
+    rev: 1,
+    elder: { ...familyState("123456").elder, name: "王奶奶" },
+  });
+  const { fake, store } = await attachedStore({
+    rpcHandlers: {
+      replace_family_state: () => ({
+        data: [
+          {
+            family_id: FAMILY_A_ID,
+            family_code: "123456",
+            revision: 1,
+            payload: acceptedPayload,
+          },
+        ],
+        error: null,
+      }),
+    },
+  });
+  let observedName = null;
+  store.subscribe(() => {
+    throw new Error("observer failed");
+  });
+  store.subscribe((nextState) => {
+    observedName = nextState.elder.name;
+  });
+
+  await store.update((draft) => {
+    draft.elder.name = "王奶奶";
+  });
+
+  assert.equal(observedName, "王奶奶");
+  assert.equal(fake.calls.rpc.filter(({ name }) => name === "replace_family_state").length, 1);
+});
+
+test("status callback exceptions do not abort authentication, attachment, or persistence", async () => {
+  const payload = familyState("123456");
+  const acceptedPayload = familyState("123456", "zh", {
+    rev: 1,
+    elder: { ...payload.elder, name: "王奶奶" },
+  });
+  const fake = fakeSupabase({
+    userId: "throwing-status",
+    existingSession: true,
+    rpcResults: {
+      join_family: {
+        family_id: FAMILY_A_ID,
+        family_code: "123456",
+        revision: 0,
+        payload,
+      },
+      replace_family_state: [
+        {
+          family_id: FAMILY_A_ID,
+          family_code: "123456",
+          revision: 1,
+          payload: acceptedPayload,
+        },
+      ],
+    },
+    tableResults: {
+      family_members: {
+        data: { family_id: FAMILY_A_ID, role: "family", families: { code: "123456" } },
+        error: null,
+      },
+    },
+  });
+  const { store } = createStore(fake, [], {
+    onStatus: () => {
+      throw new Error("status observer failed");
+    },
+  });
+
+  await store.attach("123456", "family");
+  await store.update((draft) => {
+    draft.elder.name = "王奶奶";
+  });
+
+  assert.strictEqual(store.get(), acceptedPayload);
+});
+
+test("mutator exceptions reject asynchronously without changing state or poisoning later writes", async () => {
+  const statuses = [];
+  const initialPayload = familyState("123456");
+  const acceptedPayload = familyState("123456", "zh", {
+    rev: 1,
+    elder: { ...initialPayload.elder, name: "后续更新" },
+  });
+  const { fake, store } = await attachedStore({
+    payload: initialPayload,
+    statuses,
+    rpcHandlers: {
+      replace_family_state: () => ({
+        data: [
+          {
+            family_id: FAMILY_A_ID,
+            family_code: "123456",
+            revision: 1,
+            payload: acceptedPayload,
+          },
+        ],
+        error: null,
+      }),
+    },
+  });
+  statuses.length = 0;
+  let rejectedUpdate;
+
+  assert.doesNotThrow(() => {
+    rejectedUpdate = store.update(() => {
+      throw new Error("mutator exploded");
+    });
+  });
+  await assert.rejects(rejectedUpdate, { code: "BACKEND_ERROR" });
+
+  assert.strictEqual(store.get(), initialPayload);
+  assert.equal(statuses.at(-1)[0], "error");
+  await store.update((draft) => {
+    draft.elder.name = "后续更新";
+  });
+  assert.strictEqual(store.get(), acceptedPayload);
+  assert.equal(fake.calls.rpc.filter(({ name }) => name === "replace_family_state").length, 1);
+});
+
+test("subscribe returns an unsubscribe function that stops later notifications", async () => {
+  const { fake, store } = await attachedStore();
+  let notifications = 0;
+  const unsubscribe = store.subscribe(() => {
+    notifications += 1;
+  });
+
+  assert.equal(typeof unsubscribe, "function");
+  unsubscribe();
+  fake.channels[0].emitChange({
+    family_id: FAMILY_A_ID,
+    revision: 1,
+    payload: familyState("123456", "zh", { rev: 1 }),
+  });
+
+  assert.equal(notifications, 0);
 });

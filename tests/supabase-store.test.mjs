@@ -2160,3 +2160,107 @@ test("an operation whose mutator fails during conflict replay cannot poison a la
   assert.equal(laterWrite.next_payload.elder.radius, "1200");
   assert.strictEqual(store.get(), acceptedPayload);
 });
+
+test("a queued operation quarantined during replay stays unsaved until rejection and never writes", async () => {
+  const statuses = [];
+  const retryStarted = deferred();
+  const retryResult = deferred();
+  const initialPayload = familyState("123456");
+  const freshPayload = familyState("123456", "zh", {
+    rev: 1,
+    elder: { ...initialPayload.elder, address: "冲突后的服务器地址" },
+  });
+  const acceptedPayload = familyState("123456", "zh", {
+    rev: 2,
+    elder: { ...freshPayload.elder, name: "第一项已保存" },
+  });
+  let writeAttempt = 0;
+  let stateRead = 0;
+  const { fake, store } = await attachedStore({
+    payload: initialPayload,
+    statuses,
+    rpcHandlers: {
+      replace_family_state: () => {
+        writeAttempt += 1;
+        if (writeAttempt === 1) {
+          return { data: null, error: { code: "40001", message: "REVISION_CONFLICT" } };
+        }
+        if (writeAttempt === 2) {
+          retryStarted.resolve();
+          return retryResult.promise;
+        }
+        return { data: null, error: { code: "UNEXPECTED_WRITE" } };
+      },
+    },
+    tableResults: {
+      family_states: () => {
+        stateRead += 1;
+        return {
+          data: {
+            family_id: FAMILY_A_ID,
+            revision: stateRead === 1 ? 0 : 1,
+            payload: stateRead === 1 ? initialPayload : freshPayload,
+          },
+          error: null,
+        };
+      },
+    },
+  });
+  await fake.channels[0].emitStatus("SUBSCRIBED");
+  statuses.length = 0;
+
+  const firstUpdate = store.update((draft) => {
+    draft.elder.name = "第一项已保存";
+  });
+  let secondSettlementStatusCount = -1;
+  const secondUpdate = store
+    .update((draft) => {
+      if (draft.elder.address === "冲突后的服务器地址") {
+        throw new Error("cannot replay queued operation");
+      }
+      draft.elder.radius = "1200";
+    })
+    .then(
+      (value) => {
+        secondSettlementStatusCount = statuses.length;
+        return { value };
+      },
+      (error) => {
+        secondSettlementStatusCount = statuses.length;
+        return { error };
+      },
+    );
+
+  await retryStarted.promise;
+  assert.equal(writeAttempt, 2);
+  assert.equal(
+    statuses.some(([status]) => status === "synced"),
+    false,
+  );
+  retryResult.resolve({
+    data: [
+      {
+        family_id: FAMILY_A_ID,
+        family_code: "123456",
+        revision: 2,
+        payload: acceptedPayload,
+      },
+    ],
+    error: null,
+  });
+
+  assert.strictEqual(await firstUpdate, acceptedPayload);
+  const secondOutcome = await secondUpdate;
+
+  assert.equal(secondOutcome.error.code, "BACKEND_ERROR");
+  assert.deepEqual(
+    {
+      syncedBeforeSettlement: statuses
+        .slice(0, secondSettlementStatusCount)
+        .some(([status]) => status === "synced"),
+      writeAttempt,
+    },
+    { syncedBeforeSettlement: false, writeAttempt: 2 },
+  );
+  assert.strictEqual(store.get(), acceptedPayload);
+});

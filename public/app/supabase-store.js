@@ -258,12 +258,13 @@
     }
 
     function hasUnsavedOperations(selection) {
-      return selection.operations.some((operation) => !operation.covered);
+      return selection.operations.some((operation) => operation.quarantined || !operation.covered);
     }
 
     function projectSelection(selection, throughOperationId = Infinity) {
       const operations = selection.operations.filter(
-        (operation) => operation.id <= throughOperationId && !operation.covered,
+        (operation) =>
+          operation.id <= throughOperationId && !operation.covered && !operation.quarantined,
       );
       if (operations.length === 0) return selection.confirmedState;
 
@@ -293,9 +294,6 @@
             return;
           }
           error.operation.quarantined = true;
-          selection.operations = selection.operations.filter(
-            (operation) => operation !== error.operation,
-          );
           reportStatus("error", BACKEND_MESSAGE);
         }
       }
@@ -640,6 +638,18 @@
       return error;
     }
 
+    function rejectIfQuarantined(selection, operation) {
+      if (operation.quarantined) {
+        throw reportWriteFailure(selection, "error", backendError());
+      }
+    }
+
+    function settleQuarantinedOperation(selection, operation) {
+      if (!operation.quarantined) return;
+      selection.operations = selection.operations.filter((candidate) => candidate !== operation);
+      publishSelection(selection);
+    }
+
     function acceptedWriteRow(row, selection, expectedRevision) {
       return Boolean(
         isRpcRow(row) &&
@@ -703,6 +713,8 @@
     }
 
     async function persistUpdate(selection, operation) {
+      rejectIfQuarantined(selection, operation);
+
       let firstPayload;
       try {
         firstPayload = prepareAttempt(selection, operation);
@@ -710,14 +722,13 @@
         return leaveOperationUnsaved(selection, operation, "error", backendError());
       }
 
+      rejectIfQuarantined(selection, operation);
       const firstAttempt = await callReplace(
         selection,
         firstPayload.expectedRevision,
         firstPayload.nextPayload,
       );
-      if (operation.quarantined) {
-        throw reportWriteFailure(selection, "error", backendError());
-      }
+      rejectIfQuarantined(selection, operation);
       if (operation.covered) return acceptRealtimeCoveredWrite(selection, operation);
 
       if (!firstAttempt.result.error) {
@@ -748,9 +759,7 @@
         );
       }
       publishSelection(selection);
-      if (operation.quarantined) {
-        throw reportWriteFailure(selection, "error", backendError());
-      }
+      rejectIfQuarantined(selection, operation);
 
       let retryPayload;
       try {
@@ -758,14 +767,13 @@
       } catch (_error) {
         return leaveOperationUnsaved(selection, operation, "error", backendError());
       }
+      rejectIfQuarantined(selection, operation);
       const retry = await callReplace(
         selection,
         retryPayload.expectedRevision,
         retryPayload.nextPayload,
       );
-      if (operation.quarantined) {
-        throw reportWriteFailure(selection, "error", backendError());
-      }
+      rejectIfQuarantined(selection, operation);
       if (operation.covered) return acceptRealtimeCoveredWrite(selection, operation);
 
       if (!retry.result.error) {
@@ -812,8 +820,11 @@
       emit();
 
       const persistence = selection.writeQueue.then(() => persistUpdate(selection, operation));
-      selection.writeQueue = persistence.catch(() => {});
-      return persistence;
+      const settlement = persistence.finally(() => {
+        settleQuarantinedOperation(selection, operation);
+      });
+      selection.writeQueue = settlement.catch(() => {});
+      return settlement;
     }
 
     function resetFamily() {

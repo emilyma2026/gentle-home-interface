@@ -153,11 +153,27 @@
 
     function samePayload(first, second) {
       if (first === second) return true;
-      try {
-        return JSON.stringify(first) === JSON.stringify(second);
-      } catch (_error) {
-        return false;
+      if (first === null || second === null) return false;
+      if (typeof first !== "object" || typeof second !== "object") return false;
+      if (Array.isArray(first) || Array.isArray(second)) {
+        return Boolean(
+          Array.isArray(first) &&
+          Array.isArray(second) &&
+          first.length === second.length &&
+          first.every((value, index) => samePayload(value, second[index])),
+        );
       }
+
+      const firstKeys = Object.keys(first);
+      const secondKeys = Object.keys(second);
+      return Boolean(
+        firstKeys.length === secondKeys.length &&
+        firstKeys.every(
+          (key) =>
+            Object.prototype.hasOwnProperty.call(second, key) &&
+            samePayload(first[key], second[key]),
+        ),
+      );
     }
 
     function createSelection(row, role) {
@@ -252,18 +268,36 @@
       if (operations.length === 0) return selection.confirmedState;
 
       const draft = structuredClone(selection.confirmedState);
-      operations.forEach((operation) => operation.mutator(draft));
+      operations.forEach((operation) => {
+        try {
+          operation.mutator(draft);
+        } catch (cause) {
+          const error = new Error("Unable to replay a local family-state operation.");
+          error.operation = operation;
+          error.cause = cause;
+          throw error;
+        }
+      });
       return draft;
     }
 
     function publishSelection(selection) {
       if (selection !== activeSelection) return;
-      let projectedState;
-      try {
-        projectedState = projectSelection(selection);
-      } catch (_error) {
-        reportStatus("error", BACKEND_MESSAGE);
-        return;
+      let projectedState = null;
+      while (!projectedState) {
+        try {
+          projectedState = projectSelection(selection);
+        } catch (error) {
+          if (!error.operation) {
+            reportStatus("error", BACKEND_MESSAGE);
+            return;
+          }
+          error.operation.quarantined = true;
+          selection.operations = selection.operations.filter(
+            (operation) => operation !== error.operation,
+          );
+          reportStatus("error", BACKEND_MESSAGE);
+        }
       }
       if (samePayload(state, projectedState)) return;
       state = projectedState;
@@ -681,6 +715,9 @@
         firstPayload.expectedRevision,
         firstPayload.nextPayload,
       );
+      if (operation.quarantined) {
+        throw reportWriteFailure(selection, "error", backendError());
+      }
       if (operation.covered) return acceptRealtimeCoveredWrite(selection, operation);
 
       if (!firstAttempt.result.error) {
@@ -711,6 +748,9 @@
         );
       }
       publishSelection(selection);
+      if (operation.quarantined) {
+        throw reportWriteFailure(selection, "error", backendError());
+      }
 
       let retryPayload;
       try {
@@ -723,6 +763,9 @@
         retryPayload.expectedRevision,
         retryPayload.nextPayload,
       );
+      if (operation.quarantined) {
+        throw reportWriteFailure(selection, "error", backendError());
+      }
       if (operation.covered) return acceptRealtimeCoveredWrite(selection, operation);
 
       if (!retry.result.error) {

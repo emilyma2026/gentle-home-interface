@@ -166,6 +166,16 @@ function familyState(code, lang = "zh", overrides = {}) {
   };
 }
 
+function recursivelyReverseObjectKeys(value) {
+  if (Array.isArray(value)) return value.map(recursivelyReverseObjectKeys);
+  if (!value || typeof value !== "object") return value;
+  return Object.fromEntries(
+    Object.entries(value)
+      .reverse()
+      .map(([key, nestedValue]) => [key, recursivelyReverseObjectKeys(nestedValue)]),
+  );
+}
+
 function deferred() {
   let resolve;
   let reject;
@@ -2041,4 +2051,112 @@ test("subscribe returns an unsubscribe function that stops later notifications",
   });
 
   assert.equal(notifications, 0);
+});
+
+test("a recursively reordered self Realtime payload covers a committed write after transport failure", async () => {
+  const rpcStarted = deferred();
+  const rpcResult = deferred();
+  const acceptedPayload = familyState("123456", "zh", {
+    rev: 1,
+    askCounts: { reminder: 1 },
+  });
+  const reorderedPayload = recursivelyReverseObjectKeys(acceptedPayload);
+  const { fake, store } = await attachedStore({
+    rpcHandlers: {
+      replace_family_state: (parameters) => {
+        rpcStarted.resolve(parameters);
+        return rpcResult.promise;
+      },
+    },
+  });
+  const notifications = [];
+  store.subscribe((nextState) => notifications.push(nextState));
+
+  const updating = store.update((draft) => {
+    draft.askCounts.reminder = (draft.askCounts.reminder || 0) + 1;
+  });
+  await rpcStarted.promise;
+  fake.channels[0].emitChange({
+    family_id: FAMILY_A_ID,
+    revision: 1,
+    payload: reorderedPayload,
+  });
+  const countAfterRealtime = store.get().askCounts.reminder;
+  rpcResult.reject(new TypeError("transport response lost"));
+  const outcome = await updating.then(
+    (value) => ({ value }),
+    (error) => ({ error }),
+  );
+
+  assert.equal(countAfterRealtime, 1);
+  assert.equal(outcome.error, undefined);
+  assert.strictEqual(outcome.value, reorderedPayload);
+  assert.equal(store.get().askCounts.reminder, 1);
+  assert.equal(notifications.length, 2);
+  assert.equal(fake.calls.rpc.filter(({ name }) => name === "replace_family_state").length, 1);
+});
+
+test("an operation whose mutator fails during conflict replay cannot poison a later update", async () => {
+  const initialPayload = familyState("123456");
+  const freshPayload = familyState("123456", "zh", {
+    rev: 1,
+    elder: { ...initialPayload.elder, address: "冲突后的服务器地址" },
+  });
+  const acceptedPayload = familyState("123456", "zh", {
+    rev: 2,
+    elder: { ...freshPayload.elder, radius: "1200" },
+  });
+  let writeAttempt = 0;
+  let laterWrite = null;
+  const { store } = await attachedStore({
+    payload: initialPayload,
+    rpcHandlers: {
+      replace_family_state: (parameters) => {
+        writeAttempt += 1;
+        if (writeAttempt === 1) {
+          return { data: null, error: { code: "40001", message: "REVISION_CONFLICT" } };
+        }
+        laterWrite = parameters;
+        return {
+          data: [
+            {
+              family_id: FAMILY_A_ID,
+              family_code: "123456",
+              revision: 2,
+              payload: acceptedPayload,
+            },
+          ],
+          error: null,
+        };
+      },
+    },
+    tableResults: {
+      family_states: {
+        data: { family_id: FAMILY_A_ID, revision: 1, payload: freshPayload },
+        error: null,
+      },
+    },
+  });
+
+  await assert.rejects(
+    store.update((draft) => {
+      if (draft.elder.address === "冲突后的服务器地址") {
+        throw new Error("cannot replay on changed elder data");
+      }
+      draft.elder.name = "本地未提交姓名";
+    }),
+    { code: "BACKEND_ERROR" },
+  );
+
+  assert.strictEqual(store.get(), freshPayload);
+  await store.update((draft) => {
+    draft.elder.radius = "1200";
+  });
+
+  assert.equal(writeAttempt, 2);
+  assert.equal(laterWrite.expected_revision, 1);
+  assert.equal(laterWrite.next_payload.elder.name, "陈爷爷");
+  assert.equal(laterWrite.next_payload.elder.address, "冲突后的服务器地址");
+  assert.equal(laterWrite.next_payload.elder.radius, "1200");
+  assert.strictEqual(store.get(), acceptedPayload);
 });

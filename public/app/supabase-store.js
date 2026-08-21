@@ -9,9 +9,17 @@
     let familyId = null;
     let revision = -1;
     let channel = null;
+    let initialization = null;
     const subscribers = [];
 
-    async function initialize() {
+    function initialize() {
+      if (initialization) return initialization;
+
+      initialization = initializeSession();
+      return initialization;
+    }
+
+    async function initializeSession() {
       onStatus("connecting");
 
       try {
@@ -32,6 +40,7 @@
         return user;
       } catch (error) {
         onStatus("error", errorMessage(error));
+        initialization = null;
         throw error;
       }
     }

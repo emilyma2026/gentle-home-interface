@@ -1,24 +1,28 @@
-# Elder Bloom
+# 阿尔茨海默守护助手
 
-This project was built with [Lovable](https://lovable.dev).
+面向阿尔茨海默症家庭的双端陪伴界面。家人端用于维护老人信息与家庭设置，老人端通过六位家庭码配对后使用简化界面。
 
-**Live app**: https://gentle-home-interface.lovable.app
+当前项目尚未部署线上版本。
 
-## Build with Lovable
+## 项目仓库
 
-Continue developing this project in the [Lovable editor](https://lovable.dev/projects/39ef2597-ad37-4cd2-843e-acd5a0071308).
+[emilyma2026/gentle-home-interface](https://github.com/emilyma2026/gentle-home-interface)
 
-- **Ship faster**: describe what you want to build and Lovable handles the code.
-- **Stay in sync**: every change made in Lovable is committed straight to this repository.
-- **Full ownership**: this code is yours. Push to `main` on GitHub and your changes sync back into Lovable, ready for your next prompt.
+## 本地运行
 
-## Development
-
-Prefer working locally? You need Node.js and npm — [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating).
+请先安装 Node.js 和 npm，然后执行：
 
 ```sh
-git clone <this-repository-url>
-cd <repository-name>
-npm i
+git clone https://github.com/emilyma2026/gentle-home-interface.git
+cd gentle-home-interface
+npm install
 npm run dev
+```
+
+启动后，按照终端显示的本地地址在浏览器中打开项目。
+
+## 构建
+
+```sh
+npm run build
 ```

@@ -802,7 +802,12 @@ function reportStoreError(error){
   else if(Connection.state!=="offline") setConnectionStatus("error");
   return null;
 }
-function persistUpdate(mutator){ return Store.update(mutator).catch(reportStoreError); }
+function persistUpdate(mutator){
+  return Store.update(mutator).catch(function(error){
+    reportStoreError(error);
+    throw error;
+  });
+}
 async function runPendingAction(action){
   if(Connection.pendingAction) return null;
   Connection.pendingAction=true; syncActionAvailability();
@@ -1495,6 +1500,7 @@ async function pair(code){
       App.err="";
       var role=storeRole()||App.joinAs;
       if(role==="elder"){
+        await persistUpdate(function(s){ s.paired=true; });
         rememberDevice("elder",code,null);
         App.paired=true; App.route="elder"; render();
       } else {

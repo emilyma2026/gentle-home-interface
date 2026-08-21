@@ -15,6 +15,12 @@ const viewFamilyStartSource = appSource.slice(familyStart, familyEnd);
 const profileStart = appSource.indexOf("function viewObMe(){");
 const profileEnd = appSource.indexOf("function viewCode(){", profileStart);
 const viewProfileSource = appSource.slice(profileStart, profileEnd);
+const persistUpdateStart = appSource.indexOf("function persistUpdate(");
+const persistUpdateEnd = appSource.indexOf("async function runPendingAction", persistUpdateStart);
+const persistUpdateSource = appSource.slice(persistUpdateStart, persistUpdateEnd);
+const pairStart = appSource.indexOf("async function pair(code){");
+const pairEnd = appSource.indexOf("async function hardExit(){", pairStart);
+const pairSource = appSource.slice(pairStart, pairEnd);
 const i18nStart = appSource.indexOf("var I18N = {");
 const i18nEnd = appSource.indexOf("var Store=", i18nStart);
 const i18n = vm.runInNewContext(`${appSource.slice(i18nStart, i18nEnd)}\nI18N;`);
@@ -188,4 +194,60 @@ test("entry awaits asynchronous family lifecycle actions", () => {
   assert.match(appSource, /await Store\.attach\(code,/);
   assert.match(appSource, /await Store\.resetFamily\(\)/);
   assert.match(appSource, /await Store\.signOut\(\)/);
+});
+
+test("elder pairing persists the paired state before entering the elder screen", async () => {
+  const state = { paired: false, lang: "zh" };
+  const events = [];
+  const context = {
+    App: { joinAs: "elder", err: "old error", paired: false, route: "join" },
+    D: { joinErr: "not found" },
+    Store: {
+      async attach(code, role) {
+        events.push(`attach:${code}:${role}`);
+      },
+      get() {
+        return state;
+      },
+    },
+    St: null,
+    newPerson: () => assert.fail("elder pairing must not create a family member"),
+    persistUpdate: async (mutator) => {
+      events.push("update");
+      mutator(state);
+    },
+    rememberDevice: (role, code, memberId) => {
+      events.push(`remember:${role}:${code}:${memberId}`);
+    },
+    render: () => {},
+    reportStoreError: (error) => {
+      throw error;
+    },
+    runPendingAction: async (action) => action(),
+    storeRole: () => "elder",
+  };
+
+  await vm.runInNewContext(`${pairSource}\npair(" 123456 ");`, context);
+
+  assert.equal(state.paired, true);
+  assert.equal(context.App.paired, true);
+  assert.equal(context.App.route, "elder");
+  assert.deepEqual(events, ["attach:123456:elder", "update", "remember:elder:123456:null"]);
+});
+
+test("persistUpdate reports a failed write and keeps the returned promise rejected", async () => {
+  const failure = Object.assign(new Error("write failed"), { code: "BACKEND_ERROR" });
+  let reported = null;
+  const context = {
+    Store: { update: () => Promise.reject(failure) },
+    reportStoreError: (error) => {
+      reported = error;
+      return null;
+    },
+  };
+
+  const update = vm.runInNewContext(`${persistUpdateSource}\npersistUpdate(() => {});`, context);
+
+  await assert.rejects(update, (error) => error === failure);
+  assert.equal(reported, failure);
 });

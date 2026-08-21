@@ -1,10 +1,5 @@
 # Elder Bloom
 
-https://github.com/emilyma2026/alzheimer-elderly修改这个项目目前的layout：
-1. 修改成真实手机屏幕的size
-2. 设计风格要温暖
-3. 切换中英文的按钮应该在手机屏幕内，手机屏幕外不应该有任何组件
-
 This project was built with [Lovable](https://lovable.dev).
 
 **Live app**: https://gentle-home-interface.lovable.app

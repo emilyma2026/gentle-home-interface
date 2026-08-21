@@ -2264,3 +2264,68 @@ test("a queued operation quarantined during replay stays unsaved until rejection
   );
   assert.strictEqual(store.get(), acceptedPayload);
 });
+
+test("a valid queued update excludes a quarantined predecessor from its saved payload", async () => {
+  const initialPayload = familyState("123456", "zh", {
+    rev: 4,
+    elder: {
+      ...familyState("123456").elder,
+      address: "服务器当前地址",
+    },
+  });
+  const acceptedPayload = familyState("123456", "zh", {
+    rev: 5,
+    elder: {
+      ...initialPayload.elder,
+      radius: "1200",
+    },
+  });
+  let writeAttempt = 0;
+  let laterWrite = null;
+  const { store } = await attachedStore({
+    payload: initialPayload,
+    revision: 4,
+    rpcHandlers: {
+      replace_family_state: (parameters) => {
+        writeAttempt += 1;
+        if (writeAttempt === 1) {
+          return { data: null, error: { code: "BACKEND_ERROR", message: "write failed" } };
+        }
+        laterWrite = parameters;
+        return {
+          data: [
+            {
+              family_id: FAMILY_A_ID,
+              family_code: "123456",
+              revision: 5,
+              payload: acceptedPayload,
+            },
+          ],
+          error: null,
+        };
+      },
+    },
+  });
+  let predecessorApplication = 0;
+
+  const rejectedUpdate = store.update((draft) => {
+    predecessorApplication += 1;
+    if (predecessorApplication > 1) throw new Error("cannot replay failed predecessor");
+    draft.elder.name = "不得保存的姓名";
+  });
+  const validUpdate = store.update((draft) => {
+    draft.elder.radius = "1200";
+  });
+
+  await assert.rejects(rejectedUpdate, { code: "BACKEND_ERROR" });
+  assert.strictEqual(await validUpdate, acceptedPayload);
+
+  assert.equal(writeAttempt, 2);
+  assert.equal(laterWrite.expected_revision, 4);
+  assert.deepEqual(laterWrite.next_payload.elder, {
+    name: "陈爷爷",
+    address: "服务器当前地址",
+    radius: "1200",
+  });
+  assert.strictEqual(store.get(), acceptedPayload);
+});

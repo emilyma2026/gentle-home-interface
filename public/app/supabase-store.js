@@ -664,9 +664,28 @@
       );
     }
 
+    function optimisticDependencies(selection, operationId = Infinity) {
+      return selection.operations
+        .filter(
+          (candidate) => candidate.id < operationId && !candidate.covered && !candidate.quarantined,
+        )
+        .map((candidate) => candidate.id);
+    }
+
+    function hasValidOptimisticDraft(selection, operation) {
+      if (selection.confirmedRevision !== operation.baseRevision) return false;
+      const dependencies = optimisticDependencies(selection, operation.id);
+      return (
+        dependencies.length === operation.optimisticDependencies.length &&
+        dependencies.every(
+          (dependencyId, index) => dependencyId === operation.optimisticDependencies[index],
+        )
+      );
+    }
+
     function prepareAttempt(selection, operation) {
       let nextPayload;
-      if (selection.confirmedRevision === operation.baseRevision) {
+      if (hasValidOptimisticDraft(selection, operation)) {
         nextPayload = operation.optimisticDraft;
       } else {
         nextPayload = projectSelection(selection, operation.id);
@@ -809,6 +828,7 @@
         mutator,
         baseRevision: selection.confirmedRevision,
         optimisticDraft,
+        optimisticDependencies: optimisticDependencies(selection),
         covered: false,
         state: "queued",
         expectedRevision: -1,

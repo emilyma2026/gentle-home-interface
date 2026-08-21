@@ -5,6 +5,8 @@ import vm from "node:vm";
 
 const configPath = new URL("../public/app/supabase-config.js", import.meta.url);
 const storePath = new URL("../public/app/supabase-store.js", import.meta.url);
+const FAMILY_A_ID = "11111111-1111-4111-8111-111111111111";
+const FAMILY_B_ID = "22222222-2222-4222-8222-222222222222";
 
 function fakeSupabase({
   userId,
@@ -31,15 +33,17 @@ function fakeSupabase({
       async signInAnonymously() {
         calls.signInAnonymously += 1;
         const error = pendingAuthErrors.shift();
-        return error
-          ? { data: { user: null }, error }
-          : { data: { user }, error: null };
+        return error ? { data: { user: null }, error } : { data: { user }, error: null };
       },
     },
     async rpc(name, parameters) {
       calls.rpc.push({ name, parameters });
+      const configuredResult = rpcResults[name];
       return {
-        data: rpcResults[name] ?? null,
+        data:
+          typeof configuredResult === "function"
+            ? await configuredResult(parameters)
+            : (configuredResult ?? null),
         error: rpcErrors[name] ?? null,
       };
     },
@@ -57,10 +61,16 @@ function fakeSupabase({
           return builder;
         },
         async maybeSingle() {
-          return tableResults[table] ?? { data: null, error: null };
+          const configuredResult = tableResults[table];
+          return typeof configuredResult === "function"
+            ? configuredResult(query)
+            : (configuredResult ?? { data: null, error: null });
         },
         async single() {
-          return tableResults[table] ?? { data: null, error: null };
+          const configuredResult = tableResults[table];
+          return typeof configuredResult === "function"
+            ? configuredResult(query)
+            : (configuredResult ?? { data: null, error: null });
         },
       };
 
@@ -112,6 +122,16 @@ function familyState(code, lang = "zh", overrides = {}) {
   };
 }
 
+function deferred() {
+  let resolve;
+  let reject;
+  const promise = new Promise((resolvePromise, rejectPromise) => {
+    resolve = resolvePromise;
+    reject = rejectPromise;
+  });
+  return { promise, reject, resolve };
+}
+
 test("public configuration exposes only the project URL and publishable key", () => {
   const source = readFileSync(configPath, "utf8");
   const context = { window: {} };
@@ -155,10 +175,7 @@ test("initialize reports an authentication error and does not create local state
 
   await assert.rejects(store.initialize(), /Anonymous sign-in is unavailable/);
 
-  assert.deepEqual(statuses, [
-    ["connecting"],
-    ["error", "Anonymous sign-in is unavailable"],
-  ]);
+  assert.deepEqual(statuses, [["connecting"], ["error", "Anonymous sign-in is unavailable"]]);
   assert.equal(calls.newFamily, 0);
 });
 
@@ -175,10 +192,7 @@ test("initialize reports a session lookup error without attempting anonymous sig
 
   assert.equal(fake.calls.signInAnonymously, 0);
   assert.equal(calls.newFamily, 0);
-  assert.deepEqual(statuses, [
-    ["connecting"],
-    ["error", "Session lookup is unavailable"],
-  ]);
+  assert.deepEqual(statuses, [["connecting"], ["error", "Session lookup is unavailable"]]);
 });
 
 test("concurrent initialization shares one anonymous authentication request", async () => {
@@ -226,7 +240,7 @@ test("create caches the returned family selection and exposes server state", asy
     userId: "creator-a",
     existingSession: true,
     rpcResults: {
-      create_family: [{ family_id: "family-a", family_code: "123456", revision: 0, payload }],
+      create_family: [{ family_id: FAMILY_A_ID, family_code: "123456", revision: 0, payload }],
     },
   });
   const { calls, storage, store } = createStore(fake, [], {
@@ -239,11 +253,14 @@ test("create caches the returned family selection and exposes server state", asy
   assert.equal(fake.calls.rpc[0].parameters.requested_role, "family");
   assert.equal(fake.calls.rpc[0].parameters.initial_payload.code, "");
   assert.equal(fake.calls.rpc[0].parameters.initial_payload.lang, "zh");
-  assert.deepEqual([...storage.entries()], [
-    ["alz:family-id", "family-a"],
-    ["alz:code", "123456"],
-    ["alz:role", "family"],
-  ]);
+  assert.deepEqual(
+    [...storage.entries()],
+    [
+      ["alz:family-id", FAMILY_A_ID],
+      ["alz:code", "123456"],
+      ["alz:role", "family"],
+    ],
+  );
 });
 
 test("create notifies subscribers with the returned server state", async () => {
@@ -252,7 +269,7 @@ test("create notifies subscribers with the returned server state", async () => {
     userId: "creator-b",
     existingSession: true,
     rpcResults: {
-      create_family: [{ family_id: "family-b", family_code: "123456", revision: 0, payload }],
+      create_family: [{ family_id: FAMILY_B_ID, family_code: "123456", revision: 0, payload }],
     },
   });
   const { store } = createStore(fake, [], {
@@ -272,7 +289,13 @@ test("join caches the selected elder role and exposes the latest server state", 
     userId: "elder-a",
     existingSession: true,
     rpcResults: {
-      join_family: { family_id: "family-a", family_code: "123456", revision: 1, payload },
+      join_family: { family_id: FAMILY_A_ID, family_code: "123456", revision: 1, payload },
+    },
+    tableResults: {
+      family_members: {
+        data: { family_id: FAMILY_A_ID, role: "elder", families: { code: "123456" } },
+        error: null,
+      },
     },
   });
   const { storage, store } = createStore(fake);
@@ -284,11 +307,14 @@ test("join caches the selected elder role and exposes the latest server state", 
   assert.equal(fake.calls.rpc[0].name, "join_family");
   assert.equal(fake.calls.rpc[0].parameters.family_code, "123456");
   assert.equal(fake.calls.rpc[0].parameters.requested_role, "elder");
-  assert.deepEqual([...storage.entries()], [
-    ["alz:family-id", "family-a"],
-    ["alz:code", "123456"],
-    ["alz:role", "elder"],
-  ]);
+  assert.deepEqual(
+    [...storage.entries()],
+    [
+      ["alz:family-id", FAMILY_A_ID],
+      ["alz:code", "123456"],
+      ["alz:role", "elder"],
+    ],
+  );
 });
 
 test("join maps an empty RPC result to FAMILY_NOT_FOUND without exposing state", async () => {
@@ -324,7 +350,7 @@ test("join maps Supabase failures to a user-safe backend error", async () => {
 test("restore validates cached membership before exposing the latest state", async () => {
   const payload = familyState("123456", "zh", { rev: 4 });
   const storage = new Map([
-    ["alz:family-id", "family-a"],
+    ["alz:family-id", FAMILY_A_ID],
     ["alz:code", "123456"],
     ["alz:role", "elder"],
   ]);
@@ -333,11 +359,11 @@ test("restore validates cached membership before exposing the latest state", asy
     existingSession: true,
     tableResults: {
       family_members: {
-        data: { family_id: "family-a", role: "elder", families: { code: "123456" } },
+        data: { family_id: FAMILY_A_ID, role: "elder", families: { code: "123456" } },
         error: null,
       },
       family_states: {
-        data: { family_id: "family-a", revision: 4, payload },
+        data: { family_id: FAMILY_A_ID, revision: 4, payload },
         error: null,
       },
     },
@@ -347,12 +373,15 @@ test("restore validates cached membership before exposing the latest state", asy
   assert.strictEqual(await store.restoreSelection(), payload);
   assert.strictEqual(store.get(), payload);
   assert.equal(store.role(), "elder");
-  assert.deepEqual(fake.calls.from.map(({ table }) => table), ["family_members", "family_states"]);
+  assert.deepEqual(
+    fake.calls.from.map(({ table }) => table),
+    ["family_members", "family_states"],
+  );
 });
 
 test("restore clears an invalid cached selection without exposing family state", async () => {
   const storage = new Map([
-    ["alz:family-id", "family-a"],
+    ["alz:family-id", FAMILY_A_ID],
     ["alz:code", "123456"],
     ["alz:role", "elder"],
   ]);
@@ -362,7 +391,7 @@ test("restore clears an invalid cached selection without exposing family state",
     tableResults: {
       family_members: { data: null, error: null },
       family_states: {
-        data: { family_id: "family-a", revision: 4, payload: familyState("123456") },
+        data: { family_id: FAMILY_A_ID, revision: 4, payload: familyState("123456") },
         error: null,
       },
     },
@@ -373,5 +402,308 @@ test("restore clears an invalid cached selection without exposing family state",
   assert.equal(store.get(), null);
   assert.equal(store.role(), null);
   assert.equal(storage.size, 0);
-  assert.deepEqual(fake.calls.from.map(({ table }) => table), ["family_members"]);
+  assert.deepEqual(
+    fake.calls.from.map(({ table }) => table),
+    ["family_members"],
+  );
+});
+
+test("restore rejects malformed cached selection metadata before querying the backend", async (t) => {
+  const cases = [
+    ["family ID", "not-a-uuid", "123456", "elder"],
+    ["family code", FAMILY_A_ID, "１２３４５６", "elder"],
+    ["family role", FAMILY_A_ID, "123456", "owner"],
+  ];
+
+  for (const [label, familyId, code, role] of cases) {
+    await t.test(label, async () => {
+      const storage = new Map([
+        ["alz:family-id", familyId],
+        ["alz:code", code],
+        ["alz:role", role],
+      ]);
+      const fake = fakeSupabase({ userId: "elder-invalid", existingSession: true });
+      const { store } = createStore(fake, [], { storage });
+
+      assert.equal(await store.restoreSelection(), null);
+      assert.equal(storage.size, 0);
+      assert.deepEqual(fake.calls.from, []);
+    });
+  }
+});
+
+test("join trims a valid family code before calling the RPC", async () => {
+  const payload = familyState("123456", "zh", { paired: true, rev: 1 });
+  const fake = fakeSupabase({
+    userId: "elder-trimmed",
+    existingSession: true,
+    rpcResults: {
+      join_family: { family_id: FAMILY_A_ID, family_code: "123456", revision: 1, payload },
+    },
+    tableResults: {
+      family_members: {
+        data: { family_id: FAMILY_A_ID, role: "elder", families: { code: "123456" } },
+        error: null,
+      },
+    },
+  });
+  const { store } = createStore(fake);
+
+  await store.attach(" 123456 ", "elder");
+
+  assert.equal(fake.calls.rpc[0].parameters.family_code, "123456");
+});
+
+test("join rejects a malformed family code without calling the RPC", async () => {
+  const fake = fakeSupabase({ userId: "elder-bad-code", existingSession: true });
+  const { store } = createStore(fake);
+
+  await assert.rejects(store.attach("12 3456", "elder"), { code: "FAMILY_NOT_FOUND" });
+  assert.deepEqual(fake.calls.rpc, []);
+});
+
+test("join rejects a malformed role without calling the RPC", async () => {
+  const fake = fakeSupabase({ userId: "elder-bad-role", existingSession: true });
+  const { store } = createStore(fake);
+
+  await assert.rejects(store.attach("123456", "owner"), { code: "BACKEND_ERROR" });
+  assert.deepEqual(fake.calls.rpc, []);
+});
+
+test("join caches the authoritative role for a pre-existing membership", async () => {
+  const payload = familyState("123456");
+  const fake = fakeSupabase({
+    userId: "existing-family-member",
+    existingSession: true,
+    rpcResults: {
+      join_family: { family_id: FAMILY_A_ID, family_code: "123456", revision: 0, payload },
+    },
+    tableResults: {
+      family_members: {
+        data: { family_id: FAMILY_A_ID, role: "family", families: { code: "123456" } },
+        error: null,
+      },
+    },
+  });
+  const { storage, store } = createStore(fake);
+
+  await store.attach("123456", "elder");
+
+  assert.equal(store.role(), "family");
+  assert.equal(storage.get("alz:role"), "family");
+  assert.deepEqual(
+    fake.calls.from.map(({ table }) => table),
+    ["family_members"],
+  );
+});
+
+test("create rejects malformed RPC rows as backend errors", async (t) => {
+  const validRow = {
+    family_id: FAMILY_A_ID,
+    family_code: "123456",
+    revision: 0,
+    payload: familyState("123456"),
+  };
+  const cases = [
+    ["family ID", { ...validRow, family_id: "not-a-uuid" }],
+    ["family code", { ...validRow, family_code: "１２３４５６" }],
+    ["negative revision", { ...validRow, revision: -1 }],
+    ["fractional revision", { ...validRow, revision: 0.5 }],
+    ["array payload", { ...validRow, payload: [] }],
+    ["mismatched payload code", { ...validRow, payload: familyState("654321") }],
+  ];
+
+  for (const [label, row] of cases) {
+    await t.test(label, async () => {
+      const fake = fakeSupabase({
+        userId: "creator-malformed",
+        existingSession: true,
+        rpcResults: { create_family: [row] },
+      });
+      const { storage, store } = createStore(fake, [], {
+        newFamily: (code, lang) => familyState(code, lang),
+      });
+
+      await assert.rejects(store.create("zh"), { code: "BACKEND_ERROR" });
+      assert.equal(store.get(), null);
+      assert.equal(storage.size, 0);
+    });
+  }
+});
+
+test("join rejects a malformed RPC row as a backend error", async () => {
+  const fake = fakeSupabase({
+    userId: "elder-malformed",
+    existingSession: true,
+    rpcResults: {
+      join_family: {
+        family_id: FAMILY_A_ID,
+        family_code: "123456",
+        revision: 1,
+        payload: familyState("654321", "zh", { rev: 1 }),
+      },
+    },
+  });
+  const { storage, store } = createStore(fake);
+
+  await assert.rejects(store.attach("123456", "elder"), { code: "BACKEND_ERROR" });
+  assert.equal(store.get(), null);
+  assert.equal(storage.size, 0);
+  assert.deepEqual(fake.calls.from, []);
+});
+
+test("create maps RPC errors and empty results to backend errors", async (t) => {
+  await t.test("RPC error", async () => {
+    const fake = fakeSupabase({
+      userId: "creator-error",
+      existingSession: true,
+      rpcErrors: { create_family: new Error("database detail") },
+    });
+    const { store } = createStore(fake, [], {
+      newFamily: (code, lang) => familyState(code, lang),
+    });
+
+    await assert.rejects(store.create("zh"), {
+      code: "BACKEND_ERROR",
+      message: "Unable to connect to your family right now.",
+    });
+  });
+
+  await t.test("empty result", async () => {
+    const fake = fakeSupabase({
+      userId: "creator-empty",
+      existingSession: true,
+      rpcResults: { create_family: [] },
+    });
+    const { store } = createStore(fake, [], {
+      newFamily: (code, lang) => familyState(code, lang),
+    });
+
+    await assert.rejects(store.create("zh"), { code: "BACKEND_ERROR" });
+  });
+});
+
+test("an older deferred restore cannot clear or overwrite a newer creation", async (t) => {
+  await t.test("does not clear the newer family after an invalid membership result", async () => {
+    const membershipStarted = deferred();
+    const membershipResult = deferred();
+    const newPayload = familyState("654321");
+    const storage = new Map([
+      ["alz:family-id", FAMILY_A_ID],
+      ["alz:code", "123456"],
+      ["alz:role", "elder"],
+    ]);
+    const fake = fakeSupabase({
+      userId: "race-clear",
+      existingSession: true,
+      rpcResults: {
+        create_family: [
+          { family_id: FAMILY_B_ID, family_code: "654321", revision: 0, payload: newPayload },
+        ],
+      },
+      tableResults: {
+        family_members: () => {
+          membershipStarted.resolve();
+          return membershipResult.promise;
+        },
+      },
+    });
+    const { store } = createStore(fake, [], {
+      newFamily: (code, lang) => familyState(code, lang),
+      storage,
+    });
+
+    const restore = store.restoreSelection();
+    await membershipStarted.promise;
+    await store.create("zh");
+    membershipResult.resolve({ data: null, error: null });
+    await restore;
+
+    assert.strictEqual(store.get(), newPayload);
+    assert.equal(storage.get("alz:family-id"), FAMILY_B_ID);
+    assert.equal(storage.get("alz:code"), "654321");
+    assert.equal(storage.get("alz:role"), "family");
+  });
+
+  await t.test("does not overwrite the newer family with an older state result", async () => {
+    const stateStarted = deferred();
+    const stateResult = deferred();
+    const oldPayload = familyState("123456", "zh", { rev: 4 });
+    const newPayload = familyState("654321");
+    const storage = new Map([
+      ["alz:family-id", FAMILY_A_ID],
+      ["alz:code", "123456"],
+      ["alz:role", "elder"],
+    ]);
+    const fake = fakeSupabase({
+      userId: "race-overwrite",
+      existingSession: true,
+      rpcResults: {
+        create_family: [
+          { family_id: FAMILY_B_ID, family_code: "654321", revision: 0, payload: newPayload },
+        ],
+      },
+      tableResults: {
+        family_members: {
+          data: { family_id: FAMILY_A_ID, role: "elder", families: { code: "123456" } },
+          error: null,
+        },
+        family_states: () => {
+          stateStarted.resolve();
+          return stateResult.promise;
+        },
+      },
+    });
+    const { store } = createStore(fake, [], {
+      newFamily: (code, lang) => familyState(code, lang),
+      storage,
+    });
+
+    const restore = store.restoreSelection();
+    await stateStarted.promise;
+    await store.create("zh");
+    stateResult.resolve({
+      data: { family_id: FAMILY_A_ID, revision: 4, payload: oldPayload },
+      error: null,
+    });
+    await restore;
+
+    assert.strictEqual(store.get(), newPayload);
+    assert.equal(storage.get("alz:family-id"), FAMILY_B_ID);
+    assert.equal(storage.get("alz:code"), "654321");
+    assert.equal(storage.get("alz:role"), "family");
+  });
+});
+
+test("a selection storage failure does not discard newly created server state", async () => {
+  const payload = familyState("123456");
+  const values = new Map();
+  const storage = {
+    getItem(key) {
+      return values.get(key) ?? null;
+    },
+    setItem(key, value) {
+      if (key === "alz:code") throw new Error("Storage is unavailable");
+      values.set(key, value);
+    },
+    removeItem(key) {
+      values.delete(key);
+    },
+  };
+  const fake = fakeSupabase({
+    userId: "creator-storage",
+    existingSession: true,
+    rpcResults: {
+      create_family: [{ family_id: FAMILY_A_ID, family_code: "123456", revision: 0, payload }],
+    },
+  });
+  const { store } = createStore(fake, [], {
+    newFamily: (code, lang) => familyState(code, lang),
+    storage,
+  });
+
+  assert.equal(await store.create("zh"), "123456");
+  assert.strictEqual(store.get(), payload);
+  assert.equal(store.role(), "family");
+  assert.deepEqual([...values.entries()], []);
 });

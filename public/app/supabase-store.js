@@ -22,18 +22,50 @@
     return Array.isArray(data) ? data[0] || null : data || null;
   }
 
+  function isFamilyId(value) {
+    return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value || "");
+  }
+
+  function isFamilyCode(value) {
+    return /^[0-9]{6}$/.test(value || "");
+  }
+
+  function isFamilyRole(value) {
+    return value === "family" || value === "elder";
+  }
+
+  function isRpcRow(row) {
+    return Boolean(
+      row &&
+      isFamilyId(row.family_id) &&
+      isFamilyCode(row.family_code) &&
+      Number.isInteger(row.revision) &&
+      row.revision >= 0 &&
+      row.payload &&
+      typeof row.payload === "object" &&
+      !Array.isArray(row.payload) &&
+      row.payload.code === row.family_code,
+    );
+  }
+
   function createSupabaseStore({ client, newFamily, onStatus, storage }) {
     let user = null;
     let state = null;
     let familyId = null;
     let revision = -1;
+    let selectedRole = null;
     let channel = null;
     let initialization = null;
+    let lifecycleGeneration = 0;
     const subscribers = [];
 
     function readSelection(key) {
       if (!storage) return null;
-      return storage.getItem ? storage.getItem(key) : storage.get(key) || null;
+      try {
+        return storage.getItem ? storage.getItem(key) : storage.get(key) || null;
+      } catch (_error) {
+        return null;
+      }
     }
 
     function writeSelection(key, value) {
@@ -48,27 +80,76 @@
       else storage.delete(key);
     }
 
+    function clearCachedSelection() {
+      [FAMILY_ID_KEY, FAMILY_CODE_KEY, FAMILY_ROLE_KEY].forEach((key) => {
+        try {
+          removeSelection(key);
+        } catch (_error) {
+          // Selection caching is best-effort and never the family-data source of truth.
+        }
+      });
+    }
+
+    function cacheSelection(selectedFamilyId, selectedCode, role) {
+      try {
+        writeSelection(FAMILY_ID_KEY, selectedFamilyId);
+        writeSelection(FAMILY_CODE_KEY, selectedCode);
+        writeSelection(FAMILY_ROLE_KEY, role);
+      } catch (_error) {
+        clearCachedSelection();
+      }
+    }
+
     function clearSelection() {
-      removeSelection(FAMILY_ID_KEY);
-      removeSelection(FAMILY_CODE_KEY);
-      removeSelection(FAMILY_ROLE_KEY);
+      clearCachedSelection();
       familyId = null;
       revision = -1;
       state = null;
+      selectedRole = null;
     }
 
     function emit() {
       subscribers.forEach((subscriber) => subscriber(state));
     }
 
-    function adopt(row, selectedRole) {
+    function adopt(row, role) {
       familyId = row.family_id;
       revision = Number(row.revision);
       state = row.payload;
-      writeSelection(FAMILY_ID_KEY, familyId);
-      writeSelection(FAMILY_CODE_KEY, row.family_code);
-      writeSelection(FAMILY_ROLE_KEY, selectedRole);
+      selectedRole = role;
+      cacheSelection(familyId, row.family_code, role);
       emit();
+    }
+
+    async function readMembership(selectedFamilyId, selectedCode) {
+      try {
+        return await client
+          .from("family_members")
+          .select("family_id, role, families!inner(code)")
+          .eq("family_id", selectedFamilyId)
+          .eq("user_id", user.id)
+          .eq("families.code", selectedCode)
+          .maybeSingle();
+      } catch (_error) {
+        return { data: null, error: true };
+      }
+    }
+
+    function validMembership(result, selectedFamilyId, selectedCode) {
+      const membership = singleRow(result.data);
+      const membershipCode = Array.isArray(membership?.families)
+        ? membership.families[0]?.code
+        : membership?.families?.code;
+      return {
+        membership,
+        valid: Boolean(
+          !result.error &&
+          membership &&
+          membership.family_id === selectedFamilyId &&
+          isFamilyRole(membership.role) &&
+          membershipCode === selectedCode,
+        ),
+      };
     }
 
     function initialize() {
@@ -105,7 +186,9 @@
     }
 
     async function create(lang) {
+      const operation = ++lifecycleGeneration;
       await initialize();
+      if (operation !== lifecycleGeneration) return null;
       onStatus("loading");
 
       let result;
@@ -117,9 +200,10 @@
       } catch (_error) {
         result = { data: null, error: true };
       }
+      if (operation !== lifecycleGeneration) return null;
 
       const row = singleRow(result.data);
-      if (result.error || !row) {
+      if (result.error || !isRpcRow(row)) {
         const error = backendError();
         onStatus("error", error.message);
         throw error;
@@ -131,18 +215,27 @@
     }
 
     async function attach(code, selectedRole) {
+      const normalizedCode = String(code ?? "").trim();
+      if (!isFamilyCode(normalizedCode)) {
+        throw lifecycleError("FAMILY_NOT_FOUND", "Family not found.");
+      }
+      if (!isFamilyRole(selectedRole)) throw backendError();
+
+      const operation = ++lifecycleGeneration;
       await initialize();
+      if (operation !== lifecycleGeneration) return state;
       onStatus("loading");
 
       let result;
       try {
         result = await client.rpc("join_family", {
-          family_code: code,
+          family_code: normalizedCode,
           requested_role: selectedRole,
         });
       } catch (_error) {
         result = { data: null, error: true };
       }
+      if (operation !== lifecycleGeneration) return state;
 
       if (result.error) {
         const error = backendError();
@@ -156,42 +249,47 @@
         onStatus("error", error.message);
         throw error;
       }
+      if (!isRpcRow(row)) {
+        const error = backendError();
+        onStatus("error", error.message);
+        throw error;
+      }
 
-      adopt(row, selectedRole);
+      const membershipResult = await readMembership(row.family_id, row.family_code);
+      if (operation !== lifecycleGeneration) return state;
+      const { membership, valid } = validMembership(
+        membershipResult,
+        row.family_id,
+        row.family_code,
+      );
+      if (!valid) {
+        const error = backendError();
+        onStatus("error", error.message);
+        throw error;
+      }
+
+      adopt(row, membership.role);
       onStatus("synced");
       return state;
     }
 
     async function restoreSelection() {
+      const operation = ++lifecycleGeneration;
       const cachedFamilyId = readSelection(FAMILY_ID_KEY);
       const cachedCode = readSelection(FAMILY_CODE_KEY);
       const cachedRole = readSelection(FAMILY_ROLE_KEY);
 
-      if (
-        !cachedFamilyId ||
-        !/^\d{6}$/.test(cachedCode || "") ||
-        (cachedRole !== "family" && cachedRole !== "elder")
-      ) {
+      if (!isFamilyId(cachedFamilyId) || !isFamilyCode(cachedCode) || !isFamilyRole(cachedRole)) {
         clearSelection();
         return null;
       }
 
       await initialize();
+      if (operation !== lifecycleGeneration) return state;
       onStatus("loading");
 
-      let membershipResult;
-      try {
-        membershipResult = await client
-          .from("family_members")
-          .select("family_id, role, families!inner(code)")
-          .eq("family_id", cachedFamilyId)
-          .eq("user_id", user.id)
-          .eq("role", cachedRole)
-          .eq("families.code", cachedCode)
-          .maybeSingle();
-      } catch (_error) {
-        membershipResult = { data: null, error: true };
-      }
+      const membershipResult = await readMembership(cachedFamilyId, cachedCode);
+      if (operation !== lifecycleGeneration) return state;
 
       if (membershipResult.error) {
         const error = backendError();
@@ -199,16 +297,8 @@
         throw error;
       }
 
-      const membership = singleRow(membershipResult.data);
-      const membershipCode = Array.isArray(membership?.families)
-        ? membership.families[0]?.code
-        : membership?.families?.code;
-      if (
-        !membership ||
-        membership.family_id !== cachedFamilyId ||
-        membership.role !== cachedRole ||
-        membershipCode !== cachedCode
-      ) {
+      const { membership, valid } = validMembership(membershipResult, cachedFamilyId, cachedCode);
+      if (!valid || membership.role !== cachedRole) {
         clearSelection();
         onStatus("synced");
         return null;
@@ -224,15 +314,17 @@
       } catch (_error) {
         stateResult = { data: null, error: true };
       }
+      if (operation !== lifecycleGeneration) return state;
 
       const row = singleRow(stateResult.data);
-      if (stateResult.error || !row || row.payload?.code !== cachedCode) {
+      const restoredRow = row && { ...row, family_code: cachedCode };
+      if (stateResult.error || !isRpcRow(restoredRow)) {
         const error = backendError();
         onStatus("error", error.message);
         throw error;
       }
 
-      adopt({ ...row, family_code: cachedCode }, cachedRole);
+      adopt(restoredRow, cachedRole);
       onStatus("synced");
       return state;
     }
@@ -243,7 +335,7 @@
       attach,
       restoreSelection,
       get: () => state,
-      role: () => readSelection(FAMILY_ROLE_KEY),
+      role: () => selectedRole,
       subscribe: (subscriber) => subscribers.push(subscriber),
     };
   }

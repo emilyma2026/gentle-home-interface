@@ -1260,6 +1260,28 @@ function clearDevice(){
 function selectedMemberId(){ return sessionGet(SME); }
 
 var HOME={x:130,y:90}, MPP=13.33;
+/* 家的默认位置：广州天河。老人和家的坐标都用经纬度，距离用大圆公式。 */
+var HOME_LL={lat:23.1291, lng:113.3644};
+function metersPerDegLng(lat){ return 111320*Math.cos(lat*Math.PI/180); }
+function haversine(a,b){
+  var R=6371000, t=Math.PI/180;
+  var dLat=(b.lat-a.lat)*t, dLng=(b.lng-a.lng)*t;
+  var h=Math.sin(dLat/2)*Math.sin(dLat/2)
+      + Math.sin(dLng/2)*Math.sin(dLng/2)*Math.cos(a.lat*t)*Math.cos(b.lat*t);
+  return 2*R*Math.asin(Math.min(1,Math.sqrt(h)));
+}
+/* 兼容早期用像素坐标保存的家庭 */
+function asLL(p, base){
+  if(p && typeof p.lat==="number" && typeof p.lng==="number") return {lat:p.lat, lng:p.lng};
+  var b=base||HOME_LL, q=p||{x:HOME.x, y:HOME.y};
+  var east=((q.x==null?HOME.x:q.x)-HOME.x)*MPP, north=(HOME.y-(q.y==null?HOME.y:q.y))*MPP;
+  return { lat:b.lat + north/111320, lng:b.lng + east/metersPerDegLng(b.lat) };
+}
+function offsetLL(base, eastM, northM){
+  return { lat: base.lat + northM/111320, lng: base.lng + eastM/metersPerDegLng(base.lat) };
+}
+function homeOf(s){ return asLL(s && s.elder ? s.elder.home : null); }
+function locOf(s){ return asLL(s ? s.loc : null, homeOf(s)); }
 
 function newFamily(code, lang){
   return {
@@ -1278,6 +1300,37 @@ function newFamily(code, lang){
     alertCleared:false, locReported:false, homeSet:false
   };
 }
+
+function hasUrlFlag(name, search){
+  var query=String(search||"").replace(/^\?/,"");
+  return new RegExp("(?:^|&)"+name+"=1(?:&|$)").test(query);
+}
+function localDemoRequested(){
+  try{
+    if(!/^(localhost|127\.0\.0\.1)$/.test(window.location.hostname)) return false;
+    if(hasUrlFlag("localDemo",window.location.search)) return true;
+    if(window.top&&window.top!==window){
+      try{ return hasUrlFlag("localDemo",window.top.location.search); }catch(_crossOriginError){ return false; }
+    }
+  }catch(_error){ return false; }
+  return false;
+}
+function shouldUseDemoFallback(error){
+  if(!LOCAL_DEMO || !error) return false;
+  var code=error.code||"";
+  return code==="maps_key_missing" || code==="maps_failed" || code==="route_failed" || code==="route_missing";
+}
+function localDemoElderRequested(){
+  if(!localDemoRequested()) return false;
+  try{
+    if(hasUrlFlag("localElder",window.location.search)) return true;
+    if(window.top&&window.top!==window){
+      try{ return hasUrlFlag("localElder",window.top.location.search); }catch(_crossOriginError){ return false; }
+    }
+  }catch(_error){ return false; }
+  return false;
+}
+var LOCAL_DEMO=localDemoRequested();
 
 var Connection={state:"connecting", authenticated:false, initFailed:false, pendingAction:false};
 var Store=null;
@@ -1346,23 +1399,19 @@ async function runPendingAction(action){
 }
 
 try{
-  if(LOCAL_DEMO){
-    Store=createLocalDemoStore();
-  }else{
-    var browserSessionStorage=window.sessionStorage||window.localStorage;
-    var SupabaseClient=window.supabase.createClient(
-      window.SUPABASE_CONFIG.url,
-      window.SUPABASE_CONFIG.publishableKey,
-      {auth:{storage:browserSessionStorage,persistSession:true,autoRefreshToken:true,detectSessionInUrl:false}}
-    );
-    window.SupabaseClient=SupabaseClient;
-    Store=window.createSupabaseStore({
-      client:SupabaseClient,
-      newFamily:newFamily,
-      storage:browserSessionStorage,
-      onStatus:setConnectionStatus
-    });
-  }
+  var browserSessionStorage=window.sessionStorage||window.localStorage;
+  var SupabaseClient=window.supabase.createClient(
+    window.SUPABASE_CONFIG.url,
+    window.SUPABASE_CONFIG.publishableKey,
+    {auth:{storage:browserSessionStorage,persistSession:true,autoRefreshToken:true,detectSessionInUrl:false}}
+  );
+  window.SupabaseClient=SupabaseClient;
+  Store=window.createSupabaseStore({
+    client:SupabaseClient,
+    newFamily:newFamily,
+    storage:browserSessionStorage,
+    onStatus:setConnectionStatus
+  });
 }catch(_error){
   Connection.initFailed=true;
   setConnectionStatus("error");
@@ -2299,6 +2348,17 @@ function editTarget(){
   return null;
 }
 
+function rangeFieldHTML(){
+  var r=rangeM(St), pct=Math.round((r-200)/1800*100);
+  return '<div class="field"><div class="field-top"><label>'+esc(D.fRange)+'</label>'
+    + '<span class="rangeval"><input type="number" id="rangeNum" min="200" max="2000" step="10" '
+    +   'value="'+r+'" aria-label="'+esc(D.fRange)+'"><em>'+esc(D.rangeUnit)+'</em></span></div>'
+    + '<input type="range" class="slider" id="rangeSlider" min="200" max="2000" step="10" '
+    +   'value="'+r+'" style="--pct:'+pct+'%" aria-label="'+esc(D.fRange)+'">'
+    + '<div class="range-marks"><span>'+esc(D.rangeMin)+'</span><span>'+esc(D.rangeMax)+'</span></div>'
+    + '<p class="hint">'+esc(D.rangeHint)+'</p></div>';
+}
+
 function viewObElder(){
   return '<p class="eyebrow">1 / 2</p><p class="h1">'+esc(D.obElderTitle)+'</p>'
     + '<p class="sub">'+esc(D.obElderSub)+'</p>'
@@ -2768,12 +2828,15 @@ function tabbar(){
 /* =====================================================================
    7. 视图：老人端
    ===================================================================== */
+function callDir(s){ return (s && s.call && s.call.dir==="out") ? "out" : "in"; }
+
 function elderScreen(){
   if(App.paired) return "paired";
-  if(St.call.phase==="ringing") return "ringing";
+  if(St.call.phase==="ringing") return callDir(St)==="out" ? "calling" : "ringing";
   if(St.call.phase==="talking") return "talking";
   if(St.guide.active) return "guide";
   if(St.guide.done) return "arrived";
+  if(App.pick) return "pick";
   if(App.qa) return "qa";
   if(App.eset) return "esettings";
   return "standby";
@@ -2991,6 +3054,16 @@ function callerCard(){
     + '</dl></div>';
 }
 
+function viewCalling(){
+  var p=focusPerson(St);
+  return '<div class="e-call"><p class="lbl">'+esc(D.eCalling)+'</p>'
+    + '<p class="nm">'+esc(p.nick)+'</p>'
+    + callerCard()
+    + '<div style="display:flex;justify-content:center;margin-top:16px">'+waveEl("warm")+'</div>'
+    + '<div class="ctrl"><button class="no" data-go="hangup"><i>'+IC.phoneDown+'</i>'
+    + '<span>'+esc(D.eCancelCall)+'</span></button></div></div>';
+}
+
 function viewRinging(){
   return '<div class="e-call"><p class="lbl">'+esc(D.eIncoming)+'</p>'
     + callerCard()
@@ -3053,6 +3126,17 @@ function viewPick(){
     }
     h+='</div>';
   }
+  return h + '<div class="spacer"></div>'
+    + '<button class="e-btn soft" data-go="closePick">'+esc(D.eBack)+'</button>';
+}
+
+function streetViewVisual(routeStep){
+  var point=routeStep&&routeStep.end?routeStep.end:currentPoint(St);
+  var key=window.MAPS_CONFIG&&window.MAPS_CONFIG.key?window.MAPS_CONFIG.key:"";
+  var photoHtml="";
+  if(routeStep&&routeStep.photoUrl){
+    photoHtml='<div class="place-photo-badge"><img src="'+esc(routeStep.photoUrl)+'" alt="Place"></div>';
+  }
   if(!point||!Number.isFinite(point.lat)||!Number.isFinite(point.lng)||!key){
     return '<div class="visuals-panel"><div class="sv-fallback"><span>'+esc(routeStep&&routeStep.landmark?routeStep.landmark:D.mapHome)+'</span></div>'+photoHtml+'</div>';
   }
@@ -3066,6 +3150,13 @@ function viewPick(){
   return '<div class="visuals-panel"><img class="sv-bg" src="'+esc(svUrl)+'" alt="Street View" loading="lazy">'+photoHtml+'</div>';
 }
 
+function guideText(item){ return item&&typeof item==="object"?item.text:String(item||""); }
+function guideLandmark(item){ return item&&typeof item==="object"&&item.landmark?item.landmark:D.mapHome; }
+function guideTotal(s){ return s&&s.guide&&s.guide.instructions&&s.guide.instructions.length?s.guide.instructions.length:3; }
+function guideDistance(item, point){
+  return item&&item.end&&point&&window.Navigation ? window.Navigation.distanceMeters(point,item.end) : null;
+}
+
 function viewGuide(){
   var g=D.guide[Math.min(St.guide.step,2)];
   var routeStep=St.guide.instructions&&St.guide.instructions[St.guide.step];
@@ -3076,6 +3167,16 @@ function viewGuide(){
   var visualsHtml=streetViewVisual(routeStep);
   var arrowHtml = '<div class="turn-arrow">' + maneuverIcon(routeStep ? routeStep.maneuver : "straight") + '</div>';
   var prevButton=St.guide.step>0?'<button class="e-btn soft prev-btn" data-go="prevGuide" aria-label="Previous step">←</button>':'';
+
+  return '<div class="guide-copy"><p class="stepno" style="margin-top:10px">'+esc(fill(D.eStep,{n:St.guide.step+1,total:guideTotal(St)}))+'</p>'
+    + '<div class="vr-line">'+IC.voice+'<span>'+esc(D.eGuiding)+'</span></div>'
+    + '<p class="stepcopy">'+esc(instruction)+'</p>'
+    + '<p class="stepnote">'+esc(routeNote)+'</p></div>'
+    + '<div class="lmk">' + arrowHtml + '<span class="nm">'+esc(landmark)+'</span></div>'
+    + visualsHtml
+    + '<div class="spacer"></div>'
+    + '<div class="guide-actions">'+prevButton+'<button class="e-btn arrived-btn" data-go="arrived">'+esc(D.eArrived)+'</button></div>';
+}
 
 /* 待机页底部一个安静的入口，老人不会被它吸引，家人需要时找得到 */
 function elderSettingsEntry(){
@@ -3181,12 +3282,48 @@ function render(s){
     : (App.route==="family" ? D.hintFamily : D.hintEntry);
 
   bindInputs();
+  bindRange();
   if(App.route==="obElder") initHomeMap();
   if(App.route==="elder" && St && St.guide && St.guide.active) initGuideMap();
   var th=view.querySelector(".thread"); if(th) th.scrollTop=th.scrollHeight;
   syncSubs();
   syncCallAudio(false);
   setConnectionStatus(Connection.state);
+}
+
+/* 滑块与数字框联动：拖动时只改画面，松手才写库，避免每一格都发一次请求 */
+var rangeTimer=null;
+function applyRange(v, persist){
+  v=Math.max(200, Math.min(2000, Math.round((parseInt(v,10)||800)/10)*10));
+  var sl=el("rangeSlider"), nu=el("rangeNum");
+  if(sl && document.activeElement!==sl) sl.value=v;
+  if(nu && document.activeElement!==nu) nu.value=v;
+  if(sl) sl.style.setProperty("--pct", Math.round((v-200)/1800*100)+"%");
+  if(St) St.elder.radius=String(v);
+  if(Maps.state==="ready" && Maps.circle.picker) Maps.circle.picker.setRadius(v);
+  else { var box=document.querySelector('[data-gmap="picker"] svg'); if(box) syncSchematic("picker"); }
+  if(persist){
+    clearTimeout(rangeTimer);
+    rangeTimer=setTimeout(function(){ queueUpdate(function(x){ x.elder.radius=String(v); }); }, 260);
+  }
+  return v;
+}
+function syncSchematic(kind){
+  var slot=document.querySelector('[data-gmap="'+kind+'"]');
+  if(!slot) return;
+  var old=slot.querySelector("svg"); if(old) old.remove();
+  slot.insertAdjacentHTML("afterbegin", schematicSVG(kind));
+}
+function bindRange(){
+  var sl=el("rangeSlider"), nu=el("rangeNum");
+  if(sl){
+    sl.addEventListener("input", function(){ applyRange(sl.value, false); });
+    sl.addEventListener("change", function(){ applyRange(sl.value, true); });
+  }
+  if(nu){
+    nu.addEventListener("input", function(){ applyRange(nu.value, true); });
+    nu.addEventListener("blur", function(){ nu.value=applyRange(nu.value, true); });
+  }
 }
 
 function patchLight(){
@@ -3471,7 +3608,9 @@ function setLoc(x,y){
   });
   if(started && App.route==="elder" && window.Voice) window.Voice.speak(D.guide[0].copy,{lang:St.lang});
 }
-function arrived(){
+function advanceGuide(){
+  if(!St||!St.guide||!St.guide.active) return;
+  var nextText="", advanced=false, completed=false;
   queueUpdate(function(s){
     var list=s.guide.instructions||[], total=list.length||3;
     s.guide.step++;
@@ -4065,9 +4204,8 @@ document.addEventListener("keyup",function(e){
 });
 
 document.addEventListener("click", async function(e){
-  if(e.target.closest('[data-stop="1"]') && e.target.getAttribute && e.target.getAttribute("data-go")===null
-     && !e.target.closest("[data-go]")) return;
   var b=e.target.closest("[data-go],[data-tab],[data-ask],[data-callfamily],[data-person],[data-todo-del],[data-day],[data-cal],[data-todo-open],[data-todo-rep],[data-ans-save],[data-ans-skip],[data-ans-chat],[data-chat-save],[data-chat-drop],[data-chat-tip],[data-item-do],[data-item-edit],[data-item-skip],[data-item-save],[data-item-cancel]");
+  if(e.target.closest('[data-stop="1"]') && !b) return;
   if(!b || b.disabled) return;
   var g=function(n){ return b.getAttribute(n); }, id;
 
@@ -4213,6 +4351,7 @@ document.addEventListener("click", async function(e){
     case "closePick": App.pick=false; render(); break;
     case "openESet": App.eset=true; App.qa=false; App.pick=false; render(); break;
     case "closeESet": App.eset=false; render(); break;
+    case "prevGuide": retreatGuide(); break;
     case "arrived": arrived(); break;
     case "ackHome": queueUpdate(function(s){ s.guide.done=false; }); break;
 
@@ -4305,21 +4444,8 @@ async function connectAndRestore(){
 
 (function boot(){
   D=I18N[lang];
-  if(LOCAL_DEMO){
-    Connection.authenticated=true;
-    Connection.initFailed=false;
-    St=Store&&Store.get?Store.get():null;
-    if(St){
-      lang=St.lang||lang;
-      App.route=storeRole()==="elder"?"elder":"obElder";
-    }
-    setConnectionStatus("synced");
-    render(St);
-    if(App.route==="elder") setTimeout(startGps,0);
-  }else{
-    render(St);
-    connectAndRestore();
-  }
+  render(St);
+  connectAndRestore();
   window.addEventListener("offline",function(){ setConnectionStatus("offline"); });
   setInterval(function(){ var c=el("clock"); if(c) c.textContent=clockNow(); }, 20000);
   setInterval(pollFamilyState, 2000);

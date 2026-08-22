@@ -21,9 +21,15 @@ dist-ssr
 .wrangler/
 .dev.vars
 
+# Secrets
+.env
+.env.*
+!.env.example
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
+.claude/
 .idea
 .DS_Store
 *.suo

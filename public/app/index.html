@@ -1878,7 +1878,6 @@ function viewObMe(){
     + '<label class="avatar-picker'+(p.photo?" has":"")+'"'
     +   (p.photo?' style="background-image:url('+p.photo+')"':'')+'>'
     +   (p.photo?'':'+')+'<input type="file" accept="image/*" data-photo="1" aria-label="'+esc(D.addPhoto)+'"></label>'
-    + '<p class="hint" style="text-align:center;margin:-8px 0 14px">'+esc(D.photoHint2)+'</p>'
     + fieldHTML("per.nick", D.fNick, "text")
     + fieldHTML("per.relation", D.fRel, "text", {seedKey:"relation"})
     + fieldHTML("per.phone", D.fPhone, "text", {seedKey:"phone"})
@@ -3351,7 +3350,7 @@ function chatSaveProp(idx){
   });
 }
 
-function saveAnswer(ask){
+function saveAnswer(id){
   var box=document.querySelector('[data-ans="'+id+'"]');
   var text=(box ? box.value : App.pendDraft[id] || "").trim();
   if(!text) return;
@@ -3776,6 +3775,11 @@ document.addEventListener("click", async function(e){
    ===================================================================== */
 if(Store) Store.subscribe(function(s){ render(s); });
 
+function pollFamilyState(){
+  if(!Store || !St || !Connection.authenticated || Connection.pendingAction || Connection.state==="saving") return;
+  void Store.refresh().catch(function(error){ reportStoreError(error); });
+}
+
 async function connectAndRestore(){
   if(Connection.pendingAction) return;
   Connection.initFailed=false;
@@ -3814,6 +3818,7 @@ async function connectAndRestore(){
   connectAndRestore();
   window.addEventListener("offline",function(){ setConnectionStatus("offline"); });
   setInterval(function(){ var c=el("clock"); if(c) c.textContent=clockNow(); }, 20000);
+  setInterval(pollFamilyState, 2000);
 })();
 
 })();

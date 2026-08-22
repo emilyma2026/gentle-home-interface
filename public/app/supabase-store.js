@@ -873,6 +873,24 @@
       });
     }
 
+    async function refresh() {
+      const selection = activeSelection;
+      if (!selection || !state) return state;
+
+      const latest = await readFamilyState(selection.familyId, selection.code);
+      if (selection !== activeSelection) return state;
+      if (!latest.row) {
+        const error = backendError();
+        reportStatus(latest.offline ? "offline" : "error", error.message);
+        throw error;
+      }
+
+      reconcileConfirmed(selection, latest.row);
+      publishSelection(selection);
+      reportStatus(hasUnsavedOperations(selection) ? "saving" : "synced");
+      return state;
+    }
+
     async function signOut() {
       mutationGeneration += 1;
       clearSelection();
@@ -886,6 +904,7 @@
       attach,
       restoreSelection,
       update,
+      refresh,
       resetFamily,
       signOut,
       get: () => state,

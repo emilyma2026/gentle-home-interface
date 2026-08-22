@@ -36,6 +36,9 @@ const availabilitySource = appSource.slice(availabilityStart, availabilityEnd);
 const pairStart = appSource.indexOf("async function pair(code){");
 const pairEnd = appSource.indexOf("async function hardExit(){", pairStart);
 const pairSource = appSource.slice(pairStart, pairEnd);
+const pollStart = appSource.indexOf("function pollFamilyState(){");
+const pollEnd = appSource.indexOf("async function connectAndRestore(){", pollStart);
+const pollSource = pollStart >= 0 && pollEnd > pollStart ? appSource.slice(pollStart, pollEnd) : "";
 const i18nStart = appSource.indexOf("var I18N = {");
 const i18nEnd = appSource.indexOf("var Store=", i18nStart);
 const i18n = vm.runInNewContext(`${appSource.slice(i18nStart, i18nEnd)}\nI18N;`);
@@ -192,6 +195,7 @@ test("profile form centers a neutral add-photo placeholder without the old expla
 
   assert.match(output, /class="avatar-picker"[^>]*>\+<input[^>]*type="file"/);
   assert.doesNotMatch(output, /只用于来电匹配/);
+  assert.equal(output.includes(i18n.zh.photoHint2), false);
   assert.equal(placeholderStyles["margin-left"], "auto");
   assert.equal(placeholderStyles["margin-right"], "auto");
   assert.equal(placeholderStyles.background, "#E8E3DE");
@@ -328,6 +332,23 @@ test("entry awaits asynchronous family lifecycle actions", () => {
   assert.match(appSource, /await Store\.attach\(code,/);
   assert.match(appSource, /await Store\.resetFamily\(\)/);
   assert.match(appSource, /await Store\.signOut\(\)/);
+});
+
+test("the app polls shared family state when Realtime cannot connect", async () => {
+  assert.ok(pollSource, "pollFamilyState must exist");
+  let refreshes = 0;
+  const context = {
+    Store: { refresh: async () => { refreshes += 1; } },
+    St: { code: "123456" },
+    Connection: { authenticated: true, pendingAction: false, state: "offline" },
+    reportStoreError: (error) => { throw error; },
+  };
+
+  vm.runInNewContext(`${pollSource}\npollFamilyState();`, context);
+  await Promise.resolve();
+
+  assert.equal(refreshes, 1);
+  assert.match(appSource, /setInterval\(pollFamilyState,\s*2000\)/);
 });
 
 test("elder pairing persists the paired state before entering the elder screen", async () => {

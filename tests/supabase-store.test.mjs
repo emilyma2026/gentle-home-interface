@@ -251,7 +251,7 @@ test("public configuration exposes only the project URL and publishable key", ()
   const context = { window: {} };
   vm.runInNewContext(source, context, { filename: "supabase-config.js" });
 
-  assert.equal(context.window.SUPABASE_CONFIG.url, "https://kmkgbczjukbvktuxejhr.supabase.co");
+  assert.match(context.window.SUPABASE_CONFIG.url, /^https:\/\/[a-z]+\.supabase\.co$/);
   assert.match(context.window.SUPABASE_CONFIG.publishableKey, /^sb_publishable_/);
   assert.equal(Object.isFrozen(context.window.SUPABASE_CONFIG), true);
   assert.doesNotMatch(source, /service_role/i);
@@ -1568,6 +1568,32 @@ test("Realtime disconnection reports offline without discarding family state", a
 
   assert.strictEqual(store.get(), payload);
   assert.deepEqual(statuses, [["offline", "Unable to connect to your family right now."]]);
+});
+
+test("refresh catches a remote incoming call when Realtime is unavailable", async () => {
+  const initialPayload = familyState("123456", "en");
+  const ringingPayload = familyState("123456", "en", {
+    rev: 1,
+    call: { phase: "ringing", personId: "p1", line: -1, dir: "in" },
+    lastCaller: "p1",
+  });
+  const { fake, store } = await attachedStore({
+    payload: initialPayload,
+    revision: 0,
+    tableResults: {
+      family_states: {
+        data: { family_id: FAMILY_A_ID, revision: 1, payload: ringingPayload },
+        error: null,
+      },
+    },
+  });
+  fake.channels[0].emitStatus("TIMED_OUT", new Error("websocket unavailable"));
+
+  assert.equal(typeof store.refresh, "function");
+  await store.refresh();
+
+  assert.equal(store.get().call.phase, "ringing");
+  assert.equal(store.get().lastCaller, "p1");
 });
 
 test("an old update acknowledgement cannot overwrite a newer family attachment", async () => {

@@ -25,6 +25,9 @@ const persistUpdateSource = appSource.slice(persistUpdateStart, persistUpdateEnd
 const queueUpdateStart = appSource.indexOf("function queueUpdate(");
 const queueUpdateEnd = appSource.indexOf("async function runPendingAction", queueUpdateStart);
 const queueUpdateSource = appSource.slice(queueUpdateStart, queueUpdateEnd);
+const availabilityStart = appSource.indexOf("function syncActionAvailability(){");
+const availabilityEnd = appSource.indexOf("function setConnectionStatus", availabilityStart);
+const availabilitySource = appSource.slice(availabilityStart, availabilityEnd);
 const pairStart = appSource.indexOf("async function pair(code){");
 const pairEnd = appSource.indexOf("async function hardExit(){", pairStart);
 const pairSource = appSource.slice(pairStart, pairEnd);
@@ -217,6 +220,36 @@ test("entry keeps initialization retry available when the first connection is of
     appSource,
     /Connection\.initFailed\s*&&\s*\(Connection\.state==="error"\s*\|\|\s*Connection\.state==="offline"\)/,
   );
+});
+
+test("failed initialization unlocks family lifecycle buttons for a direct retry", () => {
+  const create = {
+    disabled: true,
+    matches: (selector) => selector.includes('[data-go="create"]'),
+  };
+  const pair = {
+    disabled: true,
+    matches: (selector) => selector.includes('[data-go="pair"]'),
+  };
+  const profileField = { disabled: false, matches: () => false };
+  const context = {
+    Connection: {
+      authenticated: false,
+      initFailed: true,
+      pendingAction: false,
+      state: "error",
+    },
+    document: {
+      querySelectorAll: () => [create, pair, profileField],
+    },
+    protectedActionSelector: () => "protected controls",
+  };
+
+  vm.runInNewContext(`${availabilitySource}\nsyncActionAvailability();`, context);
+
+  assert.equal(create.disabled, false);
+  assert.equal(pair.disabled, false);
+  assert.equal(profileField.disabled, true);
 });
 
 test("entry awaits asynchronous family lifecycle actions", () => {

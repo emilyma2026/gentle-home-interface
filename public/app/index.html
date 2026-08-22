@@ -1192,9 +1192,14 @@ function protectedActionSelector(){
     +'[data-go="ackHome"],[data-go="walk"],[data-go="goHome"],[data-go="reset"],[data-go="speak"]';
 }
 function syncActionAvailability(){
-  var blocked=!Connection.authenticated || Connection.initFailed || Connection.pendingAction || Connection.state==="connecting" || Connection.state==="loading";
+  var busy=Connection.pendingAction || Connection.state==="connecting" || Connection.state==="loading";
+  var unavailable=!Connection.authenticated || Connection.initFailed;
+  var lifecycleSelector='[data-go="create"],[data-go="pair"]';
   var controls=document.querySelectorAll(protectedActionSelector());
-  Array.prototype.forEach.call(controls,function(control){ control.disabled=blocked; });
+  Array.prototype.forEach.call(controls,function(control){
+    var canRetry=unavailable && control.matches(lifecycleSelector);
+    control.disabled=busy || (unavailable && !canRetry);
+  });
 }
 function setConnectionStatus(state,message,useMessage){
   var allowed={connecting:1,loading:1,saving:1,offline:1,error:1,synced:1};

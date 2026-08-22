@@ -826,7 +826,7 @@ zh:{
   peopleT:"家人", peopleSub:"这些人会出现在老人的来电卡片上",
   addPerson:"再加一位家人", editPerson:"编辑资料", meTag:"你",
   pendingT:"等你补充", pendingD:"{elder}问了这个，记忆里没有：",
-  pendingOk:"我已经补上了",
+  pendingOk:"我已经补上了", pendingTimes:"问了 {n} 次",
   familyCodeT:"家庭码", familyCodeD:"分享给其他家人或用来配对老人的手机",
   settingsT:"设置", langRow:"界面语言", langRowV:"中文",
   logoutT:"退出登录", logoutD:"回到最初的身份选择页。重新进入需要家庭码。",
@@ -1001,7 +1001,7 @@ en:{
   peopleT:"Family", peopleSub:"These people show up on her incoming-call card",
   addPerson:"Add another relative", editPerson:"Edit details", meTag:"You",
   pendingT:"Needs your input", pendingD:"{elder} asked this and it is not in memory:",
-  pendingOk:"I've added it",
+  pendingOk:"I've added it", pendingTimes:"asked {n} times",
   familyCodeT:"Family code", familyCodeD:"Share it with relatives or use it to pair her phone",
   settingsT:"Settings", langRow:"Language", langRowV:"English",
   logoutT:"Log out", logoutD:"Go back to the role picker. You will need the family code to sign in again.",
@@ -1921,15 +1921,30 @@ function todoCard(){
 }
 
 /* 老人问了记忆里没有的问题，等家人补一句。放在首页，家人一进来就看到。 */
+/* 同一个问题她可能问很多次，家人只需要看到一条，次数作为附注。 */
+function pendingGrouped(){
+  var order=[], count={};
+  for(var i=0;i<St.pending.length;i++){
+    var a=St.pending[i].ask;
+    if(count[a]===undefined){ count[a]=0; order.push(a); }
+    count[a]++;
+  }
+  return order.map(function(a){ return { ask:a, n:count[a] }; });
+}
+
 function pendingCard(){
-  if(!St.pending.length) return "";
+  var list=pendingGrouped();
+  if(!list.length) return "";
   var h='<div class="card" style="background:var(--amber-soft);box-shadow:none;margin-bottom:12px">'
     + '<b style="font-size:13.5px;color:var(--amber)">'+esc(D.pendingT)+'</b>'
     + '<p style="margin:6px 0 9px;font-size:12.5px;color:var(--ink-2)">'+esc(D.pendingD)+'</p>';
-  for(var j=0;j<St.pending.length;j++){
-    h+='<p style="margin:0 0 8px;font-size:14px;font-weight:700">「'+esc(D.asks[St.pending[j].ask])+'」</p>';
+  for(var j=0;j<list.length;j++){
+    h+='<p style="margin:0 0 4px;font-size:14px;font-weight:700">「'+esc(D.asks[list[j].ask])+'」'
+     + (list[j].n>1 ? '<span style="margin-left:6px;color:var(--muted);font-size:11.5px;font-weight:400">'
+         + esc(fill(D.pendingTimes,{n:list[j].n}))+'</span>' : '')
+     + '</p>';
   }
-  return h+'<div class="acts"><button class="go" data-go="clearPending">'+esc(D.pendingOk)+'</button></div></div>';
+  return h+'<div class="acts" style="margin-top:8px"><button class="go" data-go="clearPending">'+esc(D.pendingOk)+'</button></div></div>';
 }
 
 function confirmCard(){

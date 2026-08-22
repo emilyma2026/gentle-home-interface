@@ -1003,7 +1003,7 @@ function initGuideMap(){
         var steps=[];
         var legs=route&&route.legs||[];
         var raw=legs[0]&&legs[0].steps||[];
-        for(var i=0;i<raw.length&&steps.length<3;i++){
+        for(var i=0;i<raw.length;i++){
           var text=String(raw[i].instructions||"").replace(/<[^>]+>/g,"").trim();
           var end=raw[i].end_location;
           if(text && end) steps.push({text:text,end:{lat:end.lat(),lng:end.lng()},distanceM:raw[i].distance?raw[i].distance.value:null});

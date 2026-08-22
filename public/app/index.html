@@ -3,11 +3,11 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Noto+Sans+SC:wght@400;500;700;900&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Noto+Sans+SC:wght@400;500;700;900&display=swap" rel="stylesheet">
 <title>Remember Us · Family Memory Companion</title>
 <style>
 :root{
-  --page:#EFE1D3; --page-2:#F7E9DA;
+  --page:#FFFFFF; --page-2:#FFFFFF;
   --paper:#FDF7F0;
   --card:#FFFCF8;
   --ink:#3A2C22;
@@ -15,13 +15,13 @@
   --muted:#9A8574;
   --faint:#C3B2A2;
   --line:#EFE3D6;
-  --blue:#C8794A; --blue-d:#A2582C; --blue-soft:#FAEADD;
+  --blue:#8A9A4E; --blue-d:#5F6E32; --blue-soft:#EEF1DE;
   --rose:#D98F80; --rose-soft:#FBE9E1;
-  --green:#7C9A63; --green-soft:#F0F4E7;
+  --green:#6B9A7C; --green-soft:#EAF3EC;
   --amber:#C08A2E; --amber-soft:#FBF0DA;
   --warm:#C2703A; --warm-soft:#FAEFE7;
   --red:#C4585C; --red-soft:#FAE7E6;
-  --sans:"Baloo 2","Noto Sans SC","PingFang SC","Microsoft YaHei","Source Han Sans SC",-apple-system,system-ui,sans-serif;
+  --sans:"Plus Jakarta Sans","Noto Sans SC","PingFang SC","Microsoft YaHei","Source Han Sans SC",-apple-system,system-ui,sans-serif;
   --r-lg:22px; --r-md:16px; --r-sm:11px;
   --sh-card:0 2px 10px rgba(94,63,38,.06), 0 12px 28px rgba(94,63,38,.07);
 }
@@ -50,7 +50,7 @@ input,textarea,select{font:inherit}
 .island{position:absolute; top:22px; left:50%; background:#2A1D14; transform:translateX(-50%);
   width:110px; height:30px; border-radius:99px; z-index:3}
 .screen{position:relative; width:390px; height:844px; border-radius:46px; overflow:hidden;
-  background:radial-gradient(60% 30% at 8% 2%, rgba(250,214,178,.55), rgba(250,214,178,0) 60%), radial-gradient(70% 40% at 100% 100%, rgba(205,220,190,.40), rgba(205,220,190,0) 60%), var(--paper); display:flex; flex-direction:column}
+  background:radial-gradient(55% 26% at 12% 0%, rgba(138,154,78,.28), rgba(138,154,78,0) 62%), radial-gradient(60% 32% at 100% 0%, rgba(250,214,178,.45), rgba(250,214,178,0) 60%), radial-gradient(70% 42% at 100% 100%, rgba(138,154,78,.24), rgba(138,154,78,0) 62%), var(--paper); display:flex; flex-direction:column}
 .statusbar{flex:0 0 auto; height:50px; display:flex; align-items:center;
   justify-content:space-between; padding:0 26px; font-size:13.5px; font-weight:700}
 .statusbar .sigs{display:flex; align-items:center; gap:4px}
@@ -207,13 +207,15 @@ input,textarea,select{font:inherit}
   font-size:12px; font-weight:700}
 
 /* ================= 家人端 ================= */
-.f-head{margin:0 -22px 14px; padding:18px 22px 20px;
-  background:linear-gradient(155deg,var(--blue-soft) 0%, var(--rose-soft) 100%)}
-.f-head .eyebrow{color:var(--blue-d); opacity:.85}
-.f-head .h1{font-size:23px}
-.f-head .who{display:flex; align-items:center; gap:9px; margin-top:12px}
-.f-head .who .avatar{background:#fff}
-.f-head .who b{font-size:13px} .f-head .who small{display:block; color:var(--ink-2); font-size:11px; opacity:.7}
+.f-head{position:relative; margin:0 -22px 16px; padding:20px 22px 26px;
+  background:radial-gradient(85% 100% at 18% 0%, rgba(138,154,78,.22), rgba(138,154,78,0) 72%)}
+.f-head .eyebrow{display:none}
+.f-head .h1{font-size:22px; font-weight:800; padding-right:44px}
+.f-head .who{display:flex; align-items:baseline; gap:5px; margin-top:6px}
+.f-head .who .avatar{position:absolute; top:0; right:22px; width:38px; height:38px; background:#fff;
+  box-shadow:var(--sh-card)}
+.f-head .who b{font-size:12px; color:var(--ink-2); margin-right:4px}
+.f-head .who small{color:var(--muted); font-size:12px}
 
 .tiles{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:12px}
 .tile{padding:14px 15px; text-align:left; border-radius:var(--r-md); background:var(--card);
@@ -491,31 +493,31 @@ input,textarea,select{font:inherit}
   color:var(--muted); font-size:12px; font-weight:700}
 
 /* ---- 月历式待办 ---- */
-.cal-head{display:flex; align-items:center; justify-content:space-between; gap:10px; margin:0 0 10px}
+.cal-head{display:flex; align-items:center; justify-content:space-between; gap:10px; margin:18px 0 10px}
 .cal-head b{font-size:18px; font-weight:800}
 .cal-nav{display:flex; gap:6px}
 .cal-nav button{width:32px; height:32px; border-radius:50%; background:var(--card);
   box-shadow:var(--sh-card); color:var(--ink-2); font-size:15px; font-weight:800}
 .cal-week{display:grid; grid-template-columns:repeat(7,1fr); margin-bottom:4px}
 .cal-week span{text-align:center; color:var(--faint); font-size:10.5px; font-weight:800}
-.cal-grid{display:grid; grid-template-columns:repeat(7,1fr); gap:2px; margin-bottom:12px}
-.cal-day{min-height:52px; padding:4px 3px 3px; border-radius:10px; background:transparent;
+.cal-grid{display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:2px; margin-bottom:12px}
+.cal-day{min-height:52px; min-width:0; overflow:hidden; padding:4px 3px 3px; border-radius:10px; background:transparent;
   display:flex; flex-direction:column; align-items:stretch; gap:2px; text-align:center}
 .cal-day:active{background:var(--well)}
 .cal-day.out{opacity:.32}
 .cal-day.sel{background:var(--blue-soft)}
 .cal-day .n{display:block; margin:0 auto; width:22px; height:22px; line-height:22px;
   border-radius:50%; font-size:12.5px; font-weight:700; color:var(--ink)}
-.cal-day.today .n{background:var(--warm); color:#fff; font-weight:800}
-.cal-chip{display:block; padding:1px 3px; border-radius:4px; background:var(--warm-soft);
-  color:var(--warm); font-size:8.5px; line-height:1.45; white-space:nowrap; overflow:hidden;
+.cal-day.today .n{background:var(--blue); color:#fff; font-weight:800}
+.cal-chip{display:block; padding:1px 3px; border-radius:4px; background:var(--blue-soft);
+  color:var(--blue-d); font-size:8.5px; line-height:1.45; white-space:nowrap; overflow:hidden;
   text-overflow:ellipsis; text-align:left}
 .cal-chip.done{background:var(--green-soft); color:var(--green)}
 .cal-more{color:var(--faint); font-size:8.5px; text-align:left; padding-left:3px}
 
 .day-panel{border-radius:var(--r-lg); background:var(--card); box-shadow:var(--sh-card); padding:14px 15px}
-.day-panel > b{display:block; font-size:15px; margin-bottom:2px}
-.day-panel > small{display:block; margin-bottom:11px; color:var(--muted); font-size:11.5px}
+.day-panel > b{display:block; font-size:15px; margin-bottom:2px; padding-right:64px}
+.day-panel > small{display:block; margin-bottom:11px; color:var(--muted); font-size:11.5px; padding-right:64px}
 .trow{border-radius:14px; background:var(--paper); margin-bottom:8px; overflow:hidden}
 .trow:last-of-type{margin-bottom:0}
 .trow.done{background:var(--green-soft)}
@@ -543,10 +545,11 @@ input,textarea,select{font:inherit}
 .trow-acts button{padding:5px 12px; border-radius:99px; background:#fff; color:var(--faint);
   font-size:11.5px; font-weight:700}
 .trow-acts button:hover{color:var(--red)}
-.fab{position:absolute; right:18px; bottom:96px; width:56px; height:56px; border-radius:50%;
-  background:var(--warm); color:#fff; font-size:28px; font-weight:300; line-height:1;
-  box-shadow:0 10px 24px rgba(194,112,58,.36); z-index:5; display:grid; place-items:center}
-.fab:active{transform:scale(.96)}
+.day-add{display:flex; align-items:center; justify-content:center; gap:7px; width:100%; margin-top:12px;
+  padding:14px; border:1.5px solid var(--blue); border-radius:var(--r-md); background:transparent;
+  color:var(--blue-d); font-size:13px; font-weight:700}
+.day-add:active{background:var(--blue-soft)}
+.day-add .plus{font-size:17px; font-weight:400; line-height:1}
 
 /* ---- 提醒：弹窗与首页横条 ---- */
 .sheet-mask{position:absolute; inset:0; z-index:20; background:rgba(23,22,26,.42);
@@ -571,24 +574,24 @@ input,textarea,select{font:inherit}
   padding:15px 16px; margin-bottom:12px}
 .todo-card > b{display:block; font-size:14px; margin-bottom:2px}
 .todo-card > small{display:block; margin-bottom:11px; color:var(--muted); font-size:11.5px}
-.todo-item{padding:12px 13px; border-radius:14px; background:var(--paper); margin-bottom:9px}
-.todo-item:last-of-type{margin-bottom:0}
-.todo-item.done{background:var(--green-soft)}
-.todo-head{display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:9px}
-.todo-head .state{font-size:11px; font-weight:800; color:var(--muted)}
+.todo-item{padding:11px 0; border-bottom:1px solid var(--line); margin-bottom:0}
+.todo-item:last-of-type{border-bottom:0; padding-bottom:0}
+.todo-item.done{background:transparent}
+.todo-head{display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:8px}
+.todo-head .state{font-size:11px; font-weight:700; color:var(--blue-d)}
 .todo-head .state.ok{color:var(--green)}
-.todo-head .del{padding:3px 9px; border-radius:99px; background:#fff; color:var(--faint);
+.todo-head .del{padding:3px 9px; border-radius:99px; background:var(--paper); color:var(--faint);
   font-size:11px; font-weight:700}
 .todo-head .del:hover{color:var(--red)}
 .todo-fields{display:grid; grid-template-columns:1fr 1fr; gap:8px}
 .todo-fields .wide{grid-column:1 / -1}
 .tf{display:grid; gap:3px}
-.tf label{color:var(--muted); font-size:10.5px; font-weight:700}
-.tf input{width:100%; padding:8px 10px; border:1px solid var(--line); border-radius:10px;
-  background:#fff; color:var(--ink); font:inherit; font-size:13px}
-.tf input:focus{border-color:var(--blue); outline:none; box-shadow:0 0 0 3px var(--blue-soft)}
-.todo-add{width:100%; margin-top:10px; padding:11px; border-radius:99px; background:var(--paper);
-  color:var(--blue-d); font-size:13px; font-weight:700; box-shadow:inset 0 0 0 1px var(--line)}
+.tf label{color:var(--faint); font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.03em}
+.tf input{width:100%; padding:3px 0; border:0; border-bottom:1px solid transparent;
+  border-radius:0; background:transparent; color:var(--ink); font:inherit; font-size:13.5px; font-weight:600}
+.tf input:focus{border-bottom-color:var(--blue); outline:none; box-shadow:none}
+.todo-add{width:100%; margin-top:12px; padding:11px; border-radius:99px; background:var(--blue-soft);
+  color:var(--blue-d); font-size:13px; font-weight:700; box-shadow:none}
 .todo-empty{padding:16px; text-align:center; color:var(--faint); font-size:12.5px}
 
 /* ---- 说一句话：转写确认 ---- */
@@ -2071,8 +2074,9 @@ function tabTodos(){
   h+='<div class="day-panel"><b>'+esc(D.calMonths[sp.m-1])+' '+sp.d
    + (sel===todayKey()?' · '+esc(D.calToday):'')+'</b>'
    + '<small>'+esc(D.todosD)+'</small>';
+  var addBox='<button class="day-add" data-go="addTodo"><span class="plus">+</span>'+esc(D.todoAdd)+'</button>';
   if(!dayItems.length){
-    h+='<div class="todo-empty">'+esc(D.dayEmpty)+'</div>';
+    h+=addBox;
   } else {
     for(var k=0;k<dayItems.length;k++){
       var t=dayItems[k], done=todoDoneOn(t,sel), open=App.cal.open===t.id;
@@ -2090,6 +2094,7 @@ function tabTodos(){
        +   '<div class="trow-acts"><button data-todo-del="'+t.id+'">'+esc(D.todoDel)+'</button></div>'
        + '</div></div>';
     }
+    if(!App.cal.open) h+=addBox;
   }
   h+='</div>';
   return h;
@@ -2484,7 +2489,6 @@ function render(s){
     if(St && St.call.phase==="ringing" && callDir(St)==="out"){ App.tab=0; App.editingPerson=null; }
     if(!App.cal.ym){ App.cal.sel=todayKey(); App.cal.ym=ymOf(App.cal.sel); }
     body = (App.tab===0?tabHome() : App.tab===1?tabAlerts() : App.tab===2?tabTodos() : tabPeople());
-    if(App.tab===2) body += '<button class="fab" data-go="addTodo">+</button>';
     /* 老人走出范围时自动弹一次，关掉之后不再自动弹 */
     var st2=alertState();
     if(st2==="on" && App.alertSeen!=="on"){ App.alertOpen=true; App.alertSeen="on"; }

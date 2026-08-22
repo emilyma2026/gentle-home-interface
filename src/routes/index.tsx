@@ -28,6 +28,7 @@ function Index() {
       <iframe
         src="/app/index.html"
         title="Remember Us prototype"
+        allow="microphone; geolocation"
         className="h-full w-full border-0"
       />
     </main>

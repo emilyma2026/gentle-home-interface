@@ -6,12 +6,16 @@ import vm from "node:vm";
 
 const htmlPath = new URL("../public/app/index.html", import.meta.url);
 const appSource = readFileSync(htmlPath, "utf8");
+const routeSource = readFileSync(new URL("../src/routes/index.tsx", import.meta.url), "utf8");
 const start = appSource.indexOf("function viewEntry(){");
 const end = appSource.indexOf("function viewFamilyStart(){", start);
 const viewEntrySource = appSource.slice(start, end);
 const familyStart = end;
 const familyEnd = appSource.indexOf("function fieldHTML(", familyStart);
 const viewFamilyStartSource = appSource.slice(familyStart, familyEnd);
+const joinStart = appSource.indexOf("function viewJoin(){");
+const joinEnd = appSource.indexOf("function viewPaired(){", joinStart);
+const viewJoinSource = appSource.slice(joinStart, joinEnd);
 const profileStart = appSource.indexOf("function viewObMe(){");
 const profileEnd = appSource.indexOf("function viewCode(){", profileStart);
 const viewProfileSource = appSource.slice(profileStart, profileEnd);
@@ -79,12 +83,19 @@ test("entry omits the setup walkthrough and demo note", () => {
   assert.doesNotMatch(output, /ENTRY_HINT_MARKER/);
 });
 
-test("entry presents the Alzheimer care assistant name as a prominent label", () => {
-  const context = { D: i18n.zh, esc: (value) => String(value) };
+test("the first visit presents the English Remember Us brand", () => {
+  const context = { D: i18n.en, esc: (value) => String(value) };
   const output = vm.runInNewContext(`${viewEntrySource}\nviewEntry();`, context);
   const labelStyles = declarations(".entry-eyebrow");
 
-  assert.match(output, /<p class="entry-eyebrow">阿尔茨海默守护助手<\/p>/);
+  assert.match(appSource, /<html lang="en">/);
+  assert.match(appSource, /<title>Remember Us · Family Memory Companion<\/title>/);
+  assert.match(appSource, /var St=null, D=null, lang="en";/);
+  assert.match(output, /<p class="entry-eyebrow">Remember Us<\/p>/);
+  assert.equal(i18n.zh.appName, "Remember Us");
+  assert.equal(i18n.en.appName, "Remember Us");
+  assert.match(routeSource, /title="Remember Us prototype"/);
+  assert.doesNotMatch(routeSource, /守护助手/);
   assert.ok(parseFloat(labelStyles["font-size"]) >= 18);
   assert.ok(
     parseFloat(labelStyles["font-size"]) > parseFloat(declarations(".entry-title")["font-size"]),
@@ -111,12 +122,14 @@ test("entry safely centers its content and biases it below the top edge", () => 
   assert.ok(parseFloat(entryStyles["padding-top"]) > parseFloat(entryStyles["padding-bottom"]));
 });
 
-test("family pages keep safe side gutters and scroll from the top", () => {
+test("family pages keep safe gutters and vertically balance short content", () => {
   const familyStyles = declarations(".view.pad0");
 
   assert.equal(familyStyles["padding-left"], "22px");
   assert.equal(familyStyles["padding-right"], "22px");
-  assert.equal(familyStyles["justify-content"], "flex-start");
+  assert.equal(familyStyles["justify-content"], "safe center");
+  assert.match(familyStyles["padding-top"], /clamp\(/);
+  assert.match(familyStyles["padding-bottom"], /clamp\(/);
 });
 
 test("family choice page gives more height to its choices than to blank space", () => {
@@ -131,7 +144,22 @@ test("family choice page gives more height to its choices than to blank space", 
   assert.equal(pageStyles["min-height"], "100%");
   assert.ok(parseFloat(headStyles["margin-bottom"]) >= 28);
   assert.equal(rolesStyles.flex, "1 1 auto");
-  assert.ok(parseFloat(roleStyles["min-height"]) >= 120);
+  assert.ok(parseFloat(rolesStyles["max-height"]) >= 380);
+  assert.ok(parseFloat(roleStyles["min-height"]) >= 132);
+});
+
+test("join page prefills a working fictional demo family code", () => {
+  const context = {
+    App: { joinAs: "family", err: "" },
+    D: i18n.en,
+    DEMO_CODE: "527487",
+    esc: (value) => String(value),
+  };
+  const output = vm.runInNewContext(`${viewJoinSource}\nviewJoin();`, context);
+
+  assert.match(output, /id="codeIn"[^>]*value="527487"/);
+  assert.match(output, /Demo family code/);
+  assert.match(output, />527487</);
 });
 
 test("profile form centers a neutral add-photo placeholder without the old explanation", () => {

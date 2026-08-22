@@ -1,10 +1,10 @@
 <!doctype html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Noto+Sans+SC:wght@400;500;700;900&display=swap" rel="stylesheet">
-<title>守护助手 · 阿尔茨海默双端伴侣</title>
+<title>Remember Us · Family Memory Companion</title>
 <style>
 :root{
   --page:#EFE1D3; --page-2:#F7E9DA;
@@ -72,9 +72,10 @@ input,textarea,select{font:inherit}
 .visually-hidden{position:absolute!important; width:1px!important; height:1px!important; padding:0!important;
   margin:-1px!important; overflow:hidden!important; clip:rect(0,0,0,0)!important; white-space:nowrap!important; border:0!important}
 .view{background:transparent; flex:1 1 auto; min-height:0; overflow-y:auto; display:flex; flex-direction:column;
-  justify-content:safe center; gap:2px; padding:10px 22px 28px}
+  justify-content:safe center; gap:clamp(4px,.8vh,10px); padding:clamp(18px,4vh,36px) 22px clamp(28px,5vh,44px)}
 .view::-webkit-scrollbar{width:0}
-.view.pad0{padding-left:22px; padding-right:22px; justify-content:flex-start}
+.view.pad0{padding-top:clamp(18px,3.5vh,30px); padding-right:22px;
+  padding-bottom:clamp(30px,5vh,46px); padding-left:22px; justify-content:safe center}
 
 /* 演示外壳（在手机框外，不属于产品界面） */
 .demo-chrome{position:absolute; right:14px; top:58px; z-index:6;
@@ -136,9 +137,9 @@ input,textarea,select{font:inherit}
 .family-start{min-height:100%; display:flex; flex-direction:column; padding:18px 0 4px}
 .family-start-head{margin-bottom:30px}
 .family-start-head .sub{margin-bottom:0}
-.family-start .roles{flex:1 1 auto; grid-template-rows:repeat(2,minmax(120px,1fr));
-  min-height:264px; max-height:340px; gap:16px}
-.family-start .role{min-height:120px; padding:24px 20px; border-radius:26px}
+.family-start .roles{flex:1 1 auto; grid-template-rows:repeat(2,minmax(132px,1fr));
+  min-height:300px; max-height:400px; gap:16px}
+.family-start .role{min-height:132px; padding:26px 20px; border-radius:26px}
 .family-start .role .face{width:64px; height:64px; font-size:31px}
 .family-start .role b{font-size:18px}
 .family-start .link{margin-top:18px}
@@ -192,6 +193,8 @@ input,textarea,select{font:inherit}
 .codein{width:100%; padding:16px; text-align:center; border:1px solid var(--line); border-radius:16px;
   background:#fff; font-size:26px; font-weight:800; letter-spacing:.24em; color:var(--ink)}
 .codein:focus{border-color:var(--blue); outline:none; box-shadow:0 0 0 3px var(--blue-soft)}
+.demo-sample{margin:10px 0 0; text-align:center; color:var(--muted); font-size:12px; line-height:1.5}
+.demo-sample b{color:var(--blue-d); font-size:13px; letter-spacing:.08em}
 .err{margin:9px 0 0; color:var(--red); font-size:12.5px}
 .recent{margin-top:16px}
 .recent .row{display:flex; align-items:center; justify-content:space-between; gap:10px;
@@ -441,8 +444,8 @@ input,textarea,select{font:inherit}
     </div>
     <div id="connectionStatus" class="connection-status" data-state="connecting" role="status" aria-live="polite">
       <span class="connection-dot" aria-hidden="true"></span>
-      <span id="connectionStatusText" class="connection-copy">正在安全连接</span>
-      <button class="connection-retry" type="button" data-go="retryConnection" hidden>重试</button>
+      <span id="connectionStatusText" class="connection-copy">Connecting securely</span>
+      <button class="connection-retry" type="button" data-go="retryConnection" hidden>Retry</button>
     </div>
     <div class="view" id="view"></div>
     <div class="demo-chrome" id="chrome"></div>
@@ -483,12 +486,12 @@ var SEED = {
 
 var I18N = {
 zh:{
-  appName:"守护助手", appSub:"阿尔茨海默中度早期 · 双端伴侣",
+  appName:"Remember Us", appSub:"阿尔茨海默家庭双端陪伴",
   langBtn:"EN", resetBtn:"重置演示", exitBtn:"换个角色",
   syncConnecting:"正在安全连接", syncLoading:"正在载入家庭", syncSaving:"正在同步更改",
   syncOffline:"网络已断开，更改尚未同步", syncError:"连接失败，请重试", syncConflict:"有新的家庭更改，请再试一次",
   syncSynced:"已同步", syncRetry:"重试",
-  labelFamily:"家人端", labelElder:"老人端", labelEntry:"阿尔茨海默守护助手",
+  labelFamily:"家人端", labelElder:"老人端", labelEntry:"Remember Us",
 
   hintEntry:"演示用法：浏览器分屏，两个窗口都打开这一页。一个选家人端，一个选老人端，用家庭码连起来。",
   hintFamily:"这台是家人的手机。改任何字段，老人端立刻同步。",
@@ -520,6 +523,7 @@ zh:{
   joinTitle:"输入家庭码", joinSubF:"问一下家里已经在用的人。",
   joinSubE:"请家人代为输入。老人不需要参与这一步。",
   joinPh:"6 位数字", joinErr:"没有找到这个家庭码。",
+  demoCode:"Demo 家庭码",
   recentT:"这台设备上的家庭", recentNote:"演示便捷入口，正式版只保留手动输入。",
   useIt:"进入",
   next:"下一步", back:"上一步", done:"完成", start:"开始",
@@ -600,12 +604,12 @@ zh:{
   resetAsk:"清空这个家庭的全部数据？两个窗口都会回到最开始。"
 },
 en:{
-  appName:"Companion", appSub:"Early-stage Alzheimer's · two-sided care",
+  appName:"Remember Us", appSub:"A two-sided companion for Alzheimer's care",
   langBtn:"中文", resetBtn:"Reset demo", exitBtn:"Switch role",
   syncConnecting:"Connecting securely", syncLoading:"Loading family", syncSaving:"Saving changes",
   syncOffline:"Offline — changes are not synced", syncError:"Connection failed. Please retry.", syncConflict:"Family data changed. Please try again.",
   syncSynced:"Synced", syncRetry:"Retry",
-  labelFamily:"Family side", labelElder:"Elder side", labelEntry:"Alzheimer's Care Assistant",
+  labelFamily:"Family side", labelElder:"Elder side", labelEntry:"Remember Us",
 
   hintEntry:"To present: split the screen and open this page in two windows. Pick the family side in one, the elder side in the other, and link them with the family code.",
   hintFamily:"This is the family member's phone. Edit any field and the elder side updates at once.",
@@ -637,6 +641,7 @@ en:{
   joinTitle:"Enter the family code", joinSubF:"Ask whoever set it up at home.",
   joinSubE:"A family member enters it. The elder is not involved.",
   joinPh:"6 digits", joinErr:"No family found with that code.",
+  demoCode:"Demo family code",
   recentT:"Families on this device", recentNote:"A demo shortcut. The real app only takes manual entry.",
   useIt:"Open",
   next:"Next", back:"Back", done:"Done", start:"Start",
@@ -895,7 +900,8 @@ var App = {
   editingPerson:null,  // 正在编辑的人物 id，null 表示列表
   addingPerson:false
 };
-var St=null, D=null, lang="zh";
+var St=null, D=null, lang="en";
+var DEMO_CODE="527487";
 var subTimer=null, walkTimer=null, speakTimer=null, typing=false;
 
 /* =====================================================================
@@ -1015,7 +1021,8 @@ function viewJoin(){
   var h='<p class="eyebrow'+(forElder?' warm':'')+'">'+esc(forElder?D.roleElderT:D.fsJoinT)+'</p>'
     + '<p class="h1">'+esc(D.joinTitle)+'</p>'
     + '<p class="sub">'+esc(forElder?D.joinSubE:D.joinSubF)+'</p>'
-    + '<input class="codein" id="codeIn" inputmode="numeric" maxlength="6" placeholder="'+esc(D.joinPh)+'">'
+    + '<input class="codein" id="codeIn" inputmode="numeric" maxlength="6" value="'+DEMO_CODE+'" placeholder="'+esc(D.joinPh)+'">'
+    + '<p class="demo-sample">'+esc(D.demoCode)+' · <b>'+DEMO_CODE+'</b></p>'
     + (App.err?'<p class="err">'+esc(App.err)+'</p>':'')
     + '<div style="height:16px"></div>'
     + '<button class="btn'+(forElder?' warm':'')+'" data-go="pair">'+esc(D.next)+'</button>';

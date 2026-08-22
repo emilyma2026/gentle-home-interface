@@ -5,7 +5,7 @@ import { test } from "node:test";
 const sql = readFileSync(
   new URL("../supabase/migrations/202608210001_backend_foundation.sql", import.meta.url),
   "utf8",
-);
+).replace(/\r\n?/g, "\n");
 
 const payloadKeys = [
   "code",

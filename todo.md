@@ -1,4 +1,4 @@
-# 阿尔茨海默守护助手技术 TODO
+# Remember Us 技术 TODO
 
 > 对照《方案速览 v3》的技术方案整理。当前仓库已经具备可交互的前端 Demo，但核心业务仍运行在单页 HTML、`localStorage` 和 `BroadcastChannel` 中。
 

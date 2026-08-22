@@ -793,6 +793,7 @@ function rememberDevice(role,code,memberId){
     sessionStorage.setItem(SROLE,role); sessionStorage.setItem(SCODE,code);
     if(memberId) sessionStorage.setItem(SME,memberId);
     else if(previousCode!==code || role!=="family") sessionStorage.removeItem(SME);
+    if(window.localStorage && /^\d{6}$/.test(String(code||""))) window.localStorage.setItem("remember-us-demo-code",String(code));
   }catch(_error){ /* Device labels are best-effort metadata only. */ }
 }
 function clearDevice(){
@@ -879,15 +880,17 @@ async function runPendingAction(action){
 }
 
 try{
+  var browserSessionStorage=window.sessionStorage||window.localStorage;
   var SupabaseClient=window.supabase.createClient(
     window.SUPABASE_CONFIG.url,
-    window.SUPABASE_CONFIG.publishableKey
+    window.SUPABASE_CONFIG.publishableKey,
+    {auth:{storage:browserSessionStorage,persistSession:true,autoRefreshToken:true,detectSessionInUrl:false}}
   );
   window.SupabaseClient=SupabaseClient;
   Store=window.createSupabaseStore({
     client:SupabaseClient,
     newFamily:newFamily,
-    storage:window.localStorage,
+    storage:browserSessionStorage,
     onStatus:setConnectionStatus
   });
 }catch(_error){
@@ -1272,7 +1275,7 @@ function viewJoin(){
   var forElder = App.joinAs==="elder";
   var demoCode=DEMO_CODE;
   try{
-    var cachedCode=window.localStorage&&window.localStorage.getItem("alz:code");
+    var cachedCode=window.localStorage&&(window.localStorage.getItem("remember-us-demo-code")||window.localStorage.getItem("alz:code"));
     if(/^\d{6}$/.test(cachedCode||"")) demoCode=cachedCode;
   }catch(_error){ /* The static fallback keeps the demo form usable offline. */ }
   var h='<p class="eyebrow'+(forElder?' warm':'')+'">'+esc(forElder?D.roleElderT:D.fsJoinT)+'</p>'
@@ -1893,6 +1896,16 @@ async function pair(code){
   });
 }
 
+async function startElderDevice(){
+  stopGps();
+  clearDevice();
+  St=null;
+  if(Store&&typeof Store.resetSession==="function") Store.resetSession();
+  try{
+    if(window.SupabaseClient&&window.SupabaseClient.auth) await window.SupabaseClient.auth.signOut();
+  }catch(_error){ /* A fresh anonymous session will be created when pairing starts. */ }
+}
+
 async function hardExit(){
   if(window.Voice){ window.Voice.stopSpeaking(); }
   if(App.voiceSession){ try{ await App.voiceSession.stop(); }catch(_error){} }
@@ -1944,7 +1957,7 @@ document.addEventListener("click", async function(e){
       });
       break;
     case "joinFamily": App.joinAs="family"; App.err=""; App.route="join"; render(); break;
-    case "elderPair":  App.joinAs="elder";  App.err=""; App.route="join"; render(); break;
+    case "elderPair":  await startElderDevice(); App.joinAs="elder"; App.err=""; App.route="join"; render(); break;
     case "pair": await pair(el("codeIn").value); break;
 
     case "obMe": App.route="obMe"; render(); break;

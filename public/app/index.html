@@ -2755,12 +2755,23 @@ function latestConfirmed(s, type){
 function factById(s,id){ for(var i=0;i<s.facts.length;i++) if(s.facts[i].id===id) return s.facts[i]; return null; }
 
 async function ask(i){
+  /* i===0/1 且没有绑定答案（factForAsk）时，同类已确认条目可能不止一条——比如通话抽取
+     出了好几条不同话题的 fact，此时"取最新一条"经常文不对题，改成让 AI 从里面挑出
+     真正回答了这道题的那条。这一步必须在 queueUpdate 外先做完，因为它是异步的，而
+     queueUpdate 的状态更新函数要保持同步。 */
+  var bound=factForAsk(St,i);
+  var matched=null;
+  if(!bound){
+    if(i===0) matched=await matchRelevantFact(St,"fact",tp(D.asks[0]));
+    else if(i===1) matched=await matchRelevantFact(St,"todo",tp(D.asks[1]));
+  }
+
   /* 先把问题和一个占位的回答放上去，模型回来之后再补写措辞 */
   var pending=null;
   queueUpdate(function(s){
     s.thread.push({role:"me",ask:i});
     var key,src,text=null,f;
-    var bound=factForAsk(s,i);
+    var boundNow=factForAsk(s,i);  // 用这次提交时的最新快照重新确认一次，避免竞态
     if(i===0){
       /* 重复提问只在今日概况里累加一条计数，不打扰家人 */
       s.askCounts.visit=(s.askCounts.visit||0)+1;
@@ -2768,15 +2779,15 @@ async function ask(i){
       for(var k=0;k<s.timeline.length;k++) if(s.timeline[k].kind==="qa") row=s.timeline[k];
       if(row) row.n=s.askCounts.visit; else s.timeline.push({t:clockNow(),kind:"qa",n:1});
     }
-    if(bound){
-      key = bound.origin==="family" ? "ansPlain" : "ansFromFact";
-      text=factLine(bound); src="srcFact";
+    if(boundNow){
+      key = boundNow.origin==="family" ? "ansPlain" : "ansFromFact";
+      text=factLine(boundNow); src="srcFact";
     } else if(i===0){
-      f=latestConfirmed(s,"fact");
+      f=matched;
       if(f){ key="ansFromFact"; text=factLine(f); src="srcFact"; }
       else { key="ansNoConfirm"; src="srcUnk"; }
     } else if(i===1){
-      f=latestConfirmed(s,"todo");
+      f=matched;
       if(f){ key="ansFromTodo"; text=factLine(f); src="srcTodo"; }
       else { key="ansNoConfirm"; src="srcUnk"; }
     } else {
@@ -2826,6 +2837,34 @@ function factForAsk(s, i){
     if(f.type==="fact" && f.status==="done" && f.ask===i) return f;
   }
   return null;
+}
+
+/* 没有绑定答案时，同类已确认条目（比如通话抽取出来的一堆 fact）可能有好几条，
+   "取最新一条"经常文不对题。条目多于一条才需要问模型，从里面挑出真正回答了
+   这个问题的那条；只有一条、AI 不可用、或 AI 判断没有一条对得上时，退回
+   "取最新一条"（latestConfirmed），不新增拒答文案。 */
+async function matchRelevantFact(s, type, questionText){
+  var src=s.facts||[];
+  var candidates=[];
+  for(var i=0;i<src.length;i++){
+    if(src[i].type===type && src[i].status==="done") candidates.push(src[i]);
+  }
+  if(candidates.length===0) return null;
+  if(candidates.length===1) return candidates[0];
+
+  var zh=s.lang!=="en";
+  var lines=candidates.map(function(f,idx){ return idx+". "+factLine(f); }).join("\n");
+  var raw=await aiAsk({
+    timeout:6000,
+    system: zh
+      ? "从下面编号的条目里选出最能回答这个问题的一条，只输出那个编号；如果没有一条真正回答了这个问题，只输出 -1。不要输出其他任何文字。"
+      : "Pick the numbered item that best answers the question. Output only that number, or -1 if none of them actually answer it. Output nothing else.",
+    user: (zh?"问题：":"Question: ")+questionText+"\n\n"+lines
+  });
+  var idx=raw!=null ? parseInt(String(raw).trim(),10) : NaN;
+  if(idx===-1) return null;
+  if(!isNaN(idx) && idx>=0 && idx<candidates.length) return candidates[idx];
+  return latestConfirmed(s,type);  // AI 不可用/返回格式不对：退回“取最新一条”
 }
 
 function saveAnswer(ask){

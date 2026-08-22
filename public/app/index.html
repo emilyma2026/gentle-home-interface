@@ -842,21 +842,31 @@ function newFamily(code, lang){
   };
 }
 
+function hasUrlFlag(name, search){
+  var query=String(search||"").replace(/^\?/,"");
+  return new RegExp("(?:^|&)"+name+"=1(?:&|$)").test(query);
+}
 function localDemoRequested(){
   try{
-    var own=new URLSearchParams(window.location.search).get("localDemo");
-    var parent=window.top&&window.top!==window?new URLSearchParams(window.top.location.search).get("localDemo"):null;
-    return (own==="1"||parent==="1") && /^(localhost|127\.0\.0\.1)$/.test(window.location.hostname);
+    if(!/^(localhost|127\.0\.0\.1)$/.test(window.location.hostname)) return false;
+    if(hasUrlFlag("localDemo",window.location.search)) return true;
+    if(window.top&&window.top!==window){
+      try{ return hasUrlFlag("localDemo",window.top.location.search); }catch(_crossOriginError){ return false; }
+    }
   }catch(_error){ return false; }
+  return false;
 }
 function localDemoElderRequested(){
   if(!localDemoRequested()) return false;
   try{
-    var own=new URLSearchParams(window.location.search).get("localElder");
-    var parent=window.top&&window.top!==window?new URLSearchParams(window.top.location.search).get("localElder"):null;
-    return own==="1"||parent==="1";
+    if(hasUrlFlag("localElder",window.location.search)) return true;
+    if(window.top&&window.top!==window){
+      try{ return hasUrlFlag("localElder",window.top.location.search); }catch(_crossOriginError){ return false; }
+    }
   }catch(_error){ return false; }
+  return false;
 }
+var LOCAL_DEMO=localDemoRequested();
 function createLocalDemoStore(){
   var elderMode=localDemoElderRequested(), state=newFamily("527487","zh"), selectedRole=elderMode?"elder":"family", subscribers=[];
   if(elderMode){ state.setup=true; state.paired=true; }
@@ -938,7 +948,7 @@ async function runPendingAction(action){
 }
 
 try{
-  if(localDemoRequested()){
+  if(LOCAL_DEMO){
     Store=createLocalDemoStore();
   }else{
     var browserSessionStorage=window.sessionStorage||window.localStorage;
@@ -2279,8 +2289,21 @@ async function connectAndRestore(){
 
 (function boot(){
   D=I18N[lang];
-  render(St);
-  connectAndRestore();
+  if(LOCAL_DEMO){
+    Connection.authenticated=true;
+    Connection.initFailed=false;
+    St=Store&&Store.get?Store.get():null;
+    if(St){
+      lang=St.lang||lang;
+      App.route=storeRole()==="elder"?"elder":"obElder";
+    }
+    setConnectionStatus("synced");
+    render(St);
+    if(App.route==="elder") setTimeout(startGps,0);
+  }else{
+    render(St);
+    connectAndRestore();
+  }
   window.addEventListener("offline",function(){ setConnectionStatus("offline"); });
   setInterval(function(){ var c=el("clock"); if(c) c.textContent=clockNow(); }, 20000);
 })();

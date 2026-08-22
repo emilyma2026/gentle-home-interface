@@ -19,6 +19,11 @@ const viewJoinSource = appSource.slice(joinStart, joinEnd);
 const profileStart = appSource.indexOf("function viewObMe(){");
 const profileEnd = appSource.indexOf("function viewCode(){", profileStart);
 const viewProfileSource = appSource.slice(profileStart, profileEnd);
+const callerCardStart = appSource.indexOf("function callerCard(){");
+const callerCardEnd = appSource.indexOf("function viewRinging(){", callerCardStart);
+const callerCardSource = appSource.slice(callerCardStart, callerCardEnd);
+const ringingEnd = appSource.indexOf("function viewTalking(){", callerCardEnd);
+const viewRingingSource = appSource.slice(callerCardEnd, ringingEnd);
 const persistUpdateStart = appSource.indexOf("function persistUpdate(");
 const persistUpdateEnd = appSource.indexOf("async function runPendingAction", persistUpdateStart);
 const persistUpdateSource = appSource.slice(persistUpdateStart, persistUpdateEnd);
@@ -34,6 +39,12 @@ const pairSource = appSource.slice(pairStart, pairEnd);
 const i18nStart = appSource.indexOf("var I18N = {");
 const i18nEnd = appSource.indexOf("var Store=", i18nStart);
 const i18n = vm.runInNewContext(`${appSource.slice(i18nStart, i18nEnd)}\nI18N;`);
+const iconStart = appSource.indexOf("var IC = {");
+const iconEnd = appSource.indexOf(
+  "/* =====================================================================",
+  iconStart,
+);
+const icons = vm.runInNewContext(`${appSource.slice(iconStart, iconEnd)}\nIC;`);
 const styleText = appSource.match(/<style>([\s\S]*?)<\/style>/)?.[1] ?? "";
 const stylesheet = postcss.parse(styleText);
 
@@ -93,7 +104,7 @@ test("the first visit presents the English Remember Us brand", () => {
 
   assert.match(appSource, /<html lang="en">/);
   assert.match(appSource, /<title>Remember Us · Family Memory Companion<\/title>/);
-  assert.match(appSource, /var St=null, D=null, lang="en";/);
+  assert.match(appSource, /var St=null, D=null, lang="en", langTouched=false;/);
   assert.match(output, /<p class="entry-eyebrow">Remember Us<\/p>/);
   assert.equal(i18n.zh.appName, "Remember Us");
   assert.equal(i18n.en.appName, "Remember Us");
@@ -186,6 +197,65 @@ test("profile form centers a neutral add-photo placeholder without the old expla
   assert.equal(placeholderStyles.background, "#E8E3DE");
 });
 
+test("incoming call card shows every family onboarding detail without a broken relationship sentence", () => {
+  const person = {
+    id: "family-1",
+    nick: "Emily",
+    relation: "Daughter",
+    phone: "+65 8371 0994",
+    recent: "Moved to Singapore for a new role.",
+    hint: "We baked peach pies together every summer.",
+    photo: "data:image/jpeg;base64,photo",
+  };
+  const context = {
+    St: { people: [person], lastCaller: person.id },
+    D: i18n.en,
+    focusPerson: () => person,
+    avatarHTML: () => '<span class="avatar av-lg photo"></span>',
+    esc: (value) => String(value),
+  };
+
+  const output = vm.runInNewContext(`${callerCardSource}\ncallerCard();`, context);
+
+  assert.match(output, /class="caller-name"[^>]*>Emily</);
+  assert.match(output, /class="caller-relation"[^>]*>Daughter</);
+  assert.match(output, />Phone<\/dt><dd[^>]*>\+65 8371 0994<\/dd>/);
+  assert.match(output, />Recent life<\/dt><dd[^>]*>Moved to Singapore for a new role\.<\/dd>/);
+  assert.match(
+    output,
+    />A memory to share<\/dt><dd[^>]*>We baked peach pies together every summer\.<\/dd>/,
+  );
+  assert.doesNotMatch(output, /, your/);
+});
+
+test("decline control uses a standard horizontal hang-up handset", () => {
+  const person = {
+    id: "family-1",
+    nick: "Emily",
+    relation: "Daughter",
+    phone: "+65 8371 0994",
+    recent: "Recent life",
+    hint: "Shared memory",
+    photo: "photo",
+  };
+  const context = {
+    St: { people: [person], lastCaller: person.id },
+    D: i18n.en,
+    IC: icons,
+    focusPerson: () => person,
+    callerCard: () => "CALLER_CARD",
+    esc: (value) => String(value),
+  };
+
+  const output = vm.runInNewContext(`${viewRingingSource}\nviewRinging();`, context);
+  const declineIconStyles = declarations(".ctrl .no .hangup-symbol");
+
+  assert.match(output, /data-go="decline"[^>]*><i><svg class="hangup-symbol"/);
+  assert.equal(declineIconStyles.fill, "currentColor");
+  assert.equal(declineIconStyles.stroke, "none");
+  assert.doesNotMatch(output, /class="nm"/);
+});
+
 test("entry loads the pinned Supabase browser runtime and adapter before the application", () => {
   const externalScripts = [...appSource.matchAll(/<script\s+src="([^"]+)"[^>]*><\/script>/g)].map(
     (match) => match[1],
@@ -193,6 +263,7 @@ test("entry loads the pinned Supabase browser runtime and adapter before the app
 
   assert.deepEqual(externalScripts, [
     "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4",
+    "/app/maps-config.js",
     "/app/supabase-config.js",
     "/app/supabase-store.js",
   ]);
@@ -253,7 +324,7 @@ test("failed initialization unlocks family lifecycle buttons for a direct retry"
 
 test("entry awaits asynchronous family lifecycle actions", () => {
   assert.match(appSource, /document\.addEventListener\("click",\s*async function/);
-  assert.match(appSource, /await Store\.create\(lang\)/);
+  assert.match(appSource, /await Store\.create\(langTouched \? lang : "en"\)/);
   assert.match(appSource, /await Store\.attach\(code,/);
   assert.match(appSource, /await Store\.resetFamily\(\)/);
   assert.match(appSource, /await Store\.signOut\(\)/);

@@ -998,7 +998,9 @@ function setConnectionStatus(state,message,useMessage){
   }
   syncActionAvailability();
 }
-function storeRole(){ return Store&&Store.role?Store.role():sessionGet(SROLE); }
+/* 这台设备当前选择的角色优先。数据库里的成员角色只在没有本地记录时兜底，
+   因为 join_family 对已存在的成员不会改角色，同一设备换身份时会拿到旧值。 */
+function storeRole(){ return sessionGet(SROLE) || (Store&&Store.role?Store.role():null); }
 function reportStoreError(error){
   var copy=D||I18N[lang]||I18N.zh;
   if(error&&error.code==="REVISION_CONFLICT") setConnectionStatus("error",copy.syncConflict,true);
@@ -2114,10 +2116,10 @@ async function pair(code){
       await Store.attach(code,App.joinAs);
       St=Store.get();
       App.err="";
-      var role=storeRole()||App.joinAs;
+      var role=App.joinAs;   // 用户在入口页选了什么就进什么
       if(role==="elder"){
-        await persistUpdate(function(s){ s.paired=true; });
         rememberDevice("elder",code,null);
+        await persistUpdate(function(s){ s.paired=true; });
         App.paired=true; App.route="elder"; render();
       } else {
         var p=newPerson(St.lang,true);
@@ -2319,7 +2321,7 @@ async function connectAndRestore(){
     St=restored;
     if(St){
       lang=St.lang||lang;
-      var role=storeRole();
+      var role=storeRole()||"family";
       var member=sessionGet(SCODE)===St.code?selectedMemberId():null;
       rememberDevice(role,St.code,role==="family"?member:null);
       App.route=role==="elder"?"elder":"family";

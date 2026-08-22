@@ -132,12 +132,26 @@
     });
   }
 
+  function geocodeAddress(address) {
+    if (!String(address || "").trim()) return Promise.reject(error("address_missing", "缺少家庭地址"));
+    return loadMaps().then(function (maps) {
+      return new Promise(function (resolve, reject) {
+        new maps.Geocoder().geocode({ address: String(address).trim(), region: "sg" }, function (results, status) {
+          if (status !== "OK" || !results || !results[0]) { reject(error("geocode_failed", "找不到这个家庭地址")); return; }
+          var location = results[0].geometry.location;
+          resolve({ lat: location.lat(), lng: location.lng(), formattedAddress: results[0].formatted_address });
+        });
+      });
+    });
+  }
+
   window.Navigation = {
     start: start,
     stop: stop,
     locate: locate,
     loadMaps: loadMaps,
     createMap: createMap,
+    geocodeAddress: geocodeAddress,
     distanceMeters: distanceMeters,
     bearingDegrees: bearingDegrees,
     isWatching: function () { return watchId !== null; },

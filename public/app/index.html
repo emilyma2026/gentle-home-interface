@@ -494,12 +494,12 @@ input,textarea,select{font:inherit}
    1. 文案与示例数据
    ===================================================================== */
 var SEED = {
-  zh:{ elderName:"妈妈", address:"广州市天河区兴华路 12 号 3 栋",
+  zh:{ elderName:"妈妈", address:"21 Lower Kent Ridge Road, Singapore 119077",
        nick:"小雨", relation:"女儿", phone:"138 0000 7612",
        recent:"现在在广州工作，一个人住。",
        hint:"你以前每天送她去三小上学，风雨无阻。",
        spoken:"我是她女儿小雨，现在在广州工作，一个人住。我妈以前每天送我去三小上学，风雨无阻。" },
-  en:{ elderName:"Mom", address:"12 Xinghua Rd, Building 3, Guangzhou",
+  en:{ elderName:"Mom", address:"21 Lower Kent Ridge Road, Singapore 119077",
        nick:"Yuki", relation:"Daughter", phone:"138 0000 7612",
        recent:"Works in Guangzhou, lives on her own.",
        hint:"You walked her to No.3 Primary School every morning, rain or shine.",
@@ -969,7 +969,14 @@ function initHomeMap(){
   var node=el("homeMap");
   if(!node || !window.Navigation || App.homeMapElement===node) return;
   App.homeMapElement=node;
-  var center=homePoint(St)||{lat:23.145,lng:113.324};
+  var address=St&&St.elder&&St.elder.address?String(St.elder.address).trim():"";
+  if(!homePoint(St) && address && App.homeGeocodeRequested!==address){
+    App.homeGeocodeRequested=address;
+    window.Navigation.geocodeAddress(address).then(function(point){ setHomePoint(point); }).catch(function(){
+      var status=el("homeMapStatus"); if(status) status.textContent=D.mapPickHint;
+    });
+  }
+  var center=homePoint(St)||{lat:1.2931,lng:103.7758};
   window.Navigation.createMap(node,{center:center,homeTitle:D.mapHome,currentTitle:D.gpsReady,onHomeSelect:setHomePoint})
     .then(function(controller){
       if(App.homeMapElement!==node) return;
@@ -998,9 +1005,13 @@ function initGuideMap(){
         var raw=legs[0]&&legs[0].steps||[];
         for(var i=0;i<raw.length&&steps.length<3;i++){
           var text=String(raw[i].instructions||"").replace(/<[^>]+>/g,"").trim();
-          if(text) steps.push(text);
+          var end=raw[i].end_location;
+          if(text && end) steps.push({text:text,end:{lat:end.lat(),lng:end.lng()},distanceM:raw[i].distance?raw[i].distance.value:null});
         }
-        if(steps.length) queueUpdate(function(s){ s.guide.instructions=steps; s.guide.routeId="google-walking"; });
+        if(steps.length){
+          queueUpdate(function(s){ s.guide.instructions=steps; s.guide.routeId="google-walking"; s.guide.step=0; });
+          if(window.Voice) window.Voice.speak(steps[0].text,{lang:St.lang});
+        }
       }).catch(function(){ /* fixed landmark instructions remain the fallback */ });
     })
     .catch(function(){ /* no map key or unavailable API: use the original guide */ });
@@ -1020,7 +1031,7 @@ function applyGpsPosition(position){
   var point={lat:Number(position.coords.latitude),lng:Number(position.coords.longitude)};
   var speak=false;
   queueUpdate(function(s){
-    var old=currentPoint(s), home=homePoint(s), oldRisk=s.risk&&s.risk.state||"safe";
+    var home=homePoint(s), oldRisk=s.risk&&s.risk.state||"safe";
     s.loc=s.loc||{};
     s.loc.lat=point.lat; s.loc.lng=point.lng;
     s.loc.accuracy=Math.round(Number(position.coords.accuracy)||0);
@@ -1053,6 +1064,8 @@ function applyGpsPosition(position){
   });
   App.gpsStatus="ready"; App.gpsError="";
   if(App.homeMapController) App.homeMapController.setCurrent(point);
+  if(App.guideMapController) App.guideMapController.setCurrent(point);
+  maybeAdvanceGuide(point);
   if(speak && App.route==="elder" && window.Voice) window.Voice.speak(D.riskLeaving,{lang:St.lang});
 }
 function startGps(){
@@ -1102,6 +1115,7 @@ var App = {
   gpsError:"",
   homeMapElement:null,
   homeMapController:null,
+  homeGeocodeRequested:"",
   guideMapElement:null,
   guideMapController:null,
   guideRouteRequested:false
@@ -1495,12 +1509,14 @@ function viewQa(){
 
 function viewGuide(){
   var g=D.guide[Math.min(St.guide.step,2)];
-  var instruction=St.guide.instructions&&St.guide.instructions[St.guide.step] ? St.guide.instructions[St.guide.step] : g.copy;
+  var routeStep=St.guide.instructions&&St.guide.instructions[St.guide.step];
+  var instruction=routeStep ? guideText(routeStep) : g.copy;
+  var remaining=routeStep&&routeStep.end?guideDistance(routeStep,currentPoint(St)):null;
   return '<p class="stepno" style="margin-top:10px">'+esc(fill(D.eStep,{n:St.guide.step+1}))+'</p>'
     + '<div class="lmk"><div class="shape '+g.cls+'"></div><span class="nm">'+esc(g.lm)+'</span></div>'
     + '<div class="vr-line">'+IC.voice+'<span>'+esc(D.eGuiding)+'</span></div>'
     + '<p class="stepcopy">'+esc(instruction)+'</p>'
-    + '<p class="stepnote">'+esc(D.eGuideNote)+'</p>'
+    + '<p class="stepnote">'+esc(remaining!==null?fill(D.riskDistance,{n:remaining}):D.eGuideNote)+'</p>'
     + '<div class="live-map" id="guideMap" aria-label="route map"></div>'
     + '<div class="spacer"></div>'
     + '<button class="e-btn" data-go="arrived">'+esc(D.eArrived)+'</button>';
@@ -1647,6 +1663,7 @@ function setLoc(x,y){
     s.loc.x=x; s.loc.y=y;
     if(!s.guide.active && !s.guide.done && distOf(s)>rangeM(s)){
       s.guide.active=true; s.guide.step=0;
+      s.guide.instructions=[]; s.guide.routeId=null; App.guideRouteRequested=false;
       s.timeline.push({t:clockNow(),kind:"guide"});
       started=true;
     }
@@ -1663,26 +1680,42 @@ function autoWalk(){
     if(i>=n) clearInterval(walkTimer);
   },120);
 }
-function arrived(){
-  var step=0;
+function guideText(item){ return item&&typeof item==="object"?item.text:String(item||""); }
+function guideDistance(item, point){
+  return item&&item.end&&point&&window.Navigation ? window.Navigation.distanceMeters(point,item.end) : null;
+}
+function advanceGuide(manual){
+  if(!St||!St.guide||!St.guide.active) return;
+  var nextText="", advanced=false, completed=false;
   queueUpdate(function(s){
+    var list=s.guide.instructions||[], total=list.length||3, current=list[s.guide.step];
+    var livePoint=currentPoint(s);
+    if(!manual && current && current.end && (!livePoint || guideDistance(current,livePoint)>55)) return;
     s.guide.step++;
-    step=s.guide.step;
-    if(s.guide.step>=3){
+    advanced=true;
+    if(s.guide.step>=total || (homePoint(s)&&currentPoint(s)&&window.Navigation.distanceMeters(homePoint(s),currentPoint(s))<=50)){
       s.guide.active=false; s.guide.done=true;
       s.loc.x=HOME.x; s.loc.y=HOME.y;
+      s.risk=s.risk||{}; s.risk.state="returned"; s.risk.outsideCount=0; s.risk.reason="inside_home_radius";
+      completed=true;
       var seen=false;
       for(var i=0;i<s.timeline.length;i++) if(s.timeline[i].kind==="home") seen=true;
       if(!seen) s.timeline.push({t:clockNow(),kind:"home"});
     } else {
-      s.loc.x += (HOME.x-s.loc.x)*0.42;
-      s.loc.y += (HOME.y-s.loc.y)*0.42;
+      nextText=guideText(list[s.guide.step]);
     }
   });
-  if(App.route==="elder" && window.Voice){
-    var guide=D.guide[Math.min(Math.max(step-1,0),2)];
-    if(guide) window.Voice.speak(guide.copy,{lang:St.lang});
+  if(advanced && App.route==="elder" && window.Voice){
+    window.Voice.speak(completed?D.eHomeT:(nextText||D.guide[Math.min(St.guide.step,2)].copy),{lang:St.lang});
   }
+}
+function maybeAdvanceGuide(point){
+  if(!St||!St.guide||!St.guide.active) return;
+  var current=(St.guide.instructions||[])[St.guide.step];
+  if(current&&current.end&&guideDistance(current,point)<=55) advanceGuide(false);
+}
+function arrived(){
+  advanceGuide(true);
 }
 
 function factById(s,id){ for(var i=0;i<s.facts.length;i++) if(s.facts[i].id===id) return s.facts[i]; return null; }

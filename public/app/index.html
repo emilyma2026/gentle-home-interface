@@ -840,6 +840,37 @@ function newFamily(code, lang){
   };
 }
 
+function localDemoRequested(){
+  try{
+    var own=new URLSearchParams(window.location.search).get("localDemo");
+    var parent=window.top&&window.top!==window?new URLSearchParams(window.top.location.search).get("localDemo"):null;
+    return (own==="1"||parent==="1") && /^(localhost|127\.0\.0\.1)$/.test(window.location.hostname);
+  }catch(_error){ return false; }
+}
+function createLocalDemoStore(){
+  var state=newFamily("527487","zh"), selectedRole="family", subscribers=[];
+  function emit(){ for(var i=0;i<subscribers.length;i++) subscribers[i](state); }
+  function setStatus(status){ if(status&&typeof status==="string") setConnectionStatus(status); }
+  return {
+    initialize:function(){ setStatus("synced"); return Promise.resolve(state); },
+    restoreSelection:function(){ return Promise.resolve(state); },
+    create:function(nextLang){ state=newFamily("527487",nextLang||"zh"); selectedRole="family"; emit(); return Promise.resolve(state.code); },
+    attach:function(code,role){
+      if(String(code||"")!==state.code){ var e=new Error("Family not found."); e.code="FAMILY_NOT_FOUND"; return Promise.reject(e); }
+      selectedRole=role||"family"; emit(); return Promise.resolve(state);
+    },
+    update:function(mutator){
+      var draft=structuredClone(state); mutator(draft); state=draft; emit(); return Promise.resolve(state);
+    },
+    resetFamily:function(){ state=newFamily(state.code,state.lang||lang); emit(); return Promise.resolve(state); },
+    signOut:function(){ state=null; selectedRole=null; subscribers=[]; return Promise.resolve(); },
+    resetSession:function(){ selectedRole=null; },
+    get:function(){ return state; },
+    role:function(){ return selectedRole; },
+    subscribe:function(fn){ subscribers.push(fn); return function(){ subscribers=subscribers.filter(function(item){ return item!==fn; }); }; },
+  };
+}
+
 var Connection={state:"connecting", authenticated:false, initFailed:false, pendingAction:false};
 var Store=null;
 
@@ -896,19 +927,23 @@ async function runPendingAction(action){
 }
 
 try{
-  var browserSessionStorage=window.sessionStorage||window.localStorage;
-  var SupabaseClient=window.supabase.createClient(
-    window.SUPABASE_CONFIG.url,
-    window.SUPABASE_CONFIG.publishableKey,
-    {auth:{storage:browserSessionStorage,persistSession:true,autoRefreshToken:true,detectSessionInUrl:false}}
-  );
-  window.SupabaseClient=SupabaseClient;
-  Store=window.createSupabaseStore({
-    client:SupabaseClient,
-    newFamily:newFamily,
-    storage:browserSessionStorage,
-    onStatus:setConnectionStatus
-  });
+  if(localDemoRequested()){
+    Store=createLocalDemoStore();
+  }else{
+    var browserSessionStorage=window.sessionStorage||window.localStorage;
+    var SupabaseClient=window.supabase.createClient(
+      window.SUPABASE_CONFIG.url,
+      window.SUPABASE_CONFIG.publishableKey,
+      {auth:{storage:browserSessionStorage,persistSession:true,autoRefreshToken:true,detectSessionInUrl:false}}
+    );
+    window.SupabaseClient=SupabaseClient;
+    Store=window.createSupabaseStore({
+      client:SupabaseClient,
+      newFamily:newFamily,
+      storage:browserSessionStorage,
+      onStatus:setConnectionStatus
+    });
+  }
 }catch(_error){
   Connection.initFailed=true;
   setConnectionStatus("error");

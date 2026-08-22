@@ -108,7 +108,7 @@ input,textarea,select{font:inherit}
 .btn.red{background:var(--red); box-shadow:0 8px 20px rgba(201,100,107,.24)}
 .btn[disabled]{opacity:.42; box-shadow:none}
 .btn-row{display:flex; gap:9px}
-.btn-row .btn{flex:1}
+.btn-row .btn,.btn-row .e-btn{flex:1; min-width:0}
 .link{display:block; width:100%; padding:11px; text-align:center; color:var(--muted); font-size:13px}
 .link:hover{color:var(--blue)}
 
@@ -376,17 +376,26 @@ input,textarea,select{font:inherit}
 .holdbar{flex:0 0 auto; margin-top:10px; padding:14px; text-align:center; border-radius:99px;
   border:1.5px dashed var(--warm); color:var(--warm); font-size:14px; font-weight:800}
 
-.lmk{position:relative; min-height:190px; margin:12px 0 16px; border-radius:26px; overflow:hidden;
-  display:grid; place-items:center; background:linear-gradient(150deg,var(--blue-soft),var(--rose-soft))}
-.lmk .shape{width:150px; height:88px; border:14px solid var(--warm); border-top:0; transform:skew(-8deg); opacity:.92}
-.lmk .shape.shop{border-color:var(--blue); border-radius:0 0 10px 10px; transform:none}
-.lmk .shape.home{border-color:var(--green); border-top:14px solid var(--green); border-radius:8px; transform:none}
-.lmk .nm{position:absolute; left:14px; bottom:14px; padding:6px 13px; border-radius:99px;
-  background:rgba(23,22,26,.82); color:#fff; font-size:13px; font-weight:700}
+.visuals-panel{position:relative; width:100%; height:220px; margin:12px 0 16px; border-radius:26px; overflow:hidden; background:linear-gradient(135deg,var(--blue-soft),var(--rose-soft)); box-shadow:0 8px 24px rgba(0,0,0,0.06)}
+.visuals-panel .sv-bg,.visuals-panel .sv-fallback{width:100%; height:100%; object-fit:cover; display:block}
+.visuals-panel .sv-bg{opacity:.95}
+.visuals-panel .sv-fallback{display:flex; align-items:flex-end; justify-content:flex-start; padding:18px; background:linear-gradient(160deg,rgba(255,255,255,.18),rgba(0,0,0,.12)),linear-gradient(135deg,var(--blue-soft),var(--rose-soft)); color:#fff}
+.visuals-panel .sv-fallback span{padding:8px 12px; border-radius:999px; background:rgba(58,44,34,.36); backdrop-filter:blur(6px); font-size:13px; font-weight:800; letter-spacing:.01em}
+.place-photo-badge{position:absolute; right:12px; bottom:12px; width:80px; height:80px; border-radius:18px; overflow:hidden; border:3px solid rgba(255,255,255,0.9); box-shadow:0 6px 16px rgba(0,0,0,0.15); background:#fff}
+.place-photo-badge img{width:100%; height:100%; object-fit:cover;}
+.guide-copy{margin-bottom:12px}
+.guide-copy .stepno{margin-bottom:8px}
+.lmk{position:relative; display:flex; align-items:center; gap:12px; margin-bottom:16px; padding:12px 16px 12px 12px; border-radius:22px; background:linear-gradient(135deg,var(--blue-soft),#fff); border:1px solid rgba(0,0,0,0.04); box-shadow:0 4px 12px rgba(0,0,0,0.03)}
+.lmk .turn-arrow{width:52px; height:52px; padding:10px; border-radius:16px; background:var(--blue); color:#fff; display:grid; place-items:center; flex-shrink:0; box-shadow:0 4px 12px rgba(35,115,225,0.3)}
+.lmk .nm{font-size:18px; font-weight:800; color:var(--ink); line-height:1.3}
 .stepno{margin:0 0 6px; color:var(--muted); font-size:14px; font-weight:700}
 .stepcopy{margin:0 0 10px; font-size:26px; font-weight:800; line-height:1.45}
 .stepnote{margin:0; color:var(--muted); font-size:14px; line-height:1.55}
 .vr-line{display:flex; align-items:center; gap:7px; margin-bottom:8px; color:var(--warm); font-size:13px; font-weight:800}
+.guide-actions{display:flex; align-items:stretch; gap:10px; margin-top:auto; width:100%}
+.guide-actions .e-btn{margin-top:0; min-width:0}
+.guide-actions .prev-btn{flex:0 0 68px; width:68px; padding:0; display:grid; place-items:center; font-size:28px; box-shadow:var(--sh-card)}
+.guide-actions .arrived-btn{flex:1 1 auto; width:auto}
 .vr-line svg{width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round}
 
 .devbar{flex:0 0 auto; margin-top:14px; padding-top:12px; border-top:1px dashed #E3DEDA}
@@ -516,7 +525,7 @@ zh:{
   syncSynced:"已同步", syncRetry:"重试",
   labelFamily:"家人端", labelElder:"老人端", labelEntry:"Remember Us",
 
-  hintEntry:"演示用法：浏览器分屏，两个窗口都打开这一页。一个选家人端，一个选老人端，用家庭码连起来。",
+  hintEntry:"演示用法：浏览器分屏，两个窗口都打开这一页。一个选家人端，一个选老人端，用家庭码连起来。地图本地演示可加 ?localDemo=1，老人端可再加 &localElder=1。",
   hintFamily:"这台是家人的手机。改任何字段，老人端立刻同步。",
   hintElder:"这台是老人的手机。她不需要操作，需要帮忙时屏幕会自己亮起来。",
 
@@ -659,7 +668,7 @@ en:{
   syncSynced:"Synced", syncRetry:"Retry",
   labelFamily:"Family side", labelElder:"Elder side", labelEntry:"Remember Us",
 
-  hintEntry:"To present: split the screen and open this page in two windows. Pick the family side in one, the elder side in the other, and link them with the family code.",
+  hintEntry:"To present: split the screen and open this page in two windows. Pick the family side in one, the elder side in the other, and link them with the family code. For a local map demo, add ?localDemo=1 and add &localElder=1 on the elder window.",
   hintFamily:"This is the family member's phone. Edit any field and the elder side updates at once.",
   hintElder:"This is the elder's phone. She never operates it; the screen wakes up when she needs help.",
 
@@ -856,6 +865,11 @@ function localDemoRequested(){
   }catch(_error){ return false; }
   return false;
 }
+function shouldUseDemoFallback(error){
+  if(!LOCAL_DEMO || !error) return false;
+  var code=error.code||"";
+  return code==="maps_key_missing" || code==="maps_failed" || code==="route_failed" || code==="route_missing";
+}
 function localDemoElderRequested(){
   if(!localDemoRequested()) return false;
   try{
@@ -868,13 +882,49 @@ function localDemoElderRequested(){
 }
 var LOCAL_DEMO=localDemoRequested();
 function createLocalDemoStore(){
-  var elderMode=localDemoElderRequested(), state=newFamily("527487","zh"), selectedRole=elderMode?"elder":"family", subscribers=[];
-  if(elderMode){ state.setup=true; state.paired=true; }
-  function emit(){ for(var i=0;i<subscribers.length;i++) subscribers[i](state); }
+  var DEMO_LS_KEY="remember-us-local-demo-state";
+  var DEMO_BC_NAME="remember-us-local-demo";
+  var elderMode=localDemoElderRequested();
+  var selectedRole=elderMode?"elder":"family";
+  var subscribers=[];
+
+  // 从 localStorage 读取已有 state，实现跨标签共享
+  function loadState(){
+    try{
+      var raw=window.localStorage&&window.localStorage.getItem(DEMO_LS_KEY);
+      if(raw){ var parsed=JSON.parse(raw); if(parsed&&parsed.code) return parsed; }
+    }catch(_e){}
+    return null;
+  }
+  function saveState(s){
+    try{ if(window.localStorage) window.localStorage.setItem(DEMO_LS_KEY,JSON.stringify(s)); }catch(_e){}
+  }
+
+  var state=loadState()||newFamily("527487","zh");
+  if(elderMode&&!state.setup){ state.setup=true; state.paired=true; }
+
+  // BroadcastChannel 跨标签同步
+  var bc=null;
+  try{
+    if(typeof BroadcastChannel==="function"){
+      bc=new BroadcastChannel(DEMO_BC_NAME);
+      bc.onmessage=function(evt){
+        if(!evt||!evt.data||!evt.data.state) return;
+        state=evt.data.state;
+        for(var i=0;i<subscribers.length;i++) try{ subscribers[i](state); }catch(_e){}
+      };
+    }
+  }catch(_e){ bc=null; }
+
+  function emit(){
+    saveState(state);
+    if(bc) try{ bc.postMessage({state:structuredClone(state)}); }catch(_e){}
+    for(var i=0;i<subscribers.length;i++) try{ subscribers[i](state); }catch(_e){}
+  }
   function setStatus(status){ if(status&&typeof status==="string") setConnectionStatus(status); }
   return {
     initialize:function(){ setStatus("synced"); return Promise.resolve(state); },
-    restoreSelection:function(){ return Promise.resolve(state); },
+    restoreSelection:function(){ state=loadState()||state; return Promise.resolve(state); },
     create:function(nextLang){ state=newFamily("527487",nextLang||"zh"); selectedRole="family"; emit(); return Promise.resolve(state.code); },
     attach:function(code,role){
       if(String(code||"")!==state.code){ var e=new Error("Family not found."); e.code="FAMILY_NOT_FOUND"; return Promise.reject(e); }
@@ -883,8 +933,8 @@ function createLocalDemoStore(){
     update:function(mutator){
       var draft=structuredClone(state); mutator(draft); state=draft; emit(); return Promise.resolve(state);
     },
-    resetFamily:function(){ state=newFamily(state.code,state.lang||lang); emit(); return Promise.resolve(state); },
-    signOut:function(){ state=null; selectedRole=null; subscribers=[]; return Promise.resolve(); },
+    resetFamily:function(){ state=newFamily(state.code,state.lang||lang); saveState(state); emit(); return Promise.resolve(state); },
+    signOut:function(){ state=null; selectedRole=null; subscribers=[]; try{ if(window.localStorage) window.localStorage.removeItem(DEMO_LS_KEY); }catch(_e){} return Promise.resolve(); },
     resetSession:function(){ selectedRole=null; },
     get:function(){ return state; },
     role:function(){ return selectedRole; },
@@ -939,7 +989,11 @@ function persistUpdate(mutator){
     throw error;
   });
 }
-function queueUpdate(mutator){ void persistUpdate(mutator).catch(function(){}); }
+function queueUpdate(mutator, onError){
+  void persistUpdate(mutator).catch(function(error){
+    if(typeof onError==="function") onError(error);
+  });
+}
 async function runPendingAction(action){
   if(Connection.pendingAction) return null;
   Connection.pendingAction=true; syncActionAvailability();
@@ -1003,12 +1057,16 @@ function esc(v,s){
   return tp(v,s).replace(/[&<>"]/g,function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]; });
 }
 function homePoint(s){
-  return s && s.home && Number.isFinite(Number(s.home.lat)) && Number.isFinite(Number(s.home.lng))
-    ? {lat:Number(s.home.lat),lng:Number(s.home.lng)} : null;
+  if(!s||!s.home) return null;
+  if(typeof s.home.lat!=="number" || typeof s.home.lng!=="number") return null;
+  var lat=s.home.lat,lng=s.home.lng;
+  return Number.isFinite(lat)&&Number.isFinite(lng)?{lat:lat,lng:lng}:null;
 }
 function currentPoint(s){
-  return s && s.loc && Number.isFinite(Number(s.loc.lat)) && Number.isFinite(Number(s.loc.lng))
-    ? {lat:Number(s.loc.lat),lng:Number(s.loc.lng)} : null;
+  if(!s||!s.loc) return null;
+  if(typeof s.loc.lat!=="number" || typeof s.loc.lng!=="number") return null;
+  var lat=s.loc.lat,lng=s.loc.lng;
+  return Number.isFinite(lat)&&Number.isFinite(lng)?{lat:lat,lng:lng}:null;
 }
 function distOf(s){
   var live=homePoint(s)&&currentPoint(s)&&window.Navigation ? window.Navigation.distanceMeters(currentPoint(s),homePoint(s)) : null;
@@ -1029,16 +1087,44 @@ function gpsStatusHTML(){
   var text=App.gpsError || (St&&St.loc&&St.loc.status==="ready"?D.gpsReady:D.gpsStarting);
   return '<span class="gps-pill'+cls+'">● '+esc(text)+'</span>';
 }
-function setHomePoint(point){
-  if(!point || !Number.isFinite(Number(point.lat)) || !Number.isFinite(Number(point.lng))) return;
+function setHomePoint(point, options){
+  if(!point || !Number.isFinite(Number(point.lat)) || !Number.isFinite(Number(point.lng))) return Promise.resolve(null);
+  options=options||{};
   App.homeGeocodeError="";
   App.homeGeocodeResolvedAddress=St&&St.elder&&St.elder.address?String(St.elder.address).trim():"";
-  queueUpdate(function(s){
+  if(options.persist===false){
+    if(St){
+      St.home=St.home||{};
+      St.home.lat=Number(point.lat); St.home.lng=Number(point.lng);
+      St.home.label=St.elder&&St.elder.address?St.elder.address:St.home.label||"";
+      St.home.radiusM=parseInt(St.elder&&St.elder.radius,10)||800;
+    }
+    return Promise.resolve(point);
+  }
+  return persistUpdate(function(s){
     s.home=s.home||{};
     s.home.lat=Number(point.lat); s.home.lng=Number(point.lng);
     s.home.label=s.elder.address||s.home.label||"";
     s.home.radiusM=parseInt(s.elder.radius,10)||800;
-  });
+  }).then(function(){ return point; });
+}
+// demo 模式下各地址对应的模拟坐标（无 Maps API Key 时兜底使用）
+var DEMO_GEOCODE_TABLE=[
+  { pattern:/lower kent ridge|119077/i,   lat:1.2966, lng:103.7764 },
+  { pattern:/guangzhou|广州/i,             lat:23.1291, lng:113.2644 },
+  { pattern:/singapore|新加坡/i,           lat:1.3521,  lng:103.8198 },
+  { pattern:/beijing|北京/i,               lat:39.9042, lng:116.4074 },
+  { pattern:/shanghai|上海/i,              lat:31.2304, lng:121.4737 },
+];
+function demoBestGuessPoint(address){
+  if(!address) return null;
+  for(var i=0;i<DEMO_GEOCODE_TABLE.length;i++){
+    if(DEMO_GEOCODE_TABLE[i].pattern.test(address)){
+      return {lat:DEMO_GEOCODE_TABLE[i].lat, lng:DEMO_GEOCODE_TABLE[i].lng};
+    }
+  }
+  // 无法匹配时给一个新加坡市中心作默认值
+  return {lat:1.3521, lng:103.8198};
 }
 function ensureHomePointFromAddress(){
   var address=St&&St.elder&&St.elder.address?String(St.elder.address).trim():"";
@@ -1061,7 +1147,21 @@ function ensureHomePointFromAddress(){
     });
     home=null;
   }
-  if(!address || !window.Navigation || typeof window.Navigation.geocodeAddress!=="function") return Promise.resolve(null);
+  if(!address) return Promise.resolve(null);
+  // Maps JS API 不可用（无 key、加载失败、或 API 未启用）：仅本地 demo 模式走模拟坐标
+  if(!window.Navigation || typeof window.Navigation.geocodeAddress!=="function" ||
+     !(window.MAPS_CONFIG&&window.MAPS_CONFIG.key)){
+    if(!LOCAL_DEMO) return Promise.resolve(null);
+    var demoPoint=demoBestGuessPoint(address);
+    if(demoPoint){
+      setHomePoint(demoPoint);
+      if(App.homeMapController) App.homeMapController.setHome(demoPoint);
+      App.homeGeocodeResolvedAddress=address;
+      refreshHomeMapStatus();
+      return Promise.resolve(demoPoint);
+    }
+    return Promise.resolve(null);
+  }
   if(App.homeGeocodePromise) return App.homeGeocodePromise;
   if(App.homeGeocodeRequested===address) return Promise.resolve(null);
   var requestedAddress=address;
@@ -1070,12 +1170,29 @@ function ensureHomePointFromAddress(){
   App.homeGeocodePromise=window.Navigation.geocodeAddress(requestedAddress).then(function(point){
     var currentAddress=St&&St.elder&&St.elder.address?String(St.elder.address).trim():"";
     if(currentAddress!==requestedAddress){ App.homeGeocodeRequested=""; return null; }
-    setHomePoint(point);
-    if(App.homeMapController) App.homeMapController.setHome(point);
-    return point;
+    return setHomePoint(point).then(function(savedPoint){
+      if(App.homeMapController) App.homeMapController.setHome(savedPoint);
+      return savedPoint;
+    },function(error){
+      return setHomePoint(point,{persist:false}).then(function(localPoint){
+        if(App.homeMapController) App.homeMapController.setHome(localPoint);
+        App.homeGeocodeError=(error&&error.message)||D.mapGeocodeFailed;
+        return localPoint;
+      });
+    });
   },function(){
     App.homeGeocodeRequested="";
     App.homeGeocodeError=D.mapGeocodeFailed;
+    if(!LOCAL_DEMO) return null;
+    var fb=demoBestGuessPoint(requestedAddress);
+    if(fb){
+      return setHomePoint(fb,{persist:false}).then(function(localPoint){
+        if(App.homeMapController) App.homeMapController.setHome(localPoint);
+        App.homeGeocodeResolvedAddress=requestedAddress;
+        App.homeGeocodeError="";
+        return localPoint;
+      });
+    }
     return null;
   }).then(function(point){
     App.homeGeocodePromise=null;
@@ -1100,17 +1217,24 @@ function initHomeMap(){
   ensureHomePointFromAddress().then(function(){
     refreshHomeMapStatus();
   });
-  var center=homePoint(St)||{lat:1.2931,lng:103.7758};
+  // 还没有真实坐标时，用 demo 坐标也可以先渲染地图
+  var center=homePoint(St)||(LOCAL_DEMO?demoBestGuessPoint((St&&St.elder&&St.elder.address)||"")||null:null)||{lat:1.2931,lng:103.7758};
   window.Navigation.createMap(node,{center:center,homeTitle:D.mapHome,currentTitle:D.gpsReady,onHomeSelect:setHomePoint})
     .then(function(controller){
       if(App.homeMapElement!==node) return;
       App.homeMapController=controller;
-      var home=homePoint(St); if(home) controller.setHome(home);
+      var home=homePoint(St)||(LOCAL_DEMO?demoBestGuessPoint((St&&St.elder&&St.elder.address)||"")||null:null);
+      if(home) controller.setHome(home);
       var current=currentPoint(St); if(current) controller.setCurrent(current);
     })
-    .catch(function(){
+    .catch(function(err){
       var status=el("homeMapStatus");
-      if(status) status.textContent=D.mapMissing;
+      if(LOCAL_DEMO){
+        var addr=(St&&St.elder&&St.elder.address)||"";
+        var fb=!homePoint(St)&&addr?demoBestGuessPoint(addr):null;
+        if(fb){ setHomePoint(fb); App.homeGeocodeResolvedAddress=addr; }
+      }
+      if(status) status.textContent=err&&err.message||D.mapMissing;
     });
 }
 function mapStepPoint(location){
@@ -1146,6 +1270,32 @@ function routeTurnWord(instruction){
   if(/right|右转/i.test(instruction)) return St.lang==="zh"?"右转":"Turn right";
   return St.lang==="zh"?"转弯":"Turn";
 }
+
+function maneuverIcon(maneuver) {
+  var m = String(maneuver || "straight").toLowerCase();
+  var color = "#fff";
+  var paths = {
+    "straight": "M12 21V4m0 0l-4 4m4-4l4 4",
+    "turn-left": "M20 21v-6a4 4 0 0 0-4-4H4m0 0l4-4m-4 4l4 4",
+    "turn-right": "M4 21v-6a4 4 0 0 1 4-4h12m0 0l-4-4m4 4l-4 4",
+    "turn-slight-left": "M18 21v-4a4 4 0 0 0-1.17-2.83L5 2m0 0h6m-6 0v6",
+    "turn-slight-right": "M6 21v-4a4 4 0 0 1 1.17-2.83L19 2m0 0h-6m6 0v6",
+    "turn-sharp-left": "M20 21v-2a4 4 0 0 0-4-4H5m0 0l4-4m-4 4l4 4",
+    "turn-sharp-right": "M4 21v-2a4 4 0 0 1 4-4h11m0 0l-4-4m4 4l-4 4",
+    "uturn-left": "M20 21v-8a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v8m0 0l4-4m-4 4l-4-4",
+    "uturn-right": "M4 21v-8a4 4 0 0 1 4-4h8a4 4 0 0 1 4 4v8m0 0l-4-4m4 4l4-4",
+    "roundabout-left": "M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM12 21v-3m-6-3l-3 3m12-3l3 3",
+    "roundabout-right": "M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM12 21v-3m-6-3l-3 3m12-3l3 3",
+    "merge": "M12 21v-6l4-4m-4 10V4m0 0l-4 4m4-4l4 4",
+    "fork-left": "M12 21v-6l-4-4m4 10V4m0 0l-4 4m4-4l4 4",
+    "fork-right": "M12 21v-6l4-4m-4 10V4m0 0l-4 4m4-4l4 4",
+    "keep-left": "M12 21v-6l-2-2v-9m0 0l-3 3m3-3l3 3",
+    "keep-right": "M12 21v-6l2-2v-9m0 0l-3 3m3-3l3 3"
+  };
+  var path = paths[m] || paths["straight"];
+  return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="width:100%;height:100%;color:'+color+'"><path d="'+path+'"/></svg>';
+}
+
 function formatElderStep(step){
   var road=step.road||D.routeRoad, landmark=step.landmark||road, distance=routeDistanceText(step.distanceM);
   if(step.isDestination) return fill(D.routeDestination,{road:road,distance:distance});
@@ -1166,7 +1316,8 @@ function buildElderWalkingSteps(route){
       var chunkDistance=Math.round(distance/chunks);
       var isLast=j===chunks-1 && i===raw.length-1;
       var landmark=road||(isLast?D.mapHome:(turning?D.routeIntersection:D.routeRoad));
-      var step={landmark:landmark,road:road||D.routeRoad,turnWord:turning&&j===0?routeTurnWord(instruction):"",isDestination:isLast,end:point,distanceM:chunkDistance,source:instruction};
+      var maneuver = item.maneuver || (isLast ? "stop" : "straight");
+      var step={landmark:landmark,road:road||D.routeRoad,turnWord:turning&&j===0?routeTurnWord(instruction):"",isDestination:isLast,end:point,distanceM:chunkDistance,source:instruction,maneuver:maneuver};
       step.text=formatElderStep(step);
       steps.push(step);
     }
@@ -1189,6 +1340,7 @@ function enrichElderWalkingSteps(steps){
       if(!place) continue;
       steps[i].place=place;
       steps[i].landmark=place.name;
+      steps[i].photoUrl = place.photoUrl || "";
       steps[i].text=formatElderStep(steps[i]);
       var identity=place.mapsUrl||place.name+":"+place.location.lat.toFixed(5)+","+place.location.lng.toFixed(5);
       if(!seen[identity]){ seen[identity]=true; places.push(place); }
@@ -1197,12 +1349,40 @@ function enrichElderWalkingSteps(steps){
   });
 }
 function initGuideMap(){
-  var node=el("guideMap"), home=homePoint(St), current=currentPoint(St);
-  if(!node || !home || !current || !window.Navigation || App.guideMapElement===node) return;
-  App.guideMapElement=node;
-  window.Navigation.createMap(node,{center:current,homeTitle:D.mapHome,currentTitle:D.gpsReady})
+  var home=homePoint(St), current=currentPoint(St);
+  if(!home || !current || !window.Navigation) return;
+  if(App.guideRouteRequested && St&&St.guide&&St.guide.routeId) return;
+  App.guideMapElement=el("guideMap")||null;
+  App.guideMapController=null;
+  App.guideRouteRequested=true;
+  App.guideRouteStatus="loading";
+  App.guideRouteError="";
+  window.Navigation.routeHome(current,home)
+    .then(function(route){
+      var steps=buildElderWalkingSteps(route);
+      if(!steps.length) throw new Error("route_steps_missing");
+      return enrichElderWalkingSteps(steps).then(function(enriched){
+        App.guideRouteStatus="ready";
+        App.guideRouteError="";
+        queueUpdate(function(s){ s.guide.instructions=enriched.steps; s.guide.routeId="google-walking"; s.guide.step=0; });
+        if(window.Voice) window.Voice.speak(enriched.steps[0].text,{lang:St.lang});
+      });
+    })
+    .catch(function(error){
+      if(shouldUseDemoFallback(error)){
+        fallbackMockRoute(current, home);
+        return;
+      }
+      App.guideRouteRequested=false;
+      App.guideRouteStatus="error";
+      App.guideRouteError=(error&&error.message)||D.routeFailed;
+      render();
+    });
+
+  return;
+
+  window.Navigation.createMap(document.createElement("div"),{center:current,homeTitle:D.mapHome,currentTitle:D.gpsReady})
     .then(function(controller){
-      if(App.guideMapElement!==node) return;
       App.guideMapController=controller; controller.setHome(home); controller.setCurrent(current);
       if(App.guideRouteRequested) return;
       App.guideRouteRequested=true;
@@ -1218,17 +1398,45 @@ function initGuideMap(){
           queueUpdate(function(s){ s.guide.instructions=enriched.steps; s.guide.routeId="google-walking"; s.guide.step=0; });
           if(window.Voice) window.Voice.speak(enriched.steps[0].text,{lang:St.lang});
         });
-      }).catch(function(){
+      }).catch(function(error){
+        if(shouldUseDemoFallback(error)){
+          fallbackMockRoute(current, home);
+          return;
+        }
+        App.guideRouteRequested=false;
         App.guideRouteStatus="error";
-        App.guideRouteError=D.routeFailed;
-        setTimeout(function(){ if(App.route==="elder"&&St&&St.guide&&St.guide.active) render(); },0);
+        App.guideRouteError=(error&&error.message)||D.routeFailed;
+        render();
       });
     })
-    .catch(function(){
+    .catch(function(error){
+      if(shouldUseDemoFallback(error)){
+        fallbackMockRoute(current, home);
+        return;
+      }
+      App.guideRouteRequested=false;
       App.guideRouteStatus="error";
-      App.guideRouteError=D.routeFailed;
+      App.guideRouteError=(error&&error.message)||D.routeFailed;
+      render();
+    });
+
+  function fallbackMockRoute(startPoint, endPoint){
+    App.guideRouteRequested=true;
+    App.guideRouteStatus="loading";
+    App.guideRouteError="";
+    var distance=window.Navigation&&window.Navigation.distanceMeters?window.Navigation.distanceMeters(startPoint,endPoint):1000;
+    var steps=[
+      { landmark:"附近的街道", road:"当前道路", isDestination:false, end:{lat:startPoint.lat+(endPoint.lat-startPoint.lat)*0.5, lng:startPoint.lng+(endPoint.lng-startPoint.lng)*0.5}, distanceM:Math.round(distance*0.5), source:"模拟导航", text:"沿当前道路继续前行" },
+      { landmark:"家附近", road:"小区道路", isDestination:true, end:endPoint, distanceM:Math.round(distance*0.5), source:"模拟导航", text:"继续前行，即将到达目的地" }
+    ];
+    enrichElderWalkingSteps(steps).then(function(enriched){
+      App.guideRouteStatus="ready";
+      if(App.guideMapController && App.guideMapController.setLandmarks) App.guideMapController.setLandmarks(enriched.places);
+      queueUpdate(function(s){ s.guide.instructions=enriched.steps; s.guide.routeId="demo-walking"; s.guide.step=0; });
+      if(window.Voice) window.Voice.speak(enriched.steps[0].text,{lang:St&&St.lang||"zh"});
       setTimeout(function(){ if(App.route==="elder"&&St&&St.guide&&St.guide.active) render(); },0);
     });
+  }
 }
 function setHomeFromGps(){
   if(!window.Navigation) return;
@@ -1675,7 +1883,7 @@ function viewStandby(){
     + '<p class="e-h1">'+esc(D.eGreet)+'</p><p class="e-copy">'+esc(D.eGreetD)+'</p></div>'
     + gpsStatusHTML()
     + (homePoint(St)?'<p class="e-copy" style="margin-top:-2px;text-align:center">'+esc(fill(D.riskDistance,{n:distOf(St)}))+'</p>':'<p class="e-copy" style="margin-top:-2px;text-align:center">'+esc(D.mapMissing)+'</p>')
-    + '<button class="e-btn" data-go="openQa">'+esc(D.eTalk)+'</button>'
+    + '<div class="btn-row"><button class="e-btn" data-go="openQa">'+esc(D.eTalk)+'</button><button class="e-btn soft" data-go="goHomePrimary">'+esc(D.devHome)+'</button></div>'
     + devBar();
 }
 
@@ -1735,6 +1943,26 @@ function viewQa(){
     + '<button class="e-btn soft" data-go="closeQa">'+esc(D.eBack)+'</button>';
 }
 
+function streetViewVisual(routeStep){
+  var point=routeStep&&routeStep.end?routeStep.end:currentPoint(St);
+  var key=window.MAPS_CONFIG&&window.MAPS_CONFIG.key?window.MAPS_CONFIG.key:"";
+  var photoHtml="";
+  if(routeStep&&routeStep.photoUrl){
+    photoHtml='<div class="place-photo-badge"><img src="'+esc(routeStep.photoUrl)+'" alt="Place"></div>';
+  }
+  if(!point||!Number.isFinite(point.lat)||!Number.isFinite(point.lng)||!key){
+    return '<div class="visuals-panel"><div class="sv-fallback"><span>'+esc(routeStep&&routeStep.landmark?routeStep.landmark:D.mapHome)+'</span></div>'+photoHtml+'</div>';
+  }
+  var params=[
+    'size=800x500',
+    'location='+encodeURIComponent(point.lat+','+point.lng),
+    'key='+encodeURIComponent(key)
+  ];
+  if(routeStep&&routeStep.maneuver&&routeStep.maneuver!=="straight") params.push('fov=100');
+  var svUrl='https://maps.googleapis.com/maps/api/streetview?'+params.join('&');
+  return '<div class="visuals-panel"><img class="sv-bg" src="'+esc(svUrl)+'" alt="Street View" loading="lazy">'+photoHtml+'</div>';
+}
+
 function viewGuide(){
   var g=D.guide[Math.min(St.guide.step,2)];
   var routeStep=St.guide.instructions&&St.guide.instructions[St.guide.step];
@@ -1742,14 +1970,18 @@ function viewGuide(){
   var landmark=routeStep ? guideLandmark(routeStep) : g.lm;
   var remaining=routeStep&&routeStep.end?guideDistance(routeStep,currentPoint(St)):null;
   var routeNote=App.guideRouteError||(App.guideRouteStatus==="loading"?D.routeLoading:(remaining!==null?fill(D.riskDistance,{n:remaining}):D.eGuideNote));
-  return '<p class="stepno" style="margin-top:10px">'+esc(fill(D.eStep,{n:St.guide.step+1,total:guideTotal(St)}))+'</p>'
-    + '<div class="lmk"><div class="shape '+g.cls+'"></div><span class="nm">'+esc(landmark)+'</span></div>'
+  var visualsHtml=streetViewVisual(routeStep);
+  var arrowHtml = '<div class="turn-arrow">' + maneuverIcon(routeStep ? routeStep.maneuver : "straight") + '</div>';
+  var prevButton=St.guide.step>0?'<button class="e-btn soft prev-btn" data-go="prevGuide" aria-label="Previous step">←</button>':'';
+
+  return '<div class="guide-copy"><p class="stepno" style="margin-top:10px">'+esc(fill(D.eStep,{n:St.guide.step+1,total:guideTotal(St)}))+'</p>'
     + '<div class="vr-line">'+IC.voice+'<span>'+esc(D.eGuiding)+'</span></div>'
     + '<p class="stepcopy">'+esc(instruction)+'</p>'
-    + '<p class="stepnote">'+esc(routeNote)+'</p>'
-    + '<div class="live-map" id="guideMap" aria-label="route map"></div>'
+    + '<p class="stepnote">'+esc(routeNote)+'</p></div>'
+    + '<div class="lmk">' + arrowHtml + '<span class="nm">'+esc(landmark)+'</span></div>'
+    + visualsHtml
     + '<div class="spacer"></div>'
-    + '<button class="e-btn" data-go="arrived">'+esc(D.eArrived)+'</button>';
+    + '<div class="guide-actions">'+prevButton+'<button class="e-btn arrived-btn" data-go="arrived">'+esc(D.eArrived)+'</button></div>';
 }
 
 function viewArrived(){
@@ -1954,6 +2186,18 @@ function advanceGuide(){
   });
   if(advanced && App.route==="elder" && window.Voice){
     window.Voice.speak(completed?D.eHomeT:(nextText||D.guide[Math.min(St.guide.step,2)].copy),{lang:St.lang});
+  }
+}
+function retreatGuide(){
+  if(!St||!St.guide||!St.guide.active||St.guide.step<=0) return;
+  var prevText="";
+  queueUpdate(function(s){
+    var list=s.guide.instructions||[];
+    s.guide.step=Math.max(0,s.guide.step-1);
+    prevText=guideText(list[s.guide.step]);
+  });
+  if(App.route==="elder"&&window.Voice){
+    window.Voice.speak(prevText||D.guide[Math.max(St.guide.step-1,0)].copy,{lang:St.lang});
   }
 }
 function arrived(){
@@ -2177,6 +2421,8 @@ document.addEventListener("click", async function(e){
     case "voiceAsk": if(App.voiceBusy) stopVoiceInput(); else startVoiceInput("qa",false); break;
     case "finishSetup":
       var first=!St.setup;
+      // 先等地理编码完成，确保 home.lat/lng 写入 state 后再跳转
+      await ensureHomePointFromAddress().catch(function(){});
       await persistUpdate(function(s){ s.setup=true; });
       App.editingPerson=null; App.speak=0;
       App.route = first ? "code" : "family";
@@ -2205,10 +2451,12 @@ document.addEventListener("click", async function(e){
 
     case "openQa": App.qa=true; render(); break;
     case "closeQa": App.qa=false; render(); break;
+    case "prevGuide": retreatGuide(); break;
     case "arrived": arrived(); break;
     case "ackHome": queueUpdate(function(s){ s.guide.done=false; }); break;
     case "toggleDev": App.dev=!App.dev; render(); break;
     case "walk": autoWalk(); break;
+    case "goHomePrimary": clearInterval(walkTimer); App.dev=false; setLoc(HOME.x,HOME.y); break;
     case "goHome": clearInterval(walkTimer); setLoc(HOME.x,HOME.y); break;
 
     case "lang":

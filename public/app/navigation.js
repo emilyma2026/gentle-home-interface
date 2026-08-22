@@ -64,7 +64,10 @@
     if (window.google && window.google.maps) return Promise.resolve(window.google.maps);
     if (mapsPromise) return mapsPromise;
     var config = window.MAPS_CONFIG || {};
-    if (!config.key) return Promise.reject(error("maps_key_missing", "地图服务尚未配置"));
+    if (!config.key) {
+      console.warn("[Navigation] Maps API key missing. Set VITE_GOOGLE_MAPS_API_KEY or run scripts/gen-maps-config.mjs");
+      return Promise.reject(error("maps_key_missing", "地图服务尚未配置"));
+    }
     mapsPromise = new Promise(function (resolve, reject) {
       var callbackName = "__rememberUsMapsReady" + Date.now();
       window[callbackName] = function () {
@@ -77,6 +80,7 @@
       script.onerror = function () {
         delete window[callbackName];
         mapsPromise = null;
+        console.warn("[Navigation] Maps JS API failed to load. Check: 1) API key restrictions (HTTP referrers) 2) Maps JavaScript API enabled in GCP 3) Billing enabled");
         reject(error("maps_failed", "地图服务加载失败"));
       };
       script.src = "https://maps.googleapis.com/maps/api/js?key=" + encodeURIComponent(config.key) + "&libraries=geometry,places&callback=" + callbackName;
@@ -111,6 +115,24 @@
         for (var i = 0; i < landmarkMarkers.length; i++) landmarkMarkers[i].setMap(null);
         landmarkMarkers = [];
       }
+      function routeHome(point, home) {
+        if (!point || !home) return Promise.reject(error("route_missing", "缺少路线起点或终点"));
+        return new Promise(function (resolve, reject) {
+          var origin = new maps.LatLng(point.lat, point.lng);
+          var destination = new maps.LatLng(home.lat, home.lng);
+          directions.route({ origin: origin, destination: destination, travelMode: maps.TravelMode.WALKING }, function (result, status) {
+            if (status !== "OK") {
+              console.error("[Navigation] Directions API failed. Status:", status, "Result:", result);
+              if (status === "REQUEST_DENIED") console.error("-> Please enable 'Directions API' in Google Cloud Console.");
+              if (status === "ZERO_RESULTS") console.error("-> No walking route found between", point, "and", home, "Distance might be too long or ocean crossing.");
+              reject(error("route_failed", "暂时找不到步行路线"));
+              return;
+            }
+            routeRenderer.setDirections(result);
+            resolve(result.routes[0]);
+          });
+        });
+      }
       return {
         setHome: function (point) {
           if (!point || !Number.isFinite(point.lat) || !Number.isFinite(point.lng)) return;
@@ -135,17 +157,14 @@
             }));
           });
         },
-        routeHome: function (point, home) {
-          if (!point || !home) return Promise.reject(error("route_missing", "缺少路线起点或终点"));
-          return new Promise(function (resolve, reject) {
-            directions.route({ origin: point, destination: home, travelMode: maps.TravelMode.WALKING }, function (result, status) {
-              if (status !== "OK") { reject(error("route_failed", "暂时找不到步行路线")); return; }
-              routeRenderer.setDirections(result);
-              resolve(result.routes[0]);
-            });
-          });
-        },
+        routeHome: routeHome,
       };
+    });
+  }
+
+  function routeHome(point, home) {
+    return createMap(document.createElement("div"), {}).then(function (controller) {
+      return controller.routeHome(point, home);
     });
   }
 
@@ -167,29 +186,40 @@
     var point = placePoint(center);
     if (!point) return Promise.resolve([]);
     return loadMaps().then(function (maps) {
-      if (typeof maps.importLibrary !== "function") return [];
-      return maps.importLibrary("places").then(function (placesLibrary) {
-        if (!placesLibrary || !placesLibrary.Place || typeof placesLibrary.Place.searchNearby !== "function") return [];
-        var request = {
-          fields: ["displayName", "location", "formattedAddress", "primaryType", "types", "googleMapsURI"],
-          locationRestriction: { center: point, radius: Math.min(Math.max(Number(options.radius) || 120, 50), 500) },
-          includedPrimaryTypes: options.types || ["convenience_store", "supermarket", "school", "hospital", "park", "bus_station", "transit_station", "cafe", "library", "shopping_mall"],
-          maxResultCount: Math.min(Math.max(Number(options.maxResultCount) || 3, 1), 10),
-          rankPreference: "DISTANCE",
-        };
-        if (options.language) request.language = options.language;
-        return placesLibrary.Place.searchNearby(request).then(function (result) {
-          return (result && result.places || []).map(function (place) {
-            var location = placePoint(place.location);
+      return new Promise(function (resolve) {
+        if (!maps.places || !maps.places.PlacesService) {
+          resolve([]);
+          return;
+        }
+        var dummy = document.createElement("div");
+        var service = new maps.places.PlacesService(dummy);
+        service.nearbySearch({
+          location: point,
+          radius: Math.min(Math.max(Number(options.radius) || 120, 50), 500),
+          type: "point_of_interest"
+        }, function (results, status) {
+          if (status !== maps.places.PlacesServiceStatus.OK || !results) {
+            resolve([]);
+            return;
+          }
+          var limit = Math.min(Math.max(Number(options.maxResultCount) || 3, 1), 10);
+          var mapped = results.slice(0, limit).map(function (place) {
+            var location = placePoint(place.geometry && place.geometry.location);
+            var photoUrl = "";
+            if (place.photos && place.photos.length > 0) {
+              photoUrl = place.photos[0].getUrl({ maxWidth: 400, maxHeight: 400 });
+            }
             return {
-              name: placeText(place.displayName) || placeText(place.name),
+              name: place.name || "",
               location: location,
-              address: placeText(place.formattedAddress),
-              primaryType: place.primaryType || "",
+              address: place.vicinity || place.formatted_address || "",
+              primaryType: (place.types && place.types[0]) || "",
               types: place.types || [],
-              mapsUrl: place.googleMapsURI || place.googleMapsUri || "",
+              mapsUrl: "",
+              photoUrl: photoUrl
             };
-          }).filter(function (place) { return place.name && place.location; });
+          }).filter(function (p) { return p.name && p.location; });
+          resolve(mapped);
         });
       });
     });
@@ -214,6 +244,7 @@
     locate: locate,
     loadMaps: loadMaps,
     createMap: createMap,
+    routeHome: routeHome,
     geocodeAddress: geocodeAddress,
     findNearbyPlaces: findNearbyPlaces,
     distanceMeters: distanceMeters,

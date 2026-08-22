@@ -193,6 +193,8 @@ test("entry loads the pinned Supabase browser runtime and adapter before the app
     "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4",
     "/app/supabase-config.js",
     "/app/supabase-store.js",
+    "/app/voice.js",
+    "/app/navigation.js",
   ]);
   assert.ok(appSource.indexOf(externalScripts[2]) < appSource.indexOf("(function(){"));
 });

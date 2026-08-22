@@ -237,6 +237,15 @@ input,textarea,select{font:inherit}
 .map-foot small{color:var(--faint); font-size:11px}
 .map-foot b{font-size:13px}
 .map-foot b.out{color:var(--red)}
+.setup-map{height:190px; margin:10px 0 8px; border-radius:18px; overflow:hidden; background:var(--blue-soft); box-shadow:var(--sh-card)}
+.setup-map-status{margin:0 0 9px; color:var(--muted); font-size:11.5px; line-height:1.45}
+.setup-map-actions{display:flex; gap:8px; margin-bottom:10px}
+.setup-map-actions button{flex:1; padding:10px 12px; border:1px solid var(--line); border-radius:13px; background:#fff; color:var(--blue-d); font-size:12px; font-weight:800}
+.setup-map-actions button:active{transform:scale(.985)}
+.gps-pill{display:inline-flex; align-items:center; gap:6px; margin:0 0 10px; padding:6px 10px; border-radius:99px; background:var(--blue-soft); color:var(--blue-d); font-size:11px; font-weight:800}
+.gps-pill.warn{background:var(--amber-soft); color:var(--amber)}
+.gps-pill.bad{background:var(--red-soft); color:var(--red)}
+.live-map{height:180px; border-radius:18px; overflow:hidden; margin-bottom:10px; background:var(--blue-soft)}
 
 .banner{display:flex; align-items:center; gap:12px; padding:14px 16px; border-radius:var(--r-md);
   background:var(--blue-soft); margin-bottom:12px}
@@ -476,6 +485,7 @@ input,textarea,select{font:inherit}
 <script src="/app/supabase-config.js"></script>
 <script src="/app/supabase-store.js"></script>
 <script src="/app/voice.js"></script>
+<script src="/app/navigation.js"></script>
 <script>
 (function(){
 "use strict";
@@ -522,6 +532,19 @@ zh:{
   obElderTitle:"关于老人", obElderSub:"三项就够，之后随时可以改。",
   fName:"称呼", fAddr:"家庭住址", fRange:"日常活动范围",
   rangeHint:"超出这个范围并持续远离，系统先提醒老人，再通知你。",
+  mapPickHint:"点击地图或拖动标记，设置老人家。",
+  mapUseGps:"用此设备当前位置",
+  mapReady:"已设置家的位置",
+  mapMissing:"还没有设置家的位置，暂时无法判断距离。",
+  gpsStarting:"正在请求定位权限……",
+  gpsReady:"定位已开启",
+  gpsDenied:"定位权限未开启，请在浏览器设置中允许。",
+  gpsFailed:"暂时拿不到位置，仍可使用演示定位。",
+  gpsLost:"定位信号中断，请回到有网络和 GPS 信号的地方。",
+  riskLeaving:"你离家有点远了，我们一起回家吧。",
+  riskFamily:"老人可能已经离开安全范围。",
+  riskSafe:"老人正在安全范围内",
+  riskDistance:"距离家约 {n} 米",
   obMeTitle:"关于你自己", obMeSub:"这些会出现在老人的来电卡片上，帮她认出你。",
   speakT:"说一句话，我来整理", speakD:"不想打字就按这里，说完自动填进下面的字段",
   speakOn:"正在听……", speakDone:"已经从这句话里整理出 2 个字段，可以直接改。",
@@ -643,6 +666,19 @@ en:{
   obElderTitle:"About the elder", obElderSub:"Three things is enough. You can change them any time.",
   fName:"Name", fAddr:"Home address", fRange:"Everyday range",
   rangeHint:"If she goes past this and keeps moving away, the system talks to her first, then tells you.",
+  mapPickHint:"Tap the map or drag the pin to set home.",
+  mapUseGps:"Use this device's location",
+  mapReady:"Home location is set",
+  mapMissing:"Home location is not set, so distance cannot be checked yet.",
+  gpsStarting:"Requesting location permission…",
+  gpsReady:"Location is on",
+  gpsDenied:"Location permission is off. Allow it in browser settings.",
+  gpsFailed:"Location is unavailable. Demo movement is still available.",
+  gpsLost:"Location signal was interrupted.",
+  riskLeaving:"You are getting far from home. Let's go home together.",
+  riskFamily:"The elder may have left the safe area.",
+  riskSafe:"The elder is inside the safe area",
+  riskDistance:"About {n} m from home",
   obMeTitle:"About you", obMeSub:"This is what she sees when you call, so she can recognise you.",
   speakT:"Say it out loud instead", speakD:"Tap and talk. The fields below fill themselves in.",
   speakOn:"Listening…", speakDone:"Two fields were pulled from that sentence. Edit them freely.",
@@ -773,14 +809,16 @@ function newFamily(code, lang){
     code:code, lang:lang, rev:0,
     setup:false, paired:false,
     elder:{ name:s.elderName, address:s.address, radius:"800" },
+    home:{ lat:null, lng:null, label:s.address, radiusM:800 },
     people:[],
     facts:[], pending:[],
     timeline:[{t:"09:10", kind:"morning"}],
     call:{ phase:"idle", personId:null, line:-1, transcript:"" },
     lastCaller:null,
     thread:[], askCounts:{},
-    loc:{ x:HOME.x, y:HOME.y },
-    guide:{ active:false, step:0, done:false }
+    loc:{ x:HOME.x, y:HOME.y, lat:null, lng:null, accuracy:null, updatedAt:null, source:"demo", status:"demo" },
+    risk:{ state:"safe", distanceM:null, outsideCount:0, triggeredAt:null, reason:"" },
+    guide:{ active:false, step:0, done:false, instructions:[], routeId:null }
   };
 }
 
@@ -888,8 +926,20 @@ function tp(str, s){
 function esc(v,s){
   return tp(v,s).replace(/[&<>"]/g,function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]; });
 }
-function distOf(s){ var dx=s.loc.x-HOME.x, dy=s.loc.y-HOME.y; return Math.round(Math.sqrt(dx*dx+dy*dy)*MPP); }
-function rangeM(s){ return parseInt(s.elder.radius,10); }
+function homePoint(s){
+  return s && s.home && Number.isFinite(Number(s.home.lat)) && Number.isFinite(Number(s.home.lng))
+    ? {lat:Number(s.home.lat),lng:Number(s.home.lng)} : null;
+}
+function currentPoint(s){
+  return s && s.loc && Number.isFinite(Number(s.loc.lat)) && Number.isFinite(Number(s.loc.lng))
+    ? {lat:Number(s.loc.lat),lng:Number(s.loc.lng)} : null;
+}
+function distOf(s){
+  var live=homePoint(s)&&currentPoint(s)&&window.Navigation ? window.Navigation.distanceMeters(currentPoint(s),homePoint(s)) : null;
+  if(live!==null) return live;
+  var dx=s.loc.x-HOME.x, dy=s.loc.y-HOME.y; return Math.round(Math.sqrt(dx*dx+dy*dy)*MPP);
+}
+function rangeM(s){ return s && s.home && Number.isFinite(Number(s.home.radiusM)) ? Number(s.home.radiusM) : parseInt(s.elder.radius,10); }
 function isOut(s){ return distOf(s)>rangeM(s); }
 function clockNow(){ var d=new Date(); return d.getHours()+":"+("0"+d.getMinutes()).slice(-2); }
 function waveEl(cls){ var h='<span class="wave '+(cls||"")+'">'; for(var i=0;i<7;i++) h+='<i style="animation-delay:'+(i*.09)+'s"></i>'; return h+'</span>'; }
@@ -898,6 +948,124 @@ function voiceStatusHTML(){
   if(App.voiceStatus) return '<p class="voice-status">'+esc(App.voiceStatus)+'</p>';
   return '';
 }
+function gpsStatusHTML(){
+  var cls=App.gpsError?" bad":(St&&St.loc&&St.loc.status==="ready"?"":" warn");
+  var text=App.gpsError || (St&&St.loc&&St.loc.status==="ready"?D.gpsReady:D.gpsStarting);
+  return '<span class="gps-pill'+cls+'">● '+esc(text)+'</span>';
+}
+function setHomePoint(point){
+  if(!point || !Number.isFinite(Number(point.lat)) || !Number.isFinite(Number(point.lng))) return;
+  queueUpdate(function(s){
+    s.home=s.home||{};
+    s.home.lat=Number(point.lat); s.home.lng=Number(point.lng);
+    s.home.label=s.elder.address||s.home.label||"";
+    s.home.radiusM=parseInt(s.elder.radius,10)||800;
+  });
+}
+function homeMapStatus(){
+  return homePoint(St) ? D.mapReady : D.mapPickHint;
+}
+function initHomeMap(){
+  var node=el("homeMap");
+  if(!node || !window.Navigation || App.homeMapElement===node) return;
+  App.homeMapElement=node;
+  var center=homePoint(St)||{lat:23.145,lng:113.324};
+  window.Navigation.createMap(node,{center:center,homeTitle:D.mapHome,currentTitle:D.gpsReady,onHomeSelect:setHomePoint})
+    .then(function(controller){
+      if(App.homeMapElement!==node) return;
+      App.homeMapController=controller;
+      var home=homePoint(St); if(home) controller.setHome(home);
+      var current=currentPoint(St); if(current) controller.setCurrent(current);
+    })
+    .catch(function(){
+      var status=el("homeMapStatus");
+      if(status) status.textContent=D.mapMissing;
+    });
+}
+function initGuideMap(){
+  var node=el("guideMap"), home=homePoint(St), current=currentPoint(St);
+  if(!node || !home || !current || !window.Navigation || App.guideMapElement===node) return;
+  App.guideMapElement=node;
+  window.Navigation.createMap(node,{center:current,homeTitle:D.mapHome,currentTitle:D.gpsReady})
+    .then(function(controller){
+      if(App.guideMapElement!==node) return;
+      App.guideMapController=controller; controller.setHome(home); controller.setCurrent(current);
+      if(App.guideRouteRequested) return;
+      App.guideRouteRequested=true;
+      return controller.routeHome(current,home).then(function(route){
+        var steps=[];
+        var legs=route&&route.legs||[];
+        var raw=legs[0]&&legs[0].steps||[];
+        for(var i=0;i<raw.length&&steps.length<3;i++){
+          var text=String(raw[i].instructions||"").replace(/<[^>]+>/g,"").trim();
+          if(text) steps.push(text);
+        }
+        if(steps.length) queueUpdate(function(s){ s.guide.instructions=steps; s.guide.routeId="google-walking"; });
+      }).catch(function(){ /* fixed landmark instructions remain the fallback */ });
+    })
+    .catch(function(){ /* no map key or unavailable API: use the original guide */ });
+}
+function setHomeFromGps(){
+  if(!window.Navigation) return;
+  App.gpsError=""; App.gpsStatus="starting"; render();
+  window.Navigation.locate(function(position){
+    setHomePoint({lat:position.coords.latitude,lng:position.coords.longitude});
+    App.gpsStatus="ready"; App.gpsError=""; render();
+  },function(){
+    App.gpsStatus="error"; App.gpsError=D.gpsDenied; render();
+  });
+}
+function applyGpsPosition(position){
+  if(!position || !position.coords) return;
+  var point={lat:Number(position.coords.latitude),lng:Number(position.coords.longitude)};
+  var speak=false;
+  queueUpdate(function(s){
+    var old=currentPoint(s), home=homePoint(s), oldRisk=s.risk&&s.risk.state||"safe";
+    s.loc=s.loc||{};
+    s.loc.lat=point.lat; s.loc.lng=point.lng;
+    s.loc.accuracy=Math.round(Number(position.coords.accuracy)||0);
+    s.loc.updatedAt=new Date().toISOString(); s.loc.source="gps"; s.loc.status="ready";
+    if(!home) return;
+    var distance=window.Navigation.distanceMeters(point,home);
+    s.risk=s.risk||{}; s.risk.distanceM=distance; s.risk.reason="";
+    if(distance>rangeM(s)){
+      s.risk.outsideCount=Number(s.risk.outsideCount||0)+1;
+      if(s.risk.outsideCount<3){ s.risk.state="safe"; s.risk.reason="checking_position"; return; }
+      s.risk.state=(oldRisk==="safe"||oldRisk==="returned")?"leaving":"guiding";
+      s.risk.reason="outside_safe_radius";
+      if(oldRisk==="safe"||oldRisk==="returned"){
+        s.risk.triggeredAt=new Date().toISOString(); speak=true;
+        App.guideRouteRequested=false;
+        s.guide.active=true; s.guide.done=false; s.guide.step=0;
+        var seen=false; for(var i=0;i<s.timeline.length;i++) if(s.timeline[i].kind==="guide") seen=true;
+        if(!seen) s.timeline.push({t:clockNow(),kind:"guide"});
+      }
+    } else if(s.guide.active && distance<=50){
+      s.risk.outsideCount=0;
+      s.risk.state="returned"; s.risk.reason="inside_home_radius";
+      s.guide.active=false; s.guide.done=true;
+      var homeSeen=false; for(var j=0;j<s.timeline.length;j++) if(s.timeline[j].kind==="home") homeSeen=true;
+      if(!homeSeen) s.timeline.push({t:clockNow(),kind:"home"});
+    } else {
+      s.risk.outsideCount=0;
+      s.risk.state="safe"; s.risk.reason="inside_safe_radius";
+    }
+  });
+  App.gpsStatus="ready"; App.gpsError="";
+  if(App.homeMapController) App.homeMapController.setCurrent(point);
+  if(speak && App.route==="elder" && window.Voice) window.Voice.speak(D.riskLeaving,{lang:St.lang});
+}
+function startGps(){
+  if(!window.Navigation || window.Navigation.isWatching()) return;
+  App.gpsStatus="starting"; App.gpsError=""; render();
+  window.Navigation.start(applyGpsPosition,function(positionError){
+    App.gpsStatus="error";
+    App.gpsError=positionError&&positionError.code==="permission_denied"?D.gpsDenied:D.gpsFailed;
+    if(St){ queueUpdate(function(s){ s.loc=s.loc||{}; s.loc.status="error"; }); }
+    render();
+  });
+}
+function stopGps(){ if(window.Navigation) window.Navigation.stop(); App.gpsStatus="idle"; }
 
 var IC = {
   voice:'<svg viewBox="0 0 24 24"><path d="M11 5 6 9H3v6h3l5 4zM15.5 8.5a5 5 0 0 1 0 7M18 6a8.5 8.5 0 0 1 0 12"/></svg>',
@@ -929,7 +1097,14 @@ var App = {
   voiceStopRequested:false,
   voiceStatus:"",
   voiceError:"",
-  callRecording:false
+  callRecording:false,
+  gpsStatus:"idle",
+  gpsError:"",
+  homeMapElement:null,
+  homeMapController:null,
+  guideMapElement:null,
+  guideMapController:null,
+  guideRouteRequested:false
 };
 var St=null, D=null, lang="en";
 var DEMO_CODE="527487";
@@ -1010,6 +1185,9 @@ function viewObElder(){
     + '<p class="sub">'+esc(D.obElderSub)+'</p>'
     + fieldHTML("elder.name", D.fName, "text", {seedKey:"elderName"})
     + fieldHTML("elder.address", D.fAddr, "text", {seedKey:"address"})
+    + '<p class="setup-map-status" id="homeMapStatus">'+esc(homeMapStatus())+'</p>'
+    + '<div class="setup-map" id="homeMap" aria-label="home map"></div>'
+    + '<div class="setup-map-actions"><button type="button" data-go="setHomeFromGps">'+esc(D.mapUseGps)+'</button></div>'
     + '<div class="field"><div class="field-top"><label>'+esc(D.fRange)+'</label></div>'
     +   seg + '<p class="hint">'+esc(D.rangeHint)+'</p></div>'
     + '<div class="spacer"></div>'
@@ -1028,7 +1206,7 @@ function viewObMe(){
     + '<p class="sub">'+esc(D.obMeSub)+'</p>'
     + '<button class="speak'+speakCls+'" data-go="speak"><span class="mic">'+IC.mic+'</span>'+speakBody+'</button>'
     + (App.speak===2 ? '<p class="filled">✓ '+esc(D.speakDone)+'</p>' : '')
-    + voiceStatusHTML()
+    + (typeof voiceStatusHTML==="function"?voiceStatusHTML():"")
     + '<div class="avatar-picker" role="img" aria-label="'+esc(D.addPhoto)+'">+</div>'
     + fieldHTML("per.nick", D.fNick, "text")
     + fieldHTML("per.relation", D.fRel, "text", {seedKey:"relation"})
@@ -1079,6 +1257,7 @@ function riskState(){
 function statusText(){
   if(St.call.phase==="ringing") return D.stRing;
   if(St.call.phase==="talking") return D.stTalk;
+  if(St.risk && (St.risk.state==="leaving" || St.risk.state==="guiding")) return D.riskFamily;
   if(St.guide.active) return fill(D.stGuide,{n:St.guide.step+1});
   if(riskState()==="done") return D.stArrived;
   if(isOut(St)) return D.stOut;
@@ -1117,6 +1296,11 @@ function tabHome(){
   if(!St.paired){
     h+='<div class="banner note"><b>'+esc(D.notPaired)+'</b>'
      + '<small>'+esc(fill(D.notPairedD,{code:St.code}))+'</small></div>';
+  }
+
+  if(St.risk && (St.risk.state==="leaving" || St.risk.state==="guiding")){
+    h+='<div class="banner" style="background:var(--red-soft);color:var(--red)"><b>'+esc(D.riskFamily)+'</b>'
+      + '<small>'+esc(fill(D.riskDistance,{n:distOf(St)}))+'</small></div>';
   }
 
   h+='<div class="tiles">'
@@ -1247,6 +1431,8 @@ function elderScreen(){
 function viewStandby(){
   return '<div class="e-hello"><div class="e-ring">'+esc(initial(St.elder.name))+'</div>'
     + '<p class="e-h1">'+esc(D.eGreet)+'</p><p class="e-copy">'+esc(D.eGreetD)+'</p></div>'
+    + gpsStatusHTML()
+    + (homePoint(St)?'<p class="e-copy" style="margin-top:-2px;text-align:center">'+esc(fill(D.riskDistance,{n:distOf(St)}))+'</p>':'<p class="e-copy" style="margin-top:-2px;text-align:center">'+esc(D.mapMissing)+'</p>')
     + '<button class="e-btn" data-go="openQa">'+esc(D.eTalk)+'</button>'
     + devBar();
 }
@@ -1278,7 +1464,7 @@ function viewTalking(){
     + '<span class="audio-tag">'+esc(D.eAudioTag)+'</span>'
     + '<div class="subs">'+lines+'</div>'
     + '<button class="voice-record" data-go="callRecord">'+IC.mic+'<span>'+esc(App.callRecording?D.voiceStop:D.voiceRecord)+'</span></button>'
-    + voiceStatusHTML()
+    + (typeof voiceStatusHTML==="function"?voiceStatusHTML():"")
     + '<button class="e-btn red" data-go="hangup">'+esc(D.hangup)+'</button>';
 }
 
@@ -1303,17 +1489,19 @@ function viewQa(){
     + '<div class="asks">'+asks+'</div>'
     + '<div class="holdbar">'+esc(D.eHold)+'</div>'
     + '<button class="voice-ask" data-go="voiceAsk">'+IC.mic+'<span>'+esc(voiceLabel)+'</span></button>'
-    + voiceStatusHTML()
+    + (typeof voiceStatusHTML==="function"?voiceStatusHTML():"")
     + '<button class="e-btn soft" data-go="closeQa">'+esc(D.eBack)+'</button>';
 }
 
 function viewGuide(){
   var g=D.guide[Math.min(St.guide.step,2)];
+  var instruction=St.guide.instructions&&St.guide.instructions[St.guide.step] ? St.guide.instructions[St.guide.step] : g.copy;
   return '<p class="stepno" style="margin-top:10px">'+esc(fill(D.eStep,{n:St.guide.step+1}))+'</p>'
     + '<div class="lmk"><div class="shape '+g.cls+'"></div><span class="nm">'+esc(g.lm)+'</span></div>'
     + '<div class="vr-line">'+IC.voice+'<span>'+esc(D.eGuiding)+'</span></div>'
-    + '<p class="stepcopy">'+esc(g.copy)+'</p>'
+    + '<p class="stepcopy">'+esc(instruction)+'</p>'
     + '<p class="stepnote">'+esc(D.eGuideNote)+'</p>'
+    + '<div class="live-map" id="guideMap" aria-label="route map"></div>'
     + '<div class="spacer"></div>'
     + '<button class="e-btn" data-go="arrived">'+esc(D.eArrived)+'</button>';
 }
@@ -1385,6 +1573,8 @@ function render(s){
     : (App.route==="family" ? D.hintFamily : D.hintEntry);
 
   bindInputs();
+  if(App.route==="obElder") initHomeMap();
+  if(App.route==="elder" && St && St.guide && St.guide.active) initGuideMap();
   var th=view.querySelector(".thread"); if(th) th.scrollTop=th.scrollHeight;
   syncSubs();
   setConnectionStatus(Connection.state);
@@ -1647,6 +1837,7 @@ async function hardExit(){
   if(window.Voice){ window.Voice.stopSpeaking(); }
   if(App.voiceSession){ try{ await App.voiceSession.stop(); }catch(_error){} }
   App.voiceBusy=false; App.voiceSession=null; App.voiceContext=null; App.callRecording=false;
+  stopGps();
   App.route="entry"; App.tab=0; App.qa=false; App.editingPerson=null; App.paired=false;
   clearDevice(); St=null;
   try{ if(Store) await Store.signOut(); }catch(error){ reportStoreError(error); }
@@ -1664,7 +1855,7 @@ document.addEventListener("click", async function(e){
   if(g("data-tab")!==null){ App.tab=parseInt(g("data-tab"),10); App.editingPerson=null; render(); return; }
   if(g("data-ask")!==null){ ask(parseInt(g("data-ask"),10)); return; }
   if((id=g("data-person"))){ App.editingPerson=id; App.speak=0; render(); return; }
-  if(g("data-range")!==null){ var r=g("data-range"); queueUpdate(function(s){ s.elder.radius=r; }); return; }
+  if(g("data-range")!==null){ var r=g("data-range"); queueUpdate(function(s){ s.elder.radius=r; s.home=s.home||{}; s.home.radiusM=parseInt(r,10); }); return; }
   if((id=g("data-item-do"))){ setItem(id,"done"); return; }
   if((id=g("data-item-skip"))){ setItem(id,"skip"); return; }
   if((id=g("data-item-edit"))){ setItem(id,"editing"); return; }
@@ -1708,7 +1899,8 @@ document.addEventListener("click", async function(e){
       render();
       break;
     case "enterFamily": App.route="family"; App.tab=0; render(); break;
-    case "enterElder": App.paired=false; render(); break;
+    case "enterElder": App.paired=false; render(); startGps(); break;
+    case "setHomeFromGps": setHomeFromGps(); break;
     case "addPerson":
       var np=newPerson(St.lang,true);
       queueUpdate(function(s){ s.people.push(np); });
@@ -1802,6 +1994,7 @@ async function connectAndRestore(){
       setConnectionStatus("synced");
     }
     render(St);
+    if(App.route==="elder") setTimeout(startGps,0);
   }catch(error){
     Connection.initFailed=true;
     setConnectionStatus(navigator.onLine===false?"offline":"error");

@@ -16,6 +16,9 @@ dist-ssr
 .tanstack/**
 .nitro
 *.local
+.env
+.env.*
+!.env.example
 
 # Wrangler / Cloudflare
 .wrangler/
@@ -31,3 +34,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# 由 scripts/gen-maps-config.mjs 生成，含 API key，不提交
+public/app/maps-config.js

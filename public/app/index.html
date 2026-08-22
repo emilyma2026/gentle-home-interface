@@ -384,6 +384,60 @@ input,textarea,select{font:inherit}
 /* 视口不够高时手机框自适应，保证分屏演示一屏放得下 */
 
 
+/* ---- 地图 ---- */
+.gmap{width:100%; height:186px; background:#EFECEE}
+.mapbox{position:relative; display:block; width:100%; min-height:186px; border-radius:var(--r-md);
+  overflow:hidden; background:#F3F1F4; box-shadow:var(--sh-card)}
+.mapbox.mappick{touch-action:none; cursor:crosshair}
+.mapbox svg{display:block; width:100%; height:auto}
+.mapbox .tip{position:absolute; left:10px; bottom:9px; padding:4px 10px; border-radius:99px;
+  background:rgba(23,22,26,.72); color:#fff; font-size:10.5px; pointer-events:none; z-index:2}
+.mapbox .badge-live{position:absolute; right:10px; top:10px; padding:3px 9px; border-radius:99px;
+  background:rgba(255,255,255,.92); color:var(--muted); font-size:10px; font-weight:800; z-index:2}
+
+/* ---- 安全范围滑块 ---- */
+.rangeval{display:inline-flex; align-items:baseline; gap:3px}
+.rangeval input{width:78px; padding:5px 8px; border:1px solid var(--line); border-radius:9px;
+  background:#fff; color:var(--ink); font-size:14px; font-weight:800; text-align:right;
+  font-variant-numeric:tabular-nums}
+.rangeval input:focus{border-color:var(--blue); outline:none; box-shadow:0 0 0 3px var(--blue-soft)}
+.rangeval em{font-style:normal; color:var(--muted); font-size:12px; font-weight:700}
+.slider{-webkit-appearance:none; appearance:none; width:100%; height:28px; background:transparent; margin:6px 0 0}
+.slider::-webkit-slider-runnable-track{height:6px; border-radius:99px;
+  background:linear-gradient(90deg,var(--warm) 0%,var(--warm) var(--pct,40%),var(--line) var(--pct,40%),var(--line) 100%)}
+.slider::-moz-range-track{height:6px; border-radius:99px; background:var(--line)}
+.slider::-moz-range-progress{height:6px; border-radius:99px; background:var(--warm)}
+.slider::-webkit-slider-thumb{-webkit-appearance:none; appearance:none; width:24px; height:24px;
+  margin-top:-9px; border-radius:50%; background:#fff; border:2px solid var(--warm);
+  box-shadow:0 2px 8px rgba(43,42,46,.2); cursor:grab}
+.slider::-moz-range-thumb{width:22px; height:22px; border-radius:50%; background:#fff;
+  border:2px solid var(--warm); box-shadow:0 2px 8px rgba(43,42,46,.2); cursor:grab}
+.range-marks{display:flex; justify-content:space-between; margin-top:1px; color:var(--faint); font-size:10.5px}
+
+/* ---- 危险操作与设置行 ---- */
+.btn.danger{background:#fff; color:var(--red); box-shadow:var(--sh-card)}
+.btn.danger:hover{background:var(--red-soft)}
+.setrow{display:flex; align-items:center; justify-content:space-between; gap:12px;
+  width:100%; padding:14px 16px; text-align:left; border-radius:var(--r-md);
+  background:var(--card); box-shadow:var(--sh-card); margin-bottom:9px}
+.setrow b{display:block; font-size:14px}
+.setrow small{color:var(--muted); font-size:11.5px}
+.setrow .val{color:var(--blue-d); font-size:13px; font-weight:800; flex:0 0 auto}
+
+/* ---- 老人端：给家人打电话 ---- */
+.callpick{display:grid; gap:11px; margin:10px 0 4px}
+.callpick button{display:flex; align-items:center; gap:14px; padding:16px; text-align:left;
+  border-radius:24px; background:#fff; box-shadow:var(--sh-card)}
+.callpick button:active{background:var(--warm-soft)}
+.callpick b{display:block; font-size:21px; line-height:1.3}
+.callpick small{color:var(--ink-2); font-size:14px}
+.callpick .dial{margin-left:auto; width:46px; height:46px; border-radius:50%; background:var(--green);
+  display:grid; place-items:center; color:#fff; flex:0 0 auto}
+.callpick .dial svg{width:21px; height:21px; fill:none; stroke:currentColor; stroke-width:2;
+  stroke-linecap:round; stroke-linejoin:round}
+.inapp-tag{display:inline-flex; align-items:center; gap:6px; margin:0 0 10px; padding:4px 11px;
+  border-radius:99px; background:var(--green-soft); color:var(--green); font-size:11.5px; font-weight:800}
+
 /* ================= 入口：温暖家庭关怀主题 ================= */
 .view:has(> .entry){padding:0; background:
   radial-gradient(70% 40% at 12% 6%, rgba(250,214,178,.85) 0%, rgba(250,214,178,0) 62%),
@@ -462,6 +516,7 @@ input,textarea,select{font:inherit}
 -->
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4"></script>
+<script src="/app/maps-config.js" onerror="window.MAPS_CONFIG={key:''}"></script>
 <script src="/app/supabase-config.js"></script>
 <script src="/app/supabase-store.js"></script>
 <script>
@@ -473,11 +528,13 @@ input,textarea,select{font:inherit}
    ===================================================================== */
 var SEED = {
   zh:{ elderName:"妈妈", address:"广州市天河区兴华路 12 号 3 栋",
+       elderPhone:"139 0000 4488",
        nick:"小雨", relation:"女儿", phone:"138 0000 7612",
        recent:"现在在广州工作，一个人住。",
        hint:"你以前每天送她去三小上学，风雨无阻。",
        spoken:"我是她女儿小雨，现在在广州工作，一个人住。我妈以前每天送我去三小上学，风雨无阻。" },
   en:{ elderName:"Mom", address:"12 Xinghua Rd, Building 3, Guangzhou",
+       elderPhone:"139 0000 4488",
        nick:"Yuki", relation:"Daughter", phone:"138 0000 7612",
        recent:"Works in Guangzhou, lives on her own.",
        hint:"You walked her to No.3 Primary School every morning, rain or shine.",
@@ -507,9 +564,14 @@ zh:{
   fsCreateT:"创建家庭", fsCreateD:"首次使用，填写老人信息",
   fsJoinT:"加入家庭", fsJoinD:"输入六位家庭码",
 
-  obElderTitle:"关于老人", obElderSub:"三项就够，之后随时可以改。",
-  fName:"称呼", fAddr:"家庭住址", fRange:"日常活动范围",
-  rangeHint:"超出这个范围并持续远离，系统先提醒老人，再通知你。",
+  obElderTitle:"关于老人", obElderSub:"四项就够，之后随时可以改。",
+  fName:"称呼", fAddr:"家庭住址", fRange:"安全范围",
+  fElderPhone:"她的手机号", elderPhoneHint:"平台内呼叫打不通时，家人可以直接拨这个号码。",
+  fHome:"家在哪里", homeHint:"在地图上点一下，或者拖动图钉，把它放到家的位置。",
+  mapTipPick:"点一下或拖动图钉", mapTipLive:"实时位置",
+  mapFallback:"地图暂时不可用，下面是示意图",
+  rangeHint:"走出这个范围并且持续远离，系统先提醒她，再通知你。范围以家为中心。",
+  rangeMin:"200 米", rangeMax:"2000 米", rangeUnit:"米",
   obMeTitle:"关于你自己", obMeSub:"这些会出现在老人的来电卡片上，帮她认出你。",
   speakT:"说一句话，我来整理", speakD:"不想打字就按这里，说完自动填进下面的字段",
   speakOn:"正在听……", speakDone:"已经从这句话里整理出 2 个字段，可以直接改。",
@@ -541,6 +603,8 @@ zh:{
   mapDist:"距家 {n} 米", mapHome:"家",
   callBtn:"打给{elder}",
   ringT:"正在呼叫{elder}", ringD:"接通后她会看到你的卡片。",
+  inRingT:"{elder}打来了", inRingD:"接听后她会看到你的资料卡。",
+  fAnswer:"接听", fDecline:"拒绝",
   talkT:"通话中", talkD:"挂断之后，系统会把这通电话整理成待确认的内容。",
   hangup:"挂断",
   notPaired:"老人端还没有配对", notPairedD:"在老人的手机上打开这一页，用家庭码 {code} 配对。",
@@ -570,9 +634,19 @@ zh:{
   pendingT:"等你补充", pendingD:"{elder}问了这个，记忆里没有：",
   pendingOk:"我已经补上了",
   familyCodeT:"家庭码", familyCodeD:"分享给其他家人或用来配对老人的手机",
+  settingsT:"设置", langRow:"界面语言", langRowV:"中文",
+  logoutT:"退出登录", logoutD:"退出后这台设备不再显示这个家庭的信息",
+  logoutAsk:"确定要退出登录吗？这台设备会回到身份选择页。",
+  logoutElder:"退出配对", logoutElderD:"解除这台手机与家庭的绑定",
+  testT:"测试安全范围", testD:"模拟她走出安全范围，确认提醒能正常送到你这里。",
+  testGo:"模拟走出范围", testBack:"回到家中", testDist:"当前距家 {n} 米",
 
   eGreet:"你好", eGreetD:"有事就按下面的按钮跟我说。",
   eTalk:"说话", eBack:"不问了",
+  eCallFamily:"找家人", eChooseT:"想给谁打电话？",
+  eChooseD:"按一下就打过去，不用记号码。",
+  eCalling:"正在呼叫", eCancelCall:"取消", eInApp:"正在通过守护助手通话",
+  eNoPeople:"家人还没有填自己的资料，先让他们填一下。",
   eIncoming:"来电", eIsYour:"，是你", eAnswer:"接听", eDecline:"拒绝",
   eOnCall:"通话中", eAudioTag:"示例音频",
   eListening:"我在听", eEmpty:"想问什么，按一下就行。",
@@ -625,9 +699,14 @@ en:{
   fsCreateT:"Create family", fsCreateD:"First time: add elder details",
   fsJoinT:"Join family", fsJoinD:"Enter the six-digit code",
 
-  obElderTitle:"About the elder", obElderSub:"Three things is enough. You can change them any time.",
-  fName:"Name", fAddr:"Home address", fRange:"Everyday range",
-  rangeHint:"If she goes past this and keeps moving away, the system talks to her first, then tells you.",
+  obElderTitle:"About the elder", obElderSub:"Four things is enough. You can change them any time.",
+  fName:"Name", fAddr:"Home address", fRange:"Safe range",
+  fElderPhone:"Her phone number", elderPhoneHint:"A fallback, so family can dial her directly if the in-app call fails.",
+  fHome:"Where home is", homeHint:"Tap the map, or drag the pin onto her home.",
+  mapTipPick:"Tap or drag the pin", mapTipLive:"Live location",
+  mapFallback:"Map unavailable, showing a schematic instead",
+  rangeHint:"If she leaves this range and keeps moving away, the system talks to her first, then tells you. The range is centred on home.",
+  rangeMin:"200 m", rangeMax:"2000 m", rangeUnit:"m",
   obMeTitle:"About you", obMeSub:"This is what she sees when you call, so she can recognise you.",
   speakT:"Say it out loud instead", speakD:"Tap and talk. The fields below fill themselves in.",
   speakOn:"Listening…", speakDone:"Two fields were pulled from that sentence. Edit them freely.",
@@ -659,6 +738,8 @@ en:{
   mapDist:"{n} m from home", mapHome:"Home",
   callBtn:"Call {elder}",
   ringT:"Calling {elder}", ringD:"Once she answers, your card is on her screen.",
+  inRingT:"{elder} is calling", inRingD:"Answer and she'll see your card.",
+  fAnswer:"Answer", fDecline:"Decline",
   talkT:"On a call", talkD:"After you hang up, the call becomes items for you to confirm.",
   hangup:"Hang up",
   notPaired:"The elder's phone is not paired", notPairedD:"Open this page on her phone and pair with code {code}.",
@@ -688,9 +769,19 @@ en:{
   pendingT:"Needs your input", pendingD:"{elder} asked this and it is not in memory:",
   pendingOk:"I've added it",
   familyCodeT:"Family code", familyCodeD:"Share it with relatives or use it to pair her phone",
+  settingsT:"Settings", langRow:"Language", langRowV:"English",
+  logoutT:"Log out", logoutD:"This device will stop showing this family's information",
+  logoutAsk:"Log out? This device goes back to the role picker.",
+  logoutElder:"Unpair this phone", logoutElderD:"Disconnect this phone from the family",
+  testT:"Test the safe range", testD:"Simulate her leaving the safe range and check the alert reaches you.",
+  testGo:"Simulate leaving", testBack:"Bring her home", testDist:"Currently {n} m from home",
 
   eGreet:"Hello", eGreetD:"Press the button below whenever you need me.",
   eTalk:"Talk", eBack:"Never mind",
+  eCallFamily:"Call family", eChooseT:"Who would you like to call?",
+  eChooseD:"One tap. No numbers to remember.",
+  eCalling:"Calling", eCancelCall:"Cancel", eInApp:"Talking through the app",
+  eNoPeople:"No family member has filled in their details yet.",
   eIncoming:"Incoming call", eIsYour:", your ", eAnswer:"Answer", eDecline:"Decline",
   eOnCall:"On a call", eAudioTag:"Sample audio",
   eListening:"I'm listening", eEmpty:"Tap anything you want to ask.",
@@ -748,20 +839,43 @@ function clearDevice(){
 function selectedMemberId(){ return sessionGet(SME); }
 
 var HOME={x:130,y:90}, MPP=13.33;
+/* 家的默认位置：广州天河。老人和家的坐标都用经纬度，距离用大圆公式。 */
+var HOME_LL={lat:23.1291, lng:113.3644};
+function metersPerDegLng(lat){ return 111320*Math.cos(lat*Math.PI/180); }
+function haversine(a,b){
+  var R=6371000, t=Math.PI/180;
+  var dLat=(b.lat-a.lat)*t, dLng=(b.lng-a.lng)*t;
+  var h=Math.sin(dLat/2)*Math.sin(dLat/2)
+      + Math.sin(dLng/2)*Math.sin(dLng/2)*Math.cos(a.lat*t)*Math.cos(b.lat*t);
+  return 2*R*Math.asin(Math.min(1,Math.sqrt(h)));
+}
+/* 兼容早期用像素坐标保存的家庭 */
+function asLL(p, base){
+  if(p && typeof p.lat==="number" && typeof p.lng==="number") return {lat:p.lat, lng:p.lng};
+  var b=base||HOME_LL, q=p||{x:HOME.x, y:HOME.y};
+  var east=((q.x==null?HOME.x:q.x)-HOME.x)*MPP, north=(HOME.y-(q.y==null?HOME.y:q.y))*MPP;
+  return { lat:b.lat + north/111320, lng:b.lng + east/metersPerDegLng(b.lat) };
+}
+function offsetLL(base, eastM, northM){
+  return { lat: base.lat + northM/111320, lng: base.lng + eastM/metersPerDegLng(base.lat) };
+}
+function homeOf(s){ return asLL(s && s.elder ? s.elder.home : null); }
+function locOf(s){ return asLL(s ? s.loc : null, homeOf(s)); }
 
 function newFamily(code, lang){
   var s=SEED[lang]||SEED.zh;
   return {
     code:code, lang:lang, rev:0,
     setup:false, paired:false,
-    elder:{ name:s.elderName, address:s.address, radius:"800" },
+    elder:{ name:s.elderName, phone:s.elderPhone, address:s.address,
+            home:{ lat:HOME_LL.lat, lng:HOME_LL.lng }, radius:"800" },
     people:[],
     facts:[], pending:[],
     timeline:[{t:"09:10", kind:"morning"}],
     call:{ phase:"idle", personId:null, line:-1 },
     lastCaller:null,
     thread:[], askCounts:{},
-    loc:{ x:HOME.x, y:HOME.y },
+    loc:{ lat:HOME_LL.lat, lng:HOME_LL.lng },
     guide:{ active:false, step:0, done:false }
   };
 }
@@ -869,7 +983,7 @@ function tp(str, s){
 function esc(v,s){
   return tp(v,s).replace(/[&<>"]/g,function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]; });
 }
-function distOf(s){ var dx=s.loc.x-HOME.x, dy=s.loc.y-HOME.y; return Math.round(Math.sqrt(dx*dx+dy*dy)*MPP); }
+function distOf(s){ return Math.round(haversine(locOf(s), homeOf(s))); }
 function rangeM(s){ return parseInt(s.elder.radius,10); }
 function isOut(s){ return distOf(s)>rangeM(s); }
 function clockNow(){ var d=new Date(); return d.getHours()+":"+("0"+d.getMinutes()).slice(-2); }
@@ -888,6 +1002,151 @@ var IC = {
 };
 
 /* =====================================================================
+   3b. 地图：优先 Google 地图，加载不出来时降级为示意图
+   ===================================================================== */
+var Maps={ state:"idle", waiters:[], host:{}, inst:{}, circle:{}, homeMk:{}, elderMk:{} };
+function mapsKey(){ return (window.MAPS_CONFIG && window.MAPS_CONFIG.key) || ""; }
+function loadMaps(){
+  if(Maps.state==="ready") return Promise.resolve(true);
+  if(Maps.state==="failed") return Promise.resolve(false);
+  if(Maps.state==="loading") return new Promise(function(r){ Maps.waiters.push(r); });
+  if(!mapsKey()){ Maps.state="failed"; return Promise.resolve(false); }
+  Maps.state="loading";
+  return new Promise(function(resolve){
+    Maps.waiters.push(resolve);
+    function done(ok){
+      Maps.state = ok ? "ready" : "failed";
+      Maps.waiters.splice(0).forEach(function(w){ w(ok); });
+    }
+    var timer=setTimeout(function(){ done(false); }, 9000);
+    window.__mapsReady=function(){ clearTimeout(timer); done(!!(window.google && window.google.maps)); };
+    var sc=document.createElement("script");
+    sc.async=true;
+    sc.src="https://maps.googleapis.com/maps/api/js?key="+encodeURIComponent(mapsKey())
+         + "&callback=__mapsReady&loading=async";
+    sc.onerror=function(){ clearTimeout(timer); done(false); };
+    document.head.appendChild(sc);
+  });
+}
+
+var MAP_STYLE=[
+  {featureType:"poi.business", stylers:[{visibility:"off"}]},
+  {featureType:"transit", elementType:"labels.icon", stylers:[{visibility:"off"}]}
+];
+
+function mapHost(kind){
+  if(!Maps.host[kind]){
+    var d=document.createElement("div");
+    d.className="gmap";
+    Maps.host[kind]=d;
+  }
+  return Maps.host[kind];
+}
+
+/* 示意图降级：把经纬度投影成 260x150 的画布 */
+function schematicSVG(kind){
+  var home=homeOf(St), here=locOf(St), r=rangeM(St), out=isOut(St);
+  var cx=130, cy=75, rpx=52, ppm=rpx/Math.max(r,1);
+  var east=(here.lng-home.lng)*metersPerDegLng(home.lat);
+  var north=(here.lat-home.lat)*111320;
+  var ex=Math.max(8,Math.min(252, cx+east*ppm)), ey=Math.max(8,Math.min(142, cy-north*ppm));
+  var g=D.guide;
+  var h='<svg viewBox="0 0 260 150" aria-label="map">'
+    + '<rect width="260" height="150" fill="#F3F1F4"/>'
+    + '<path d="M0 48H260M0 104H260M74 0V150M186 0V150" stroke="#E7E3E6" stroke-width="1.4" fill="none"/>'
+    + '<circle cx="'+cx+'" cy="'+cy+'" r="'+rpx+'" fill="rgba(110,147,206,.10)" stroke="#6E93CE" stroke-width="1.3" stroke-dasharray="5 4"/>'
+    + '<circle cx="74" cy="40" r="3.2" fill="#D19A55"/><text x="80" y="43" font-size="7.5" fill="#8B8791">'+esc(g[0].lm)+'</text>'
+    + '<circle cx="196" cy="116" r="3.2" fill="#6E93CE"/><text x="150" y="128" font-size="7.5" fill="#8B8791">'+esc(g[1].lm)+'</text>'
+    + '<rect x="'+(cx-6)+'" y="'+(cy-6)+'" width="12" height="12" rx="3" fill="#5E9E82"/>'
+    + '<text x="'+(cx+10)+'" y="'+(cy+4)+'" font-size="8.5" fill="#5E9E82" font-weight="700">'+esc(D.mapHome)+'</text>';
+  if(kind!=="picker"){
+    h+='<circle cx="'+ex.toFixed(1)+'" cy="'+ey.toFixed(1)+'" r="8" fill="'+(out?"#C9646B":"#D19A55")+'" opacity=".22"/>'
+     + '<circle cx="'+ex.toFixed(1)+'" cy="'+ey.toFixed(1)+'" r="5" fill="'+(out?"#C9646B":"#D19A55")+'" stroke="#fff" stroke-width="2"/>';
+  }
+  return h+'</svg>';
+}
+
+/* 家人端只读地图 / 首次设置的选点地图，共用一个占位符 */
+function mapBox(kind){
+  var tip = kind==="picker" ? D.mapTipPick : D.mapTipLive;
+  return '<div class="mapbox'+(kind==="picker"?" mappick":"")+'" data-gmap="'+kind+'">'
+    + '<span class="tip">'+esc(tip)+'</span></div>';
+}
+
+function mountMaps(){
+  ["picker","view"].forEach(function(kind){
+    var slot=document.querySelector('[data-gmap="'+kind+'"]');
+    if(!slot) return;
+    loadMaps().then(function(ok){
+      var still=document.querySelector('[data-gmap="'+kind+'"]');
+      if(still!==slot) return;
+      if(!ok){ slot.insertAdjacentHTML("afterbegin", schematicSVG(kind)); return; }
+      var host=mapHost(kind);
+      var moved = host.parentNode!==slot;
+      if(moved) slot.insertBefore(host, slot.firstChild);
+      syncMap(kind);
+      if(moved && Maps.inst[kind]){
+        // 重新挂到新的容器之后要让地图重算尺寸，否则会留白
+        requestAnimationFrame(function(){
+          if(!Maps.inst[kind]) return;
+          window.google.maps.event.trigger(Maps.inst[kind],"resize");
+          Maps.inst[kind].setCenter(homeOf(St));
+        });
+      }
+    });
+  });
+}
+
+function syncMap(kind){
+  if(Maps.state!=="ready" || !St) return;
+  var g=window.google.maps, host=Maps.host[kind];
+  if(!host || !host.isConnected) return;
+  var home=homeOf(St), r=rangeM(St);
+  var map=Maps.inst[kind];
+  if(!map){
+    map=new g.Map(host,{
+      center:home, zoom:15, disableDefaultUI:true, gestureHandling:"greedy",
+      clickableIcons:false, styles:MAP_STYLE
+    });
+    Maps.inst[kind]=map;
+    Maps.homeMk[kind]=new g.Marker({map:map, position:home, draggable:kind==="picker", title:D.mapHome});
+    Maps.circle[kind]=new g.Circle({map:map, center:home, radius:r,
+      strokeColor:"#6E93CE", strokeOpacity:.9, strokeWeight:1.6,
+      fillColor:"#6E93CE", fillOpacity:.10, clickable:false});
+    if(kind==="picker"){
+      Maps.homeMk[kind].addListener("dragend", function(ev){ commitHome(ev.latLng.lat(), ev.latLng.lng()); });
+      map.addListener("click", function(ev){ commitHome(ev.latLng.lat(), ev.latLng.lng()); });
+    }else{
+      Maps.elderMk[kind]=new g.Marker({map:map, position:locOf(St), title:St.elder.name,
+        icon:{path:g.SymbolPath.CIRCLE, scale:7, fillColor:"#D19A55", fillOpacity:1,
+              strokeColor:"#fff", strokeWeight:2.5}});
+    }
+  }else{
+    g.event.trigger(map,"resize");
+  }
+  Maps.homeMk[kind].setPosition(home);
+  Maps.circle[kind].setCenter(home);
+  Maps.circle[kind].setRadius(r);
+  if(kind==="view" && Maps.elderMk[kind]){
+    var here=locOf(St), out=isOut(St);
+    Maps.elderMk[kind].setPosition(here);
+    Maps.elderMk[kind].setIcon({path:g.SymbolPath.CIRCLE, scale:7,
+      fillColor: out?"#C9646B":"#D19A55", fillOpacity:1, strokeColor:"#fff", strokeWeight:2.5});
+    map.setCenter(out ? {lat:(here.lat+home.lat)/2, lng:(here.lng+home.lng)/2} : home);
+  } else if(kind==="picker"){
+    map.setCenter(home);
+  }
+  map.setZoom(r>1200?14:(r>600?15:16));
+}
+
+function commitHome(lat,lng){
+  queueUpdate(function(s){
+    s.elder.home={lat:lat, lng:lng};
+    if(!s.guide.active && !s.guide.done) s.loc={lat:lat, lng:lng};
+  });
+}
+
+/* =====================================================================
    4. 应用状态
    ===================================================================== */
 var App = {
@@ -896,7 +1155,7 @@ var App = {
   tab:0,
   err:"",
   speak:0,             // 0 未说 1 正在听 2 已填
-  qa:false, dev:false,
+  qa:false, pick:false, dev:false,
   editingPerson:null,  // 正在编辑的人物 id，null 表示列表
   addingPerson:false
 };
@@ -969,18 +1228,26 @@ function editTarget(){
   return null;
 }
 
+function rangeFieldHTML(){
+  var r=rangeM(St), pct=Math.round((r-200)/1800*100);
+  return '<div class="field"><div class="field-top"><label>'+esc(D.fRange)+'</label>'
+    + '<span class="rangeval"><input type="number" id="rangeNum" min="200" max="2000" step="10" '
+    +   'value="'+r+'" aria-label="'+esc(D.fRange)+'"><em>'+esc(D.rangeUnit)+'</em></span></div>'
+    + '<input type="range" class="slider" id="rangeSlider" min="200" max="2000" step="10" '
+    +   'value="'+r+'" style="--pct:'+pct+'%" aria-label="'+esc(D.fRange)+'">'
+    + '<div class="range-marks"><span>'+esc(D.rangeMin)+'</span><span>'+esc(D.rangeMax)+'</span></div>'
+    + '<p class="hint">'+esc(D.rangeHint)+'</p></div>';
+}
+
 function viewObElder(){
-  var r=St.elder.radius;
-  var segs=["500","800","1200"], names=["500 m","800 m","1200 m"];
-  var seg='<div class="seg">';
-  for(var i=0;i<3;i++) seg+='<button data-range="'+segs[i]+'" aria-pressed="'+(r===segs[i])+'">'+names[i]+'</button>';
-  seg+='</div>';
   return '<p class="eyebrow">1 / 2</p><p class="h1">'+esc(D.obElderTitle)+'</p>'
     + '<p class="sub">'+esc(D.obElderSub)+'</p>'
     + fieldHTML("elder.name", D.fName, "text", {seedKey:"elderName"})
-    + fieldHTML("elder.address", D.fAddr, "text", {seedKey:"address"})
-    + '<div class="field"><div class="field-top"><label>'+esc(D.fRange)+'</label></div>'
-    +   seg + '<p class="hint">'+esc(D.rangeHint)+'</p></div>'
+    + fieldHTML("elder.phone", D.fElderPhone, "text", {seedKey:"elderPhone", hint:D.elderPhoneHint})
+    + '<div class="field"><div class="field-top"><label>'+esc(D.fHome)+'</label></div>'
+    +   mapBox("picker")
+    +   '<p class="hint">'+esc(D.homeHint)+'</p></div>'
+    + rangeFieldHTML()
     + '<div class="spacer"></div>'
     + '<button class="btn" data-go="obMe">'+esc(D.next)+'</button>'
     + '<button class="link" data-go="familyStart">'+esc(D.back)+'</button>';
@@ -1059,18 +1326,8 @@ function me(){
 }
 
 function mapSVG(){
-  var d=distOf(St), out=isOut(St), g=D.guide;
-  return '<svg class="map" viewBox="0 0 260 150" aria-label="map">'
-    + '<rect width="260" height="150" fill="#F3F1F4"/>'
-    + '<path d="M0 48H260M0 104H260M74 0V150M186 0V150" stroke="#E7E3E6" stroke-width="1.4" fill="none"/>'
-    + '<circle cx="'+HOME.x+'" cy="'+(HOME.y-15)+'" r="'+(rangeM(St)/MPP).toFixed(1)+'" fill="rgba(110,147,206,.10)" stroke="#6E93CE" stroke-width="1.3" stroke-dasharray="5 4"/>'
-    + '<circle cx="74" cy="48" r="3.2" fill="#D19A55"/><text x="80" y="51" font-size="7.5" fill="#8B8791">'+esc(g[0].lm)+'</text>'
-    + '<circle cx="186" cy="104" r="3.2" fill="#6E93CE"/><text x="192" y="107" font-size="7.5" fill="#8B8791">'+esc(g[1].lm)+'</text>'
-    + '<rect x="'+(HOME.x-6)+'" y="'+(HOME.y-21)+'" width="12" height="12" rx="3" fill="#5E9E82"/>'
-    + '<text x="'+(HOME.x+10)+'" y="'+(HOME.y-11)+'" font-size="8.5" fill="#5E9E82" font-weight="700">'+esc(D.mapHome)+'</text>'
-    + '<circle cx="'+St.loc.x.toFixed(1)+'" cy="'+(St.loc.y-15).toFixed(1)+'" r="8" fill="'+(out?"#C9646B":"#D19A55")+'" opacity=".22"/>'
-    + '<circle cx="'+St.loc.x.toFixed(1)+'" cy="'+(St.loc.y-15).toFixed(1)+'" r="5" fill="'+(out?"#C9646B":"#D19A55")+'" stroke="#fff" stroke-width="2"/>'
-    + '</svg>'
+  var d=distOf(St), out=isOut(St);
+  return mapBox("view")
     + '<div class="map-foot"><small>'+esc(D.mapNote)+'</small>'
     + '<b class="'+(out?"out":"")+'">'+esc(fill(D.mapDist,{n:d}))+'</b></div>';
 }
@@ -1093,7 +1350,12 @@ function tabHome(){
    + esc(rs==="on"?D.tileAlertOn:(rs==="done"?D.tileAlertDone:D.tileAlertV))+'</b></button></div>'
    + '<div class="map-card">'+mapSVG()+'</div>';
 
-  if(St.call.phase==="ringing" || St.call.phase==="talking"){
+  if(St.call.phase==="ringing" && callDir(St)==="out"){
+    h+='<div class="banner warn">'+waveEl()+'<span><b>'+esc(D.inRingT)+'</b>'
+     + '<small>'+esc(D.inRingD)+'</small></span></div>'
+     + '<div class="btn-row"><button class="btn ghost" data-go="decline">'+esc(D.fDecline)+'</button>'
+     + '<button class="btn" data-go="answer">'+esc(D.fAnswer)+'</button></div>';
+  } else if(St.call.phase==="ringing" || St.call.phase==="talking"){
     var ring = St.call.phase==="ringing";
     h+='<div class="banner">'+waveEl()+'<span><b>'+esc(ring?fill(D.ringT,{}):D.talkT)+'</b>'
      + '<small>'+esc(ring?D.ringD:D.talkD)+'</small></span></div>'
@@ -1157,7 +1419,19 @@ function tabAlerts(){
       + '<dl class="detail ok"><dt>✓ '+esc(D.tileAlertDone)+'</dt><dd>'+esc(D.dDoneV)+'</dd></dl>';
   }
   return '<div class="f-head"><p class="eyebrow">'+esc(D.alertT)+'</p><p class="h1">'+esc(D.alertNone)+'</p></div>'
-    + '<div class="empty">'+esc(D.alertNoneD)+'</div>';
+    + '<div class="empty">'+esc(D.alertNoneD)+'</div>'
+    + testRangeCard();
+}
+
+/* 家人可以自己验一次「她走远了我能不能收到提醒」，这是产品功能不是演示开关 */
+function testRangeCard(){
+  return '<div class="card" style="margin-top:14px">'
+    + '<b style="font-size:13.5px">'+esc(D.testT)+'</b>'
+    + '<p style="margin:5px 0 11px;color:var(--muted);font-size:11.5px;line-height:1.55">'+esc(D.testD)+'</p>'
+    + '<div class="btn-row"><button class="btn ghost" data-go="testWalk">'+esc(D.testGo)+'</button>'
+    + '<button class="btn ghost" data-go="testHome">'+esc(D.testBack)+'</button></div>'
+    + '<p style="margin:10px 0 0;color:var(--faint);font-size:11px;text-align:center">'
+    + esc(fill(D.testDist,{n:distOf(St)}))+'</p></div>';
 }
 
 function tabPeople(){
@@ -1185,6 +1459,12 @@ function tabPeople(){
   h+='<div class="card" style="margin-top:14px"><b style="font-size:13.5px">'+esc(D.familyCodeT)+'</b>'
    + '<p style="margin:4px 0 10px;color:var(--muted);font-size:11.5px">'+esc(D.familyCodeD)+'</p>'
    + '<div class="codebox" style="margin:0;padding:16px"><b style="font-size:30px">'+St.code+'</b></div></div>';
+
+  h+='<p class="eyebrow" style="margin:20px 0 8px">'+esc(D.settingsT)+'</p>'
+   + '<button class="setrow" data-go="lang"><span><b>'+esc(D.langRow)+'</b></span>'
+   + '<span class="val">'+esc(D.langRowV)+'</span></button>'
+   + '<button class="btn danger" data-go="logout" style="margin-top:6px">'+esc(D.logoutT)+'</button>'
+   + '<p style="margin:8px 0 0;color:var(--faint);font-size:11px;text-align:center">'+esc(D.logoutD)+'</p>';
   return h;
 }
 
@@ -1202,12 +1482,15 @@ function tabbar(){
 /* =====================================================================
    7. 视图：老人端
    ===================================================================== */
+function callDir(s){ return (s && s.call && s.call.dir==="out") ? "out" : "in"; }
+
 function elderScreen(){
   if(App.paired) return "paired";
-  if(St.call.phase==="ringing") return "ringing";
+  if(St.call.phase==="ringing") return callDir(St)==="out" ? "calling" : "ringing";
   if(St.call.phase==="talking") return "talking";
   if(St.guide.active) return "guide";
   if(St.guide.done) return "arrived";
+  if(App.pick) return "pick";
   if(App.qa) return "qa";
   return "standby";
 }
@@ -1216,7 +1499,8 @@ function viewStandby(){
   return '<div class="e-hello"><div class="e-ring">'+esc(initial(St.elder.name))+'</div>'
     + '<p class="e-h1">'+esc(D.eGreet)+'</p><p class="e-copy">'+esc(D.eGreetD)+'</p></div>'
     + '<button class="e-btn" data-go="openQa">'+esc(D.eTalk)+'</button>'
-    + devBar();
+    + '<button class="e-btn soft" data-go="openPick" style="margin-top:10px">'+esc(D.eCallFamily)+'</button>'
+    + elderSettings();
 }
 
 function callerCard(){
@@ -1236,6 +1520,15 @@ function viewRinging(){
 
 function viewTalking(){
   var p=focusPerson(St), lines="";
+  if(callDir(St)==="out"){
+    return '<p class="eyebrow warm" style="margin-top:8px">'+esc(D.eOnCall)+'</p>'
+      + '<p class="e-h1" style="font-size:28px;margin-bottom:10px">'+esc(p.nick)+'</p>'
+      + '<span class="inapp-tag">'+IC.phoneUp+esc(D.eInApp)+'</span>'
+      + callerCard()
+      + '<div style="display:flex;justify-content:center;margin-top:18px">'+waveEl("warm")+'</div>'
+      + '<div class="spacer"></div>'
+      + '<button class="e-btn red" data-go="hangup">'+esc(D.hangup)+'</button>';
+  }
   for(var i=0;i<D.callLines.length;i++){
     var L=D.callLines[i], who = L[0]==="me" ? St.elder.name : p.nick;
     lines+='<p class="'+(i<=St.call.line?"on":"")+'"><b class="'+(L[0]==="me"?"self":"")+'">'
@@ -1270,6 +1563,39 @@ function viewQa(){
     + '<button class="e-btn soft" data-go="closeQa">'+esc(D.eBack)+'</button>';
 }
 
+/* 老人不用记号码，按一下头像就打过去；呼叫中把这位家人的资料摆在屏幕上 */
+function viewPick(){
+  var h='<p class="eyebrow warm" style="margin-top:8px">'+esc(D.eChooseT)+'</p>'
+    + '<p class="e-copy" style="margin-bottom:6px">'+esc(D.eChooseD)+'</p>'
+    + '<span class="inapp-tag">'+IC.phoneUp+esc(D.eInApp)+'</span>';
+  var named=[];
+  for(var i=0;i<St.people.length;i++) if((St.people[i].nick||"").trim()) named.push(St.people[i]);
+  if(!named.length){
+    h+='<p class="e-copy" style="margin:auto 0;text-align:center">'+esc(D.eNoPeople)+'</p>';
+  }else{
+    h+='<div class="callpick">';
+    for(var j=0;j<named.length;j++){
+      var p=named[j];
+      h+='<button data-callfamily="'+p.id+'"><span class="avatar av-lg">'+esc(initial(p.nick))+'</span>'
+       + '<span><b>'+esc(p.nick)+'</b><small>'+esc(p.relation)+'</small></span>'
+       + '<span class="dial">'+IC.phoneUp+'</span></button>';
+    }
+    h+='</div>';
+  }
+  return h + '<div class="spacer"></div>'
+    + '<button class="e-btn soft" data-go="closePick">'+esc(D.eBack)+'</button>';
+}
+
+function viewCalling(){
+  var p=focusPerson(St);
+  return '<div class="e-call"><p class="lbl">'+esc(D.eCalling)+'</p>'
+    + '<p class="nm">'+esc(p.nick)+'</p>'
+    + callerCard()
+    + '<div style="display:flex;justify-content:center;margin-top:16px">'+waveEl("warm")+'</div>'
+    + '<div class="ctrl"><button class="no" data-go="hangup"><i>'+IC.phoneDown+'</i>'
+    + '<span>'+esc(D.eCancelCall)+'</span></button></div></div>';
+}
+
 function viewGuide(){
   var g=D.guide[Math.min(St.guide.step,2)];
   return '<p class="stepno" style="margin-top:10px">'+esc(fill(D.eStep,{n:St.guide.step+1}))+'</p>'
@@ -1281,21 +1607,20 @@ function viewGuide(){
     + '<button class="e-btn" data-go="arrived">'+esc(D.eArrived)+'</button>';
 }
 
+function elderSettings(){
+  return '<div class="devbar"><button class="hd" data-go="toggleDev"><span>'+esc(D.settingsT)+'</span>'
+    + '<span>'+esc(App.dev?D.devClose:D.devOpen)+'</span></button>'
+    + '<div class="bd" '+(App.dev?"":"hidden")+'>'
+    + '<p>'+esc(D.logoutElderD)+'</p>'
+    + '<button class="btn danger" data-go="logout">'+esc(D.logoutElder)+'</button></div></div>';
+}
+
 function viewArrived(){
   return '<div class="e-hello"><div class="e-ring" style="background:var(--green-soft);color:var(--green)">✓</div>'
     + '<p class="e-h1">'+esc(D.eHomeT)+'</p><p class="e-copy">'+esc(D.eHomeD)+'</p></div>'
     + '<button class="e-btn soft" data-go="ackHome">'+esc(D.eGot)+'</button>';
 }
 
-function devBar(){
-  var d=distOf(St), out=isOut(St);
-  return '<div class="devbar"><button class="hd" data-go="toggleDev"><span>'+esc(D.devT)+'</span>'
-    + '<span>'+esc(App.dev?D.devClose:D.devOpen)+'</span></button>'
-    + '<div class="bd" '+(App.dev?"":"hidden")+'><p>'+esc(D.devD)+'</p>'
-    + '<div class="btn-row"><button class="btn" data-go="walk">'+esc(D.devWalk)+'</button>'
-    + '<button class="btn" data-go="goHome">'+esc(D.devHome)+'</button></div>'
-    + '<span class="devdist '+(out?"out":"")+'">'+esc(fill(D.devDist,{n:d}))+'</span></div></div>';
-}
 
 /* =====================================================================
    8. 渲染
@@ -1318,10 +1643,12 @@ function render(s){
   else if(App.route==="elder"){
     isElder=true;
     var sc=elderScreen();
-    body = sc==="paired"?viewPaired() : sc==="ringing"?viewRinging() : sc==="talking"?viewTalking()
-         : sc==="qa"?viewQa() : sc==="guide"?viewGuide() : sc==="arrived"?viewArrived() : viewStandby();
+    body = sc==="paired"?viewPaired() : sc==="ringing"?viewRinging() : sc==="calling"?viewCalling()
+         : sc==="talking"?viewTalking() : sc==="pick"?viewPick() : sc==="qa"?viewQa()
+         : sc==="guide"?viewGuide() : sc==="arrived"?viewArrived() : viewStandby();
   }
   else if(App.route==="family"){
+    if(St && St.call.phase==="ringing" && callDir(St)==="out"){ App.tab=0; App.editingPerson=null; }
     body = (App.tab===0?tabHome() : App.tab===1?tabToday() : App.tab===2?tabAlerts() : tabPeople());
   }
 
@@ -1340,17 +1667,54 @@ function render(s){
   lab.className="device-label "+(App.route==="elder"?"elder":(App.route==="family"?"family":""));
   lab.querySelector("span").textContent = who + (St && St.code ? " · " + St.code : "");
 
-  chrome='<button class="chip" data-go="lang">'+esc(D.langBtn)+'</button>';
-  if(St&&St.code) chrome+='<button class="chip" data-go="reset">'+esc(D.resetBtn)+'</button>';
-  if(storeRole()) chrome+='<button class="chip" data-go="exit">'+esc(D.exitBtn)+'</button>';
+  /* 只在还没进入家庭时提供语言入口；进入之后语言在「家人 → 设置」里改 */
+  chrome = (App.route==="entry"||App.route==="familyStart"||App.route==="join")
+    ? '<button class="chip" data-go="lang">'+esc(D.langBtn)+'</button>' : "";
   el("chrome").innerHTML=chrome;
   el("hintLine").textContent = App.route==="elder" ? D.hintElder
     : (App.route==="family" ? D.hintFamily : D.hintEntry);
 
   bindInputs();
+  bindRange();
+  mountMaps();
   var th=view.querySelector(".thread"); if(th) th.scrollTop=th.scrollHeight;
   syncSubs();
   setConnectionStatus(Connection.state);
+}
+
+/* 滑块与数字框联动：拖动时只改画面，松手才写库，避免每一格都发一次请求 */
+var rangeTimer=null;
+function applyRange(v, persist){
+  v=Math.max(200, Math.min(2000, Math.round((parseInt(v,10)||800)/10)*10));
+  var sl=el("rangeSlider"), nu=el("rangeNum");
+  if(sl && document.activeElement!==sl) sl.value=v;
+  if(nu && document.activeElement!==nu) nu.value=v;
+  if(sl) sl.style.setProperty("--pct", Math.round((v-200)/1800*100)+"%");
+  if(St) St.elder.radius=String(v);
+  if(Maps.state==="ready" && Maps.circle.picker) Maps.circle.picker.setRadius(v);
+  else { var box=document.querySelector('[data-gmap="picker"] svg'); if(box) syncSchematic("picker"); }
+  if(persist){
+    clearTimeout(rangeTimer);
+    rangeTimer=setTimeout(function(){ queueUpdate(function(x){ x.elder.radius=String(v); }); }, 260);
+  }
+  return v;
+}
+function syncSchematic(kind){
+  var slot=document.querySelector('[data-gmap="'+kind+'"]');
+  if(!slot) return;
+  var old=slot.querySelector("svg"); if(old) old.remove();
+  slot.insertAdjacentHTML("afterbegin", schematicSVG(kind));
+}
+function bindRange(){
+  var sl=el("rangeSlider"), nu=el("rangeNum");
+  if(sl){
+    sl.addEventListener("input", function(){ applyRange(sl.value, false); });
+    sl.addEventListener("change", function(){ applyRange(sl.value, true); });
+  }
+  if(nu){
+    nu.addEventListener("input", function(){ applyRange(nu.value, true); });
+    nu.addEventListener("blur", function(){ nu.value=applyRange(nu.value, true); });
+  }
 }
 
 function patchLight(){
@@ -1368,7 +1732,9 @@ function bindInputs(){
       typing=false;
       var tag=n.parentNode.querySelector(".tag");
       if(tag){
-        var k=path.split(".").pop(); if(k==="name") k="elderName";
+        var k=path.split(".").pop();
+        if(path==="elder.name") k="elderName";
+        if(path==="elder.phone") k="elderPhone";
         tag.hidden = (n.value !== SEED[St.lang][k]);
       }
     });
@@ -1386,7 +1752,7 @@ function newPerson(lang, blank){
 }
 
 function syncSubs(){
-  var talking = App.route==="elder" && St && St.call.phase==="talking";
+  var talking = App.route==="elder" && St && St.call.phase==="talking" && callDir(St)==="in";
   if(talking && !subTimer){
     subTimer=setInterval(function(){
       var s=Store.get();
@@ -1411,9 +1777,9 @@ function endCall(){
   });
 }
 
-function setLoc(x,y){
+function setLoc(lat,lng){
   queueUpdate(function(s){
-    s.loc.x=x; s.loc.y=y;
+    s.loc={lat:lat, lng:lng};
     if(!s.guide.active && !s.guide.done && distOf(s)>rangeM(s)){
       s.guide.active=true; s.guide.step=0;
       s.timeline.push({t:clockNow(),kind:"guide"});
@@ -1422,26 +1788,32 @@ function setLoc(x,y){
 }
 function autoWalk(){
   clearInterval(walkTimer);
-  queueUpdate(function(s){ s.guide.done=false; s.guide.step=0; s.loc.x=HOME.x; s.loc.y=HOME.y; });
-  var i=0,n=20, from={x:HOME.x,y:HOME.y}, to={x:56,y:36};
+  var home=homeOf(St), target=rangeM(St)*1.6;
+  queueUpdate(function(s){
+    s.guide.done=false; s.guide.step=0;
+    s.loc={lat:home.lat, lng:home.lng};
+  });
+  var i=0, n=18;
   walkTimer=setInterval(function(){
-    i++; var p=i/n;
-    setLoc(from.x+(to.x-from.x)*p, from.y+(to.y-from.y)*p);
+    i++;
+    var d=target*(i/n), p=offsetLL(home, -d*0.72, d*0.69);
+    setLoc(p.lat, p.lng);
     if(i>=n) clearInterval(walkTimer);
-  },120);
+  },140);
 }
 function arrived(){
   queueUpdate(function(s){
+    var home=homeOf(s), here=locOf(s);
     s.guide.step++;
     if(s.guide.step>=3){
       s.guide.active=false; s.guide.done=true;
-      s.loc.x=HOME.x; s.loc.y=HOME.y;
+      s.loc={lat:home.lat, lng:home.lng};
       var seen=false;
       for(var i=0;i<s.timeline.length;i++) if(s.timeline[i].kind==="home") seen=true;
       if(!seen) s.timeline.push({t:clockNow(),kind:"home"});
     } else {
-      s.loc.x += (HOME.x-s.loc.x)*0.42;
-      s.loc.y += (HOME.y-s.loc.y)*0.42;
+      s.loc={ lat: here.lat + (home.lat-here.lat)*0.42,
+              lng: here.lng + (home.lng-here.lng)*0.42 };
     }
   });
 }
@@ -1526,24 +1898,36 @@ async function pair(code){
 }
 
 async function hardExit(){
-  App.route="entry"; App.tab=0; App.qa=false; App.editingPerson=null; App.paired=false;
+  App.route="entry"; App.tab=0; App.qa=false; App.pick=false; App.editingPerson=null; App.paired=false;
   clearDevice(); St=null;
   try{ if(Store) await Store.signOut(); }catch(error){ reportStoreError(error); }
   D=I18N[lang]; render();
+  /* 退出后换一个全新的匿名身份，否则下次配对会沿用上一次的角色 */
+  Connection.authenticated=false;
+  await connectAndRestore();
 }
 
 /* =====================================================================
    10. 事件
    ===================================================================== */
 document.addEventListener("click", async function(e){
-  var b=e.target.closest("[data-go],[data-tab],[data-ask],[data-range],[data-person],[data-item-do],[data-item-edit],[data-item-skip],[data-item-save],[data-item-cancel]");
+  var b=e.target.closest("[data-go],[data-tab],[data-ask],[data-callfamily],[data-person],[data-item-do],[data-item-edit],[data-item-skip],[data-item-save],[data-item-cancel]");
   if(!b || b.disabled) return;
   var g=function(n){ return b.getAttribute(n); }, id;
 
   if(g("data-tab")!==null){ App.tab=parseInt(g("data-tab"),10); App.editingPerson=null; render(); return; }
   if(g("data-ask")!==null){ ask(parseInt(g("data-ask"),10)); return; }
   if((id=g("data-person"))){ App.editingPerson=id; App.speak=0; render(); return; }
-  if(g("data-range")!==null){ var r=g("data-range"); queueUpdate(function(s){ s.elder.radius=r; }); return; }
+  if((id=g("data-callfamily"))){
+    var target=id;
+    App.pick=false;
+    queueUpdate(function(x){
+      x.call={ phase:"ringing", personId:target, line:-1, dir:"out" };
+      x.lastCaller=target;
+    });
+    return;
+  }
+  
   if((id=g("data-item-do"))){ setItem(id,"done"); return; }
   if((id=g("data-item-skip"))){ setItem(id,"skip"); return; }
   if((id=g("data-item-edit"))){ setItem(id,"editing"); return; }
@@ -1596,20 +1980,36 @@ document.addEventListener("click", async function(e){
 
     case "call":
       App.tab=0;
-      queueUpdate(function(s){ s.call.phase="ringing"; s.call.line=-1;
-        s.call.personId=selectedMemberId(); s.lastCaller=selectedMemberId(); });
+      queueUpdate(function(s){
+        s.call={ phase:"ringing", personId:selectedMemberId(), line:-1, dir:"in" };
+        s.lastCaller=selectedMemberId();
+      });
       break;
     case "answer": queueUpdate(function(s){ s.call.phase="talking"; s.call.line=-1; }); break;
-    case "decline": queueUpdate(function(s){ s.call.phase="idle"; s.call.line=-1; }); break;
-    case "hangup": stopSubs(); endCall(); break;
+    case "decline": App.pick=false; queueUpdate(function(s){ s.call.phase="idle"; s.call.line=-1; }); break;
+    case "hangup": stopSubs(); App.pick=false; endCall(); break;
 
-    case "openQa": App.qa=true; render(); break;
+    case "openQa": App.qa=true; App.pick=false; render(); break;
     case "closeQa": App.qa=false; render(); break;
+    case "openPick": App.pick=true; App.qa=false; render(); break;
+    case "closePick": App.pick=false; render(); break;
     case "arrived": arrived(); break;
     case "ackHome": queueUpdate(function(s){ s.guide.done=false; }); break;
     case "toggleDev": App.dev=!App.dev; render(); break;
-    case "walk": autoWalk(); break;
-    case "goHome": clearInterval(walkTimer); setLoc(HOME.x,HOME.y); break;
+    case "testWalk": autoWalk(); break;
+    case "testHome":
+      clearInterval(walkTimer);
+      var hm=homeOf(St);
+      queueUpdate(function(s){
+        var h2=homeOf(s);
+        s.loc={lat:h2.lat, lng:h2.lng};
+        s.guide.active=false; s.guide.step=0;
+      });
+      void hm;
+      break;
+    case "logout":
+      if(confirm(D.logoutAsk)) await hardExit();
+      break;
 
     case "lang":
       var nl = (St?St.lang:lang)==="zh" ? "en" : "zh";
@@ -1620,6 +2020,7 @@ document.addEventListener("click", async function(e){
           s.lang=nl;
           if(s.elder.name===SEED[old].elderName) s.elder.name=SEED[nl].elderName;
           if(s.elder.address===SEED[old].address) s.elder.address=SEED[nl].address;
+          if(s.elder.phone===SEED[old].elderPhone) s.elder.phone=SEED[nl].elderPhone;
           for(var i=0;i<s.people.length;i++){
             var pp=s.people[i];
             ["nick","relation","recent","hint"].forEach(function(k){

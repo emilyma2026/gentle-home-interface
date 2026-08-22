@@ -21,6 +21,22 @@ npm run dev
 
 启动后，按照终端显示的本地地址在浏览器中打开项目。
 
+## 地图配置
+
+家人端首次设置里的「家在哪里」用 Google 地图选点。把 key 放在项目根目录的 .env：
+
+```
+VITE_GOOGLE_MAPS_API_KEY=你的key
+```
+
+然后生成前端配置（该文件不会提交）：
+
+```sh
+node scripts/gen-maps-config.mjs
+```
+
+没有配置 key 时地图会自动降级为示意图，其余功能不受影响。
+
 ## 构建
 
 ```sh

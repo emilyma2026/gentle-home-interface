@@ -540,8 +540,8 @@ zh:{
   mapGeocodeFailed:"家庭地址解析失败，请检查地址或地图 API 配置。",
   routeLoading:"正在加载步行路线……",
   routeFailed:"步行路线暂时加载失败，请稍后重试或联系家人。",
-  routeStraight:"沿“{road}”直行约 {distance}。看到下一个路口或道路标志后停下。",
-  routeTurn:"在“{road}”附近{turn}，然后沿这条路走约 {distance}。",
+  routeStraight:"沿“{road}”直行约 {distance}。地标：{landmark}，看到它后停下。",
+  routeTurn:"走到“{landmark}”附近后{turn}，再沿“{road}”走约 {distance}。",
   routeDestination:"沿“{road}”继续走到家庭地址，约 {distance}。",
   routeRoad:"当前道路",
   routeIntersection:"下一个路口",
@@ -682,8 +682,8 @@ en:{
   mapGeocodeFailed:"The home address could not be located. Check the address or Maps API setup.",
   routeLoading:"Loading the walking route…",
   routeFailed:"The walking route could not load. Try again or contact family.",
-  routeStraight:"Walk straight along {road} for about {distance}. Stop at the next junction or road sign.",
-  routeTurn:"{turn} near {road}, then walk along this road for about {distance}.",
+  routeStraight:"Walk straight along {road} for about {distance}. Stop when you see {landmark}.",
+  routeTurn:"{turn} near {landmark}, then walk along {road} for about {distance}.",
   routeDestination:"Continue along {road} to the home address, about {distance}.",
   routeRoad:"the current road",
   routeIntersection:"the next junction",
@@ -1087,6 +1087,12 @@ function routeTurnWord(instruction){
   if(/right|右转/i.test(instruction)) return St.lang==="zh"?"右转":"Turn right";
   return St.lang==="zh"?"转弯":"Turn";
 }
+function formatElderStep(step){
+  var road=step.road||D.routeRoad, landmark=step.landmark||road, distance=routeDistanceText(step.distanceM);
+  if(step.isDestination) return fill(D.routeDestination,{road:road,distance:distance});
+  if(step.turnWord) return fill(D.routeTurn,{road:road,landmark:landmark,turn:step.turnWord,distance:distance});
+  return fill(D.routeStraight,{road:road,landmark:landmark,distance:distance});
+}
 function buildElderWalkingSteps(route){
   var legs=route&&route.legs||[], raw=legs[0]&&legs[0].steps||[], steps=[];
   for(var i=0;i<raw.length;i++){
@@ -1101,14 +1107,35 @@ function buildElderWalkingSteps(route){
       var chunkDistance=Math.round(distance/chunks);
       var isLast=j===chunks-1 && i===raw.length-1;
       var landmark=road||(isLast?D.mapHome:(turning?D.routeIntersection:D.routeRoad));
-      var text;
-      if(isLast) text=fill(D.routeDestination,{road:landmark,distance:routeDistanceText(chunkDistance)});
-      else if(turning&&j===0) text=fill(D.routeTurn,{road:landmark,turn:routeTurnWord(instruction),distance:routeDistanceText(chunkDistance)});
-      else text=fill(D.routeStraight,{road:landmark,distance:routeDistanceText(chunkDistance)});
-      steps.push({text:text,landmark:landmark,end:point,distanceM:chunkDistance,source:instruction});
+      var step={landmark:landmark,road:road||D.routeRoad,turnWord:turning&&j===0?routeTurnWord(instruction):"",isDestination:isLast,end:point,distanceM:chunkDistance,source:instruction};
+      step.text=formatElderStep(step);
+      steps.push(step);
     }
   }
   return steps;
+}
+function enrichElderWalkingSteps(steps){
+  if(!window.Navigation||typeof window.Navigation.findNearbyPlaces!=="function") return Promise.resolve({steps:steps,places:[]});
+  var cache={};
+  var jobs=steps.map(function(step){
+    if(step.isDestination) return Promise.resolve([]);
+    var key=step.end.lat.toFixed(5)+","+step.end.lng.toFixed(5);
+    if(!cache[key]) cache[key]=window.Navigation.findNearbyPlaces(step.end,{radius:130,maxResultCount:1,language:St.lang}).catch(function(){ return []; });
+    return cache[key];
+  });
+  return Promise.all(jobs).then(function(results){
+    var places=[], seen={};
+    for(var i=0;i<steps.length;i++){
+      var place=results[i]&&results[i][0];
+      if(!place) continue;
+      steps[i].place=place;
+      steps[i].landmark=place.name;
+      steps[i].text=formatElderStep(steps[i]);
+      var identity=place.mapsUrl||place.name+":"+place.location.lat.toFixed(5)+","+place.location.lng.toFixed(5);
+      if(!seen[identity]){ seen[identity]=true; places.push(place); }
+    }
+    return {steps:steps,places:places};
+  });
 }
 function initGuideMap(){
   var node=el("guideMap"), home=homePoint(St), current=currentPoint(St);
@@ -1125,10 +1152,13 @@ function initGuideMap(){
       return controller.routeHome(current,home).then(function(route){
         var steps=buildElderWalkingSteps(route);
         if(!steps.length) throw new Error("route_steps_missing");
-        App.guideRouteStatus="ready";
-        App.guideRouteError="";
-        queueUpdate(function(s){ s.guide.instructions=steps; s.guide.routeId="google-walking"; s.guide.step=0; });
-        if(window.Voice) window.Voice.speak(steps[0].text,{lang:St.lang});
+        return enrichElderWalkingSteps(steps).then(function(enriched){
+          App.guideRouteStatus="ready";
+          App.guideRouteError="";
+          if(controller.setLandmarks) controller.setLandmarks(enriched.places);
+          queueUpdate(function(s){ s.guide.instructions=enriched.steps; s.guide.routeId="google-walking"; s.guide.step=0; });
+          if(window.Voice) window.Voice.speak(enriched.steps[0].text,{lang:St.lang});
+        });
       }).catch(function(){
         App.guideRouteStatus="error";
         App.guideRouteError=D.routeFailed;

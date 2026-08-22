@@ -79,7 +79,7 @@
         mapsPromise = null;
         reject(error("maps_failed", "地图服务加载失败"));
       };
-      script.src = "https://maps.googleapis.com/maps/api/js?key=" + encodeURIComponent(config.key) + "&libraries=geometry&callback=" + callbackName;
+      script.src = "https://maps.googleapis.com/maps/api/js?key=" + encodeURIComponent(config.key) + "&libraries=geometry,places&callback=" + callbackName;
       document.head.appendChild(script);
     });
     return mapsPromise;
@@ -98,6 +98,7 @@
       });
       var homeMarker = new maps.Marker({ map: map, position: center, title: options.homeTitle || "Home", draggable: true });
       var currentMarker = null;
+      var landmarkMarkers = [];
       var routeRenderer = new maps.DirectionsRenderer({ map: map, suppressMarkers: false, preserveViewport: false });
       var directions = new maps.DirectionsService();
       function selectHome(point) {
@@ -106,6 +107,10 @@
       }
       map.addListener("click", function (event) { selectHome(event.latLng); });
       homeMarker.addListener("dragend", function (event) { selectHome(event.latLng); });
+      function clearLandmarks() {
+        for (var i = 0; i < landmarkMarkers.length; i++) landmarkMarkers[i].setMap(null);
+        landmarkMarkers = [];
+      }
       return {
         setHome: function (point) {
           if (!point || !Number.isFinite(point.lat) || !Number.isFinite(point.lng)) return;
@@ -118,6 +123,18 @@
           if (!currentMarker) currentMarker = new maps.Marker({ map: map, position: point, title: options.currentTitle || "Current location", icon: { path: maps.SymbolPath.CIRCLE, scale: 7, fillColor: "#C9646B", fillOpacity: 1, strokeColor: "#fff", strokeWeight: 2 } });
           else currentMarker.setPosition(point);
         },
+        setLandmarks: function (places) {
+          clearLandmarks();
+          (places || []).forEach(function (place) {
+            if (!place || !place.location || !Number.isFinite(place.location.lat) || !Number.isFinite(place.location.lng)) return;
+            landmarkMarkers.push(new maps.Marker({
+              map: map,
+              position: place.location,
+              title: place.name || "Nearby place",
+              label: { text: "•", color: "#426A8C", fontSize: "22px", fontWeight: "700" },
+            }));
+          });
+        },
         routeHome: function (point, home) {
           if (!point || !home) return Promise.reject(error("route_missing", "缺少路线起点或终点"));
           return new Promise(function (resolve, reject) {
@@ -129,6 +146,52 @@
           });
         },
       };
+    });
+  }
+
+  function placeText(value) {
+    if (!value) return "";
+    if (typeof value === "string") return value;
+    return String(value.text || value.value || "");
+  }
+
+  function placePoint(location) {
+    if (!location) return null;
+    var lat = typeof location.lat === "function" ? location.lat() : Number(location.lat);
+    var lng = typeof location.lng === "function" ? location.lng() : Number(location.lng);
+    return Number.isFinite(lat) && Number.isFinite(lng) ? { lat: lat, lng: lng } : null;
+  }
+
+  function findNearbyPlaces(center, options) {
+    options = options || {};
+    var point = placePoint(center);
+    if (!point) return Promise.resolve([]);
+    return loadMaps().then(function (maps) {
+      if (typeof maps.importLibrary !== "function") return [];
+      return maps.importLibrary("places").then(function (placesLibrary) {
+        if (!placesLibrary || !placesLibrary.Place || typeof placesLibrary.Place.searchNearby !== "function") return [];
+        var request = {
+          fields: ["displayName", "location", "formattedAddress", "primaryType", "types", "googleMapsURI"],
+          locationRestriction: { center: point, radius: Math.min(Math.max(Number(options.radius) || 120, 50), 500) },
+          includedPrimaryTypes: options.types || ["convenience_store", "supermarket", "school", "hospital", "park", "bus_station", "transit_station", "cafe", "library", "shopping_mall"],
+          maxResultCount: Math.min(Math.max(Number(options.maxResultCount) || 3, 1), 10),
+          rankPreference: "DISTANCE",
+        };
+        if (options.language) request.language = options.language;
+        return placesLibrary.Place.searchNearby(request).then(function (result) {
+          return (result && result.places || []).map(function (place) {
+            var location = placePoint(place.location);
+            return {
+              name: placeText(place.displayName) || placeText(place.name),
+              location: location,
+              address: placeText(place.formattedAddress),
+              primaryType: place.primaryType || "",
+              types: place.types || [],
+              mapsUrl: place.googleMapsURI || place.googleMapsUri || "",
+            };
+          }).filter(function (place) { return place.name && place.location; });
+        });
+      });
     });
   }
 
@@ -152,6 +215,7 @@
     loadMaps: loadMaps,
     createMap: createMap,
     geocodeAddress: geocodeAddress,
+    findNearbyPlaces: findNearbyPlaces,
     distanceMeters: distanceMeters,
     bearingDegrees: bearingDegrees,
     isWatching: function () { return watchId !== null; },

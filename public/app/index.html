@@ -455,6 +455,25 @@ input,textarea,select{font:inherit}
   stroke-linecap:round; stroke-linejoin:round}
 .e-actions{margin-top:auto; padding-top:8px}
 
+/* ---- 老人端设置入口与设置页 ---- */
+.e-quiet{align-self:center; display:inline-flex; align-items:center; gap:7px; margin:9px auto 0;
+  padding:8px 16px; border-radius:99px; background:transparent; color:var(--faint);
+  font-size:14px; font-weight:700}
+.e-quiet:active{background:rgba(0,0,0,.04)}
+.e-quiet svg{width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:1.9;
+  stroke-linecap:round; stroke-linejoin:round}
+.e-set{display:flex; flex-direction:column; gap:10px}
+.e-setrow{display:flex; align-items:center; justify-content:space-between; gap:12px;
+  padding:15px 17px; border-radius:20px; background:#fff; box-shadow:var(--sh-card)}
+.e-setrow small{display:block; color:var(--muted); font-size:13px; font-weight:700}
+.e-setrow b{display:block; margin-top:2px; font-size:18px; font-weight:800}
+.e-setrow .code{font-size:22px; font-weight:800; letter-spacing:.14em; color:var(--blue-d);
+  font-variant-numeric:tabular-nums}
+.e-danger{width:100%; margin-top:4px; padding:16px; border-radius:99px; background:#fff;
+  color:var(--red); font-size:18px; font-weight:800; box-shadow:var(--sh-card)}
+.e-danger:active{background:var(--red-soft)}
+.e-setnote{margin:8px 4px 0; color:var(--faint); font-size:13px; line-height:1.5; text-align:center}
+
 /* ---- 老人端：给家人打电话 ---- */
 .callpick{display:grid; gap:11px; margin:10px 0 4px}
 .callpick button{display:flex; align-items:center; gap:14px; padding:16px; text-align:left;
@@ -675,6 +694,9 @@ zh:{
 
   eGreet:"你好", eGreetD:"有事就按下面的按钮跟我说。",
   eTalk:"说话", eBack:"不问了",
+  eSetEntry:"设置", eSetTitle:"这台手机", eSetBack:"返回",
+  eSetRole:"当前身份", eSetRoleV:"老人端",
+  eSetCode:"家庭码", eSetCodeD:"家人用这串数字加入同一个家庭",
   eTodayT:"今天是",
   eWeekdays:["星期日","星期一","星期二","星期三","星期四","星期五","星期六"],
   eMorning:"上午", eAfternoon:"下午", eEvening:"晚上",
@@ -824,6 +846,9 @@ en:{
 
   eGreet:"Hello", eGreetD:"Press the button below whenever you need me.",
   eTalk:"Talk", eBack:"Never mind",
+  eSetEntry:"Settings", eSetTitle:"This phone", eSetBack:"Back",
+  eSetRole:"Signed in as", eSetRoleV:"Elder",
+  eSetCode:"Family code", eSetCodeD:"Family members join with these digits",
   eTodayT:"Today is",
   eWeekdays:["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"],
   eMorning:"Morning", eAfternoon:"Afternoon", eEvening:"Evening",
@@ -1057,7 +1082,8 @@ var IC = {
   users:'<svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.4"/><path d="M3 20c0-3.3 2.7-5.6 6-5.6s6 2.3 6 5.6"/><path d="M16 5.6a3.4 3.4 0 0 1 0 6.6M17.5 14.6c2.1.7 3.5 2.6 3.5 5.4"/></svg>',
   logo:'<svg viewBox="0 0 24 24"><path d="M12 20.5S3.8 15.6 3.8 9.8A4.3 4.3 0 0 1 12 7.6a4.3 4.3 0 0 1 8.2 2.2c0 5.8-8.2 10.7-8.2 10.7z"/><path d="M7.5 12h2l1.3-2.6 1.6 4L14 12h2.5"/></svg>',
   phoneUp:'<svg viewBox="0 0 24 24"><path d="M8 4l3 5-2 2c1 2 2 3 4 4l2-2 5 3-1 4c-8 1-15-6-15-15z"/></svg>',
-  phoneDown:'<svg viewBox="0 0 24 24"><path d="M5 15c4-4 10-4 14 0M8 13l-2-3M16 13l2-3"/></svg>'
+  phoneDown:'<svg viewBox="0 0 24 24"><path d="M5 15c4-4 10-4 14 0M8 13l-2-3M16 13l2-3"/></svg>',
+  gear:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 13.5a7.6 7.6 0 0 0 0-3l1.7-1.3-1.9-3.3-2 .8a7.6 7.6 0 0 0-2.6-1.5L14.3 3h-3.8l-.3 2.2a7.6 7.6 0 0 0-2.6 1.5l-2-.8L3.7 9.2l1.7 1.3a7.6 7.6 0 0 0 0 3l-1.7 1.3 1.9 3.3 2-.8a7.6 7.6 0 0 0 2.6 1.5l.3 2.2h3.8l.3-2.2a7.6 7.6 0 0 0 2.6-1.5l2 .8 1.9-3.3z"/></svg>'
 };
 
 /* =====================================================================
@@ -1272,7 +1298,7 @@ var App = {
   tab:0,
   err:"",
   speak:0,             // 0 未说 1 正在听 2 已填
-  qa:false, pick:false, dev:false,
+  qa:false, pick:false, eset:false,
   editingPerson:null,  // 正在编辑的人物 id，null 表示列表
   addingPerson:false
 };
@@ -1610,6 +1636,7 @@ function elderScreen(){
   if(St.guide.done) return "arrived";
   if(App.pick) return "pick";
   if(App.qa) return "qa";
+  if(App.eset) return "esettings";
   return "standby";
 }
 
@@ -1693,7 +1720,7 @@ function viewStandby(){
   h+='<div class="e-actions">'
    + '<button class="e-btn" data-go="openQa">'+esc(D.eTalk)+'</button>'
    + '<button class="e-btn soft" data-go="openPick" style="margin-top:10px">'+esc(D.eCallFamily)+'</button>'
-   + elderSettings()
+   + elderSettingsEntry()
    + '</div>';
   return h;
 }
@@ -1802,12 +1829,25 @@ function viewGuide(){
     + '<button class="e-btn" data-go="arrived">'+esc(D.eArrived)+'</button>';
 }
 
-function elderSettings(){
-  return '<div class="devbar"><button class="hd" data-go="toggleDev"><span>'+esc(D.settingsT)+'</span>'
-    + '<span>'+esc(App.dev?D.devClose:D.devOpen)+'</span></button>'
-    + '<div class="bd" '+(App.dev?"":"hidden")+'>'
-    + '<p>'+esc(D.logoutElderD)+'</p>'
-    + '<button class="btn danger" data-go="logout">'+esc(D.logoutElder)+'</button></div></div>';
+/* 待机页底部一个安静的入口，老人不会被它吸引，家人需要时找得到 */
+function elderSettingsEntry(){
+  return '<button class="e-quiet" data-go="openESet">'+IC.gear+esc(D.eSetEntry)+'</button>';
+}
+
+function viewESettings(){
+  return '<p class="eyebrow warm" style="margin-top:8px">'+esc(D.eSetEntry)+'</p>'
+    + '<p class="e-h1" style="font-size:28px;margin-bottom:14px">'+esc(D.eSetTitle)+'</p>'
+    + '<div class="e-set">'
+    +   '<div class="e-setrow"><span><small>'+esc(D.eSetRole)+'</small>'
+    +     '<b>'+esc(D.eSetRoleV)+'</b></span></div>'
+    +   '<div class="e-setrow"><span><small>'+esc(D.eSetCode)+'</small>'
+    +     '<b style="font-size:14px;font-weight:400;color:var(--muted)">'+esc(D.eSetCodeD)+'</b></span>'
+    +     '<span class="code">'+esc(St.code)+'</span></div>'
+    + '</div>'
+    + '<div class="spacer"></div>'
+    + '<button class="e-danger" data-go="logout">'+esc(D.logoutElder)+'</button>'
+    + '<p class="e-setnote">'+esc(D.logoutElderD)+'</p>'
+    + '<button class="e-btn soft" data-go="closeESet" style="margin-top:12px">'+esc(D.eSetBack)+'</button>';
 }
 
 function viewArrived(){
@@ -1840,6 +1880,7 @@ function render(s){
     var sc=elderScreen();
     body = sc==="paired"?viewPaired() : sc==="ringing"?viewRinging() : sc==="calling"?viewCalling()
          : sc==="talking"?viewTalking() : sc==="pick"?viewPick() : sc==="qa"?viewQa()
+         : sc==="esettings"?viewESettings()
          : sc==="guide"?viewGuide() : sc==="arrived"?viewArrived() : viewStandby();
   }
   else if(App.route==="family"){
@@ -2093,7 +2134,8 @@ async function pair(code){
 }
 
 async function hardExit(){
-  App.route="entry"; App.tab=0; App.qa=false; App.pick=false; App.editingPerson=null; App.paired=false;
+  App.route="entry"; App.tab=0; App.qa=false; App.pick=false; App.eset=false;
+  App.editingPerson=null; App.paired=false;
   clearDevice(); St=null;
   try{ if(Store) await Store.signOut(); }catch(error){ reportStoreError(error); }
   D=I18N[lang]; render();
@@ -2196,13 +2238,14 @@ document.addEventListener("click", async function(e){
       });
       break;
     case "readHome": speakSummary(homeSummaryText()); break;
-    case "openQa": App.qa=true; App.pick=false; render(); break;
+    case "openQa": App.qa=true; App.pick=false; App.eset=false; render(); break;
     case "closeQa": App.qa=false; render(); break;
-    case "openPick": App.pick=true; App.qa=false; render(); break;
+    case "openPick": App.pick=true; App.qa=false; App.eset=false; render(); break;
     case "closePick": App.pick=false; render(); break;
+    case "openESet": App.eset=true; App.qa=false; App.pick=false; render(); break;
+    case "closeESet": App.eset=false; render(); break;
     case "arrived": arrived(); break;
     case "ackHome": queueUpdate(function(s){ s.guide.done=false; }); break;
-    case "toggleDev": App.dev=!App.dev; render(); break;
     case "testWalk": autoWalk(); break;
     case "testHome":
       clearInterval(walkTimer);

@@ -898,6 +898,13 @@
       reportStatus("synced");
     }
 
+    function resetSession() {
+      mutationGeneration += 1;
+      clearSelection();
+      user = null;
+      initialization = null;
+    }
+
     return {
       initialize,
       create,
@@ -907,6 +914,7 @@
       refresh,
       resetFamily,
       signOut,
+      resetSession,
       get: () => state,
       role: () => selectedRole,
       subscribe: (subscriber) => {

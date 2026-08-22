@@ -22,12 +22,15 @@ export const Route = createFileRoute("/")({
 });
 
 function Index() {
+  const query = typeof window === "undefined" ? "" : window.location.search;
+
   return (
     <main className="h-screen w-screen overflow-hidden">
       <h1 className="sr-only">Remember Us · Family Memory Companion</h1>
       <iframe
-        src="/app/index.html"
+        src={`/app/index.html${query}`}
         title="Remember Us prototype"
+        allow="microphone; geolocation"
         className="h-full w-full border-0"
       />
     </main>

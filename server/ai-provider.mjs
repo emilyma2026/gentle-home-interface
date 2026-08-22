@@ -32,7 +32,7 @@ export function serverEnv(base) {
 }
 
 const DEFAULTS = {
-  gemini: "gemini-2.5-flash",
+  gemini: "gemini-3.6-flash",
   openai: "gpt-4o-mini",
 };
 

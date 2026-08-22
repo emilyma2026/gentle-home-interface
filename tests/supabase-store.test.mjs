@@ -125,7 +125,7 @@ function fakeSupabase({
 
 function createStore(client, statuses = [], options = {}) {
   const source = readFileSync(storePath, "utf8");
-  const context = { structuredClone, window: {} };
+  const context = { structuredClone, window: {}, ...options.context };
   vm.runInNewContext(source, context, { filename: "supabase-store.js" });
 
   const calls = { newFamily: 0 };
@@ -186,6 +186,30 @@ function deferred() {
   return { promise, reject, resolve };
 }
 
+function manualTimeouts() {
+  const active = new Map();
+  let nextId = 0;
+  return {
+    active,
+    context: {
+      setTimeout(callback, milliseconds) {
+        const id = ++nextId;
+        active.set(id, { callback, milliseconds });
+        return id;
+      },
+      clearTimeout(id) {
+        active.delete(id);
+      },
+    },
+    fireOnly() {
+      assert.equal(active.size, 1, "the stalled backend request must have one active timeout");
+      const [{ callback, milliseconds }] = active.values();
+      assert.equal(milliseconds, 12000);
+      callback();
+    },
+  };
+}
+
 async function attachedStore({
   payload = familyState("123456"),
   revision = 0,
@@ -194,6 +218,7 @@ async function attachedStore({
   rpcErrors = {},
   tableResults = {},
   newFamily,
+  context,
 } = {}) {
   const fake = fakeSupabase({
     userId: "attached-user",
@@ -216,7 +241,7 @@ async function attachedStore({
       ...tableResults,
     },
   });
-  const created = createStore(fake, statuses, { newFamily });
+  const created = createStore(fake, statuses, { context, newFamily });
   await created.store.attach("123456", "family");
   return { ...created, fake, statuses };
 }
@@ -321,6 +346,47 @@ test("initialize can retry after an anonymous authentication failure", async () 
   assert.equal(user.id, "user-g");
   assert.equal(fake.calls.getSession, 2);
   assert.equal(fake.calls.signInAnonymously, 2);
+});
+
+test("a stalled session lookup times out and initialization remains retryable", async () => {
+  const fake = fakeSupabase({ userId: "user-timeout", existingSession: true });
+  const regularGetSession = fake.auth.getSession;
+  const stalledSession = deferred();
+  const activeTimers = new Map();
+  let firstAttempt = true;
+  let nextTimerId = 0;
+  fake.auth.getSession = () => {
+    if (firstAttempt) return stalledSession.promise;
+    return regularGetSession();
+  };
+  const { store } = createStore(fake, [], {
+    context: {
+      setTimeout(callback, milliseconds) {
+        const id = ++nextTimerId;
+        activeTimers.set(id, { callback, milliseconds });
+        return id;
+      },
+      clearTimeout(id) {
+        activeTimers.delete(id);
+      },
+    },
+  });
+
+  const initialization = store.initialize();
+  await Promise.resolve();
+
+  assert.equal(activeTimers.size, 1, "authentication must not wait forever");
+  const [{ callback, milliseconds }] = activeTimers.values();
+  assert.equal(milliseconds, 12000);
+  callback();
+  await assert.rejects(initialization, {
+    code: "REQUEST_TIMEOUT",
+    message: "Unable to connect to your family right now.",
+  });
+
+  firstAttempt = false;
+  const user = await store.initialize();
+  assert.equal(user.id, "user-timeout");
 });
 
 test("create caches the returned family selection and exposes server state", async () => {
@@ -466,6 +532,80 @@ test("restore validates cached membership before exposing the latest state", asy
     fake.calls.from.map(({ table }) => table),
     ["family_members", "family_states"],
   );
+});
+
+test("a stalled cached-family restore times out instead of locking initialization forever", async () => {
+  const storage = new Map([
+    ["alz:family-id", FAMILY_A_ID],
+    ["alz:code", "123456"],
+    ["alz:role", "family"],
+  ]);
+  const membershipStarted = deferred();
+  const neverCompletes = deferred();
+  const activeTimers = new Map();
+  let nextTimerId = 0;
+  const fake = fakeSupabase({
+    userId: "stalled-restore",
+    existingSession: true,
+    tableResults: {
+      family_members: () => {
+        membershipStarted.resolve();
+        return neverCompletes.promise;
+      },
+    },
+  });
+  const { store } = createStore(fake, [], {
+    storage,
+    context: {
+      setTimeout(callback, milliseconds) {
+        const id = ++nextTimerId;
+        activeTimers.set(id, { callback, milliseconds });
+        return id;
+      },
+      clearTimeout(id) {
+        activeTimers.delete(id);
+      },
+    },
+  });
+
+  const restore = store.restoreSelection();
+  await membershipStarted.promise;
+
+  assert.equal(activeTimers.size, 1, "the stalled backend request must have an active timeout");
+  const [{ callback, milliseconds }] = activeTimers.values();
+  assert.equal(milliseconds, 12000);
+  callback();
+
+  await assert.rejects(restore, {
+    code: "BACKEND_ERROR",
+    message: "Unable to connect to your family right now.",
+  });
+});
+
+test("a stalled join request times out instead of leaving the family screen loading", async () => {
+  const requestStarted = deferred();
+  const neverCompletes = deferred();
+  const timeouts = manualTimeouts();
+  const fake = fakeSupabase({
+    userId: "elder-stalled-join",
+    existingSession: true,
+    rpcHandlers: {
+      join_family: () => {
+        requestStarted.resolve();
+        return neverCompletes.promise;
+      },
+    },
+  });
+  const { store } = createStore(fake, [], { context: timeouts.context });
+
+  const joining = store.attach("527487", "elder");
+  await requestStarted.promise;
+  timeouts.fireOnly();
+
+  await assert.rejects(joining, {
+    code: "BACKEND_ERROR",
+    message: "Unable to connect to your family right now.",
+  });
 });
 
 test("restore clears an invalid cached selection without exposing family state", async () => {
@@ -669,6 +809,35 @@ test("create maps RPC errors and empty results to backend errors", async (t) => 
     });
 
     await assert.rejects(store.create("zh"), { code: "BACKEND_ERROR" });
+  });
+});
+
+test("a stalled create request times out instead of leaving family creation loading", async () => {
+  const requestStarted = deferred();
+  const neverCompletes = deferred();
+  const timeouts = manualTimeouts();
+  const fake = fakeSupabase({
+    userId: "creator-stalled",
+    existingSession: true,
+    rpcHandlers: {
+      create_family: () => {
+        requestStarted.resolve();
+        return neverCompletes.promise;
+      },
+    },
+  });
+  const { store } = createStore(fake, [], {
+    context: timeouts.context,
+    newFamily: (code, lang) => familyState(code, lang),
+  });
+
+  const creating = store.create("en");
+  await requestStarted.promise;
+  timeouts.fireOnly();
+
+  await assert.rejects(creating, {
+    code: "BACKEND_ERROR",
+    message: "Unable to connect to your family right now.",
   });
 });
 
@@ -1309,6 +1478,34 @@ test("update rolls back to the fresh server state after a repeated revision conf
 });
 
 test("update preserves optimistic input while reporting offline and backend errors", async (t) => {
+  await t.test("stalled network request", async () => {
+    const statuses = [];
+    const requestStarted = deferred();
+    const neverCompletes = deferred();
+    const timeouts = manualTimeouts();
+    const { store } = await attachedStore({
+      context: timeouts.context,
+      statuses,
+      rpcHandlers: {
+        replace_family_state: () => {
+          requestStarted.resolve();
+          return neverCompletes.promise;
+        },
+      },
+    });
+    statuses.length = 0;
+
+    const updating = store.update((draft) => {
+      draft.elder.name = "仍然可见";
+    });
+    await requestStarted.promise;
+    timeouts.fireOnly();
+
+    await assert.rejects(updating, { code: "BACKEND_ERROR" });
+    assert.equal(store.get().elder.name, "仍然可见");
+    assert.deepEqual(statuses.at(-1), ["offline", "Unable to connect to your family right now."]);
+  });
+
   await t.test("offline network failure", async () => {
     const statuses = [];
     const { store } = await attachedStore({

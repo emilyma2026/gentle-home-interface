@@ -600,8 +600,8 @@ zh:{
   alertT:"提醒", alertNone:"暂无提醒", alertNoneD:"{elder}在活动范围内，一切正常。",
   alertOnT:"正在协助{elder}回家",
   dWhy:"触发原因", dWhyV:"超出活动范围后持续远离，系统已经开始语音引导。",
-  dWhere:"当前位置", dProg:"引导进度", dProgV:"第 {n} 步 · 共 3 步",
-  alertDoneT:"{elder}已经到家", dDoneV:"三步引导全程没有中断。",
+  dWhere:"当前位置", dProg:"引导进度", dProgV:"第 {n} 步 · 共 {total} 步",
+  alertDoneT:"{elder}已经到家", dDoneV:"分步引导全程没有中断。",
 
   peopleT:"家人", peopleSub:"这些人会出现在老人的来电卡片上",
   addPerson:"再加一位家人", editPerson:"编辑资料", meTag:"你",
@@ -618,7 +618,7 @@ zh:{
   eHold:"按住说话",
   srcFact:"来自{nick}今天确认的信息", srcTodo:"来自{nick}今天确认的待办",
   srcUnk:"记忆里还没有，已经去问{nick}了",
-  eStep:"第 {n} 步 · 共 3 步", eArrived:"我到了",
+  eStep:"第 {n} 步 · 共 {total} 步", eArrived:"我到了",
   eGuideNote:"到了就按下面的按钮，我再告诉你下一步。",
   eHomeT:"你到家了", eHomeD:"已经告诉{nick}你平安到家。", eGot:"知道了",
 
@@ -734,8 +734,8 @@ en:{
   alertT:"Alerts", alertNone:"No alerts", alertNoneD:"{elder} is inside her range. Everything is normal.",
   alertOnT:"Helping {elder} get home",
   dWhy:"Why it fired", dWhyV:"She went past her range and kept moving away. Voice guidance has started.",
-  dWhere:"Current location", dProg:"Guidance progress", dProgV:"Step {n} of 3",
-  alertDoneT:"{elder} is home", dDoneV:"Three guided steps, no interruption.",
+  dWhere:"Current location", dProg:"Guidance progress", dProgV:"Step {n} of {total}",
+  alertDoneT:"{elder} is home", dDoneV:"The step-by-step guidance completed without interruption.",
 
   peopleT:"Family", peopleSub:"These people show up on her incoming-call card",
   addPerson:"Add another relative", editPerson:"Edit details", meTag:"You",
@@ -752,7 +752,7 @@ en:{
   eHold:"Hold to speak",
   srcFact:"From what {nick} confirmed today", srcTodo:"From the reminder {nick} confirmed today",
   srcUnk:"Not in memory yet. {nick} has been asked.",
-  eStep:"Step {n} of 3", eArrived:"I'm there",
+  eStep:"Step {n} of {total}", eArrived:"I'm there",
   eGuideNote:"Tap the button when you get there and I'll give you the next step.",
   eHomeT:"You're home", eHomeD:"{nick} has been told you got home safely.", eGot:"Got it",
 
@@ -1053,10 +1053,7 @@ function applyGpsPosition(position){
       }
     } else if(s.guide.active && distance<=50){
       s.risk.outsideCount=0;
-      s.risk.state="returned"; s.risk.reason="inside_home_radius";
-      s.guide.active=false; s.guide.done=true;
-      var homeSeen=false; for(var j=0;j<s.timeline.length;j++) if(s.timeline[j].kind==="home") homeSeen=true;
-      if(!homeSeen) s.timeline.push({t:clockNow(),kind:"home"});
+      s.risk.state="guiding"; s.risk.reason="near_home_waiting_confirmation";
     } else {
       s.risk.outsideCount=0;
       s.risk.state="safe"; s.risk.reason="inside_safe_radius";
@@ -1065,7 +1062,6 @@ function applyGpsPosition(position){
   App.gpsStatus="ready"; App.gpsError="";
   if(App.homeMapController) App.homeMapController.setCurrent(point);
   if(App.guideMapController) App.guideMapController.setCurrent(point);
-  maybeAdvanceGuide(point);
   if(speak && App.route==="elder" && window.Voice) window.Voice.speak(D.riskLeaving,{lang:St.lang});
 }
 function startGps(){
@@ -1378,7 +1374,7 @@ function tabAlerts(){
     return '<div class="f-head"><p class="eyebrow">'+esc(D.alertT)+'</p><p class="h1">'+esc(D.alertOnT)+'</p></div>'
       + '<dl class="detail"><dt>'+esc(D.dWhy)+'</dt><dd>'+esc(D.dWhyV)+'</dd>'
       + '<dt>'+esc(D.dWhere)+'</dt><dd>'+esc(fill(D.mapDist,{n:distOf(St)}))+'</dd>'
-      + '<dt>'+esc(D.dProg)+'</dt><dd>'+esc(fill(D.dProgV,{n:Math.min(St.guide.step+1,3)}))+'</dd></dl>'
+      + '<dt>'+esc(D.dProg)+'</dt><dd>'+esc(fill(D.dProgV,{n:Math.min(St.guide.step+1,guideTotal(St)),total:guideTotal(St)}))+'</dd></dl>'
       + '<div class="map-card">'+mapSVG()+'</div>'
       + '<button class="btn" data-go="call">'+esc(D.callBtn)+'</button>';
   }
@@ -1512,7 +1508,7 @@ function viewGuide(){
   var routeStep=St.guide.instructions&&St.guide.instructions[St.guide.step];
   var instruction=routeStep ? guideText(routeStep) : g.copy;
   var remaining=routeStep&&routeStep.end?guideDistance(routeStep,currentPoint(St)):null;
-  return '<p class="stepno" style="margin-top:10px">'+esc(fill(D.eStep,{n:St.guide.step+1}))+'</p>'
+  return '<p class="stepno" style="margin-top:10px">'+esc(fill(D.eStep,{n:St.guide.step+1,total:guideTotal(St)}))+'</p>'
     + '<div class="lmk"><div class="shape '+g.cls+'"></div><span class="nm">'+esc(g.lm)+'</span></div>'
     + '<div class="vr-line">'+IC.voice+'<span>'+esc(D.eGuiding)+'</span></div>'
     + '<p class="stepcopy">'+esc(instruction)+'</p>'
@@ -1681,16 +1677,15 @@ function autoWalk(){
   },120);
 }
 function guideText(item){ return item&&typeof item==="object"?item.text:String(item||""); }
+function guideTotal(s){ return s&&s.guide&&s.guide.instructions&&s.guide.instructions.length?s.guide.instructions.length:3; }
 function guideDistance(item, point){
   return item&&item.end&&point&&window.Navigation ? window.Navigation.distanceMeters(point,item.end) : null;
 }
-function advanceGuide(manual){
+function advanceGuide(){
   if(!St||!St.guide||!St.guide.active) return;
   var nextText="", advanced=false, completed=false;
   queueUpdate(function(s){
-    var list=s.guide.instructions||[], total=list.length||3, current=list[s.guide.step];
-    var livePoint=currentPoint(s);
-    if(!manual && current && current.end && (!livePoint || guideDistance(current,livePoint)>55)) return;
+    var list=s.guide.instructions||[], total=list.length||3;
     s.guide.step++;
     advanced=true;
     if(s.guide.step>=total || (homePoint(s)&&currentPoint(s)&&window.Navigation.distanceMeters(homePoint(s),currentPoint(s))<=50)){
@@ -1709,13 +1704,8 @@ function advanceGuide(manual){
     window.Voice.speak(completed?D.eHomeT:(nextText||D.guide[Math.min(St.guide.step,2)].copy),{lang:St.lang});
   }
 }
-function maybeAdvanceGuide(point){
-  if(!St||!St.guide||!St.guide.active) return;
-  var current=(St.guide.instructions||[])[St.guide.step];
-  if(current&&current.end&&guideDistance(current,point)<=55) advanceGuide(false);
-}
 function arrived(){
-  advanceGuide(true);
+  advanceGuide();
 }
 
 function factById(s,id){ for(var i=0;i<s.facts.length;i++) if(s.facts[i].id===id) return s.facts[i]; return null; }

@@ -832,8 +832,7 @@ zh:{
   logoutT:"退出登录", logoutD:"回到最初的身份选择页。重新进入需要家庭码。",
   logoutAsk:"要回到最初的身份选择页吗？重新进入需要家庭码。",
   logoutElder:"退出登录", logoutElderD:"回到最初的身份选择页。重新进入需要家庭码。",
-  testT:"测试安全范围", testD:"模拟她走出安全范围，确认提醒能正常送到你这里。",
-  testGo:"模拟走出范围", testBack:"回到家中", testDist:"当前距家 {n} 米",
+  mapWaiting:"等她的手机上报位置", mapDenied:"她的手机还没有允许定位",
 
   eGreet:"你好", eGreetD:"有事就按下面的按钮跟我说。",
   eTalk:"说话", eBack:"不问了",
@@ -1008,8 +1007,7 @@ en:{
   logoutT:"Log out", logoutD:"Go back to the role picker. You will need the family code to sign in again.",
   logoutAsk:"Go back to the role picker? You will need the family code to sign in again.",
   logoutElder:"Log out", logoutElderD:"Go back to the role picker. You will need the family code to sign in again.",
-  testT:"Test the safe range", testD:"Simulate her leaving the safe range and check the alert reaches you.",
-  testGo:"Simulate leaving", testBack:"Bring her home", testDist:"Currently {n} m from home",
+  mapWaiting:"Waiting for her phone to report its location", mapDenied:"Her phone has not allowed location yet",
 
   eGreet:"Hello", eGreetD:"Press the button below whenever you need me.",
   eTalk:"Talk", eBack:"Never mind",
@@ -1138,7 +1136,7 @@ function homeOf(s){ return asLL(s && s.elder ? s.elder.home : null); }
 function locOf(s){ return asLL(s ? s.loc : null, homeOf(s)); }
 
 function newFamily(code, lang){
-  var s=SEED[lang]||SEED.zh;
+  var s=SEED[lang]||SEED.en;
   return {
     code:code, lang:lang, rev:0,
     setup:false, paired:false,
@@ -1152,7 +1150,7 @@ function newFamily(code, lang){
     thread:[], askCounts:{},
     loc:{ lat:HOME_LL.lat, lng:HOME_LL.lng },
     guide:{ active:false, step:0, done:false },
-    alertCleared:false
+    alertCleared:false, locReported:false, homeSet:false
   };
 }
 
@@ -1366,6 +1364,7 @@ function mountMaps(){
       var still=document.querySelector('[data-gmap="'+kind+'"]');
       if(still!==slot) return;
       if(!ok){ slot.insertAdjacentHTML("afterbegin", schematicSVG(kind)); return; }
+      if(kind==="picker") seedHomeFromDevice();
       var host=mapHost(kind);
       var moved = host.parentNode!==slot;
       if(moved) slot.insertBefore(host, slot.firstChild);
@@ -1427,8 +1426,20 @@ function syncMap(kind){
 function commitHome(lat,lng){
   queueUpdate(function(s){
     s.elder.home={lat:lat, lng:lng};
-    if(!s.guide.active && !s.guide.done) s.loc={lat:lat, lng:lng};
+    s.homeSet=true;
+    if(!s.locReported && !s.guide.active && !s.guide.done) s.loc={lat:lat, lng:lng};
   });
+}
+
+/* 家人还没在地图上选过家时，先用家人此刻的位置当默认点，
+   比写死一个坐标合理，也避免老人一配对就被判成走远了。 */
+function seedHomeFromDevice(){
+  if(!St || St.homeSet || Geo.seededHome || !navigator.geolocation) return;
+  Geo.seededHome=true;
+  navigator.geolocation.getCurrentPosition(function(pos){
+    if(!St || St.homeSet) return;
+    commitHome(pos.coords.latitude, pos.coords.longitude);
+  }, function(){}, { enableHighAccuracy:false, maximumAge:60000, timeout:12000 });
 }
 
 /* =====================================================================
@@ -1562,6 +1573,38 @@ function stopSpeech(){
 }
 
 /* =====================================================================
+   3f. 定位：老人端上报自己的真实位置，家人端只读。
+       没有授权或拿不到定位时保持上一次的位置，不伪造。
+   ===================================================================== */
+var Geo={ watchId:null, lastAt:0, denied:false };
+
+function startGeo(){
+  if(Geo.watchId!==null || !navigator.geolocation) return;
+  Geo.watchId = navigator.geolocation.watchPosition(function(pos){
+    var now=Date.now();
+    if(now - Geo.lastAt < 8000) return;
+    var next={ lat:pos.coords.latitude, lng:pos.coords.longitude };
+    if(!St) return;
+    /* 没挪动就不写库，省掉无意义的同步 */
+    if(St.locReported && haversine(locOf(St), next) < 12) return;
+    Geo.lastAt=now; Geo.denied=false;
+    queueUpdate(function(s){
+      s.loc=next; s.locReported=true; s.locAt=now;
+      if(!s.guide.active && !s.guide.done && distOf(s) > rangeM(s)){
+        s.guide.active=true; s.guide.step=0; s.alertCleared=false;
+        s.timeline.push({ t:clockNow(), kind:"guide" });
+      }
+    });
+  }, function(){
+    Geo.denied=true;
+  }, { enableHighAccuracy:true, maximumAge:15000, timeout:20000 });
+}
+function stopGeo(){
+  if(Geo.watchId!==null && navigator.geolocation) navigator.geolocation.clearWatch(Geo.watchId);
+  Geo.watchId=null;
+}
+
+/* =====================================================================
    4. 应用状态
    ===================================================================== */
 var App = {
@@ -1577,9 +1620,9 @@ var App = {
   editingPerson:null,  // 正在编辑的人物 id，null 表示列表
   addingPerson:false
 };
-var St=null, D=null, lang="en";
+var St=null, D=null, lang="en", langTouched=false;
 var DEMO_CODE="527487";
-var subTimer=null, walkTimer=null, speakTimer=null, typing=false;
+var subTimer=null, speakTimer=null, typing=false;
 
 /* =====================================================================
    5. 视图：入口与注册
@@ -1760,6 +1803,7 @@ function statusText(){
   if(St.call.phase==="talking") return D.stTalk;
   if(St.guide.active) return fill(D.stGuide,{n:St.guide.step+1});
   if(riskState()==="done") return D.stArrived;
+  if(!St.locReported) return D.mapWaiting;
   if(isOut(St)) return D.stOut;
   return D.stHome;
 }
@@ -1770,10 +1814,11 @@ function me(){
 }
 
 function mapSVG(){
-  var d=distOf(St), out=isOut(St);
+  var d=distOf(St), out=isOut(St), known=!!St.locReported;
   return mapBox("view")
-    + '<div class="map-foot"><small>'+esc(D.mapNote)+'</small>'
-    + '<b class="'+(out?"out":"")+'">'+esc(fill(D.mapDist,{n:d}))+'</b></div>';
+    + '<div class="map-foot"><small>'+esc(known?D.mapNote:D.mapWaiting)+'</small>'
+    + (known ? '<b class="'+(out?"out":"")+'">'+esc(fill(D.mapDist,{n:d}))+'</b>' : '')
+    + '</div>';
 }
 
 /* 只有一种提醒：走出安全范围。关掉之后挂在首页，必须家人手动清。 */
@@ -1824,6 +1869,7 @@ function tabHome(){
   }
 
   h+=confirmCard();
+  h+=pendingCard();
   h+=todaySummary();
   h+=todoCard();
 
@@ -1872,6 +1918,18 @@ function todoCard(){
   }
   h+='<button class="todo-add" data-go="addTodo">'+esc(D.todoAdd)+'</button>';
   return h+'</div>';
+}
+
+/* 老人问了记忆里没有的问题，等家人补一句。放在首页，家人一进来就看到。 */
+function pendingCard(){
+  if(!St.pending.length) return "";
+  var h='<div class="card" style="background:var(--amber-soft);box-shadow:none;margin-bottom:12px">'
+    + '<b style="font-size:13.5px;color:var(--amber)">'+esc(D.pendingT)+'</b>'
+    + '<p style="margin:6px 0 9px;font-size:12.5px;color:var(--ink-2)">'+esc(D.pendingD)+'</p>';
+  for(var j=0;j<St.pending.length;j++){
+    h+='<p style="margin:0 0 8px;font-size:14px;font-weight:700">「'+esc(D.asks[St.pending[j].ask])+'」</p>';
+  }
+  return h+'<div class="acts"><button class="go" data-go="clearPending">'+esc(D.pendingOk)+'</button></div></div>';
 }
 
 function confirmCard(){
@@ -1938,7 +1996,6 @@ function tabAlerts(){
   }
   h+='<div class="map-card">'+mapSVG()+'</div>';
   if(a!=="none") h+='<button class="btn" data-go="call">'+esc(D.callBtn)+'</button>';
-  h+=testRangeCard();
   return h;
 }
 
@@ -1996,15 +2053,6 @@ function tabTodos(){
 
 
 /* 家人可以自己验一次「她走远了我能不能收到提醒」，这是产品功能不是演示开关 */
-function testRangeCard(){
-  return '<div class="card" style="margin-top:14px">'
-    + '<b style="font-size:13.5px">'+esc(D.testT)+'</b>'
-    + '<p style="margin:5px 0 11px;color:var(--muted);font-size:11.5px;line-height:1.55">'+esc(D.testD)+'</p>'
-    + '<div class="btn-row"><button class="btn ghost" data-go="testWalk">'+esc(D.testGo)+'</button>'
-    + '<button class="btn ghost" data-go="testHome">'+esc(D.testBack)+'</button></div>'
-    + '<p style="margin:10px 0 0;color:var(--faint);font-size:11px;text-align:center">'
-    + esc(fill(D.testDist,{n:distOf(St)}))+'</p></div>';
-}
 
 function tabPeople(){
   if(App.editingPerson) return viewObMe();
@@ -2017,16 +2065,6 @@ function tabPeople(){
      + (p.id===selectedMemberId()?'<span class="me">'+esc(D.meTag)+'</span>':'<span class="go">›</span>')+'</button>';
   }
   h+='<button class="btn ghost" data-go="addPerson" style="margin-top:6px">'+esc(D.addPerson)+'</button>';
-
-  if(St.pending.length){
-    h+='<div class="card" style="margin-top:14px;background:var(--amber-soft);box-shadow:none">'
-     + '<b style="font-size:13.5px;color:var(--amber)">'+esc(D.pendingT)+'</b>'
-     + '<p style="margin:6px 0 8px;font-size:12.5px;color:var(--ink-2)">'+esc(D.pendingD)+'</p>';
-    for(var j=0;j<St.pending.length;j++){
-      h+='<p style="margin:0 0 8px;font-size:14px;font-weight:700">「'+esc(D.asks[St.pending[j].ask])+'」</p>';
-    }
-    h+='<div class="acts"><button class="go" data-go="clearPending">'+esc(D.pendingOk)+'</button></div></div>';
-  }
 
   h+='<div class="card" style="margin-top:14px"><b style="font-size:13.5px">'+esc(D.familyCodeT)+'</b>'
    + '<p style="margin:4px 0 10px;color:var(--muted);font-size:11.5px">'+esc(D.familyCodeD)+'</p>'
@@ -2045,7 +2083,7 @@ function tabbar(){
   for(var i=0;i<4;i++){
     var dot="";
     if(i===1 && alertState()!=="none" && !St.alertCleared) dot='<span class="dot"></span>';
-    if(i===3 && St.pending.length) dot='<span class="dot"></span>';
+    if(i===0 && St.pending.length) dot='<span class="dot"></span>';
     h+='<button data-tab="'+i+'" aria-selected="'+(App.tab===i)+'">'+ics[i]+'<span>'+esc(D.tabs[i])+'</span>'+dot+'</button>';
   }
   return h+'</div>';
@@ -2377,7 +2415,7 @@ function viewArrived(){
    ===================================================================== */
 function render(s){
   if(s!==undefined) St=s;
-  D = I18N[St ? St.lang : lang];
+  D = I18N[St ? St.lang : lang] || I18N.en;
 
   if(typing){ patchLight(); return; }
 
@@ -2410,6 +2448,7 @@ function render(s){
     if(App.alertOpen && st2!=="none" && !St.alertCleared) body += alertSheet();
   }
 
+  if(isElder) startGeo(); else stopGeo();
   screen.classList.toggle("elder", isElder);
   view.classList.toggle("pad0", App.route==="family");
   view.className = (isElder ? "e-view" : "view") + (App.route==="family" ? " pad0" : "");
@@ -2632,21 +2671,6 @@ function setLoc(lat,lng){
       s.timeline.push({t:clockNow(),kind:"guide"});
     }
   });
-}
-function autoWalk(){
-  clearInterval(walkTimer);
-  var home=homeOf(St), target=rangeM(St)*1.6;
-  queueUpdate(function(s){
-    s.guide.done=false; s.guide.step=0;
-    s.loc={lat:home.lat, lng:home.lng};
-  });
-  var i=0, n=18;
-  walkTimer=setInterval(function(){
-    i++;
-    var d=target*(i/n), p=offsetLL(home, -d*0.72, d*0.69);
-    setLoc(p.lat, p.lng);
-    if(i>=n) clearInterval(walkTimer);
-  },140);
 }
 function arrived(){
   queueUpdate(function(s){
@@ -2871,7 +2895,7 @@ async function pair(code){
 async function hardExit(){
   App.route="entry"; App.tab=0; App.qa=false; App.pick=false; App.eset=false;
   App.editingPerson=null; App.paired=false;
-  clearDevice(); St=null;
+  clearDevice(); stopGeo(); St=null;
   try{ if(Store) await Store.signOut(); }catch(error){ reportStoreError(error); }
   D=I18N[lang]; render();
   /* 退出后换一个全新的匿名身份，否则下次配对会沿用上一次的角色 */
@@ -2962,7 +2986,7 @@ document.addEventListener("click", async function(e){
     case "create":
       await runPendingAction(async function(){
         try{
-          var code=await Store.create(lang);
+          var code=await Store.create(langTouched ? lang : "en");
           if(!code) return;
           St=Store.get();
           var p0=newPerson(lang,false);
@@ -3038,24 +3062,14 @@ document.addEventListener("click", async function(e){
     case "closeESet": App.eset=false; render(); break;
     case "arrived": arrived(); break;
     case "ackHome": queueUpdate(function(s){ s.guide.done=false; }); break;
-    case "testWalk": autoWalk(); break;
-    case "testHome":
-      clearInterval(walkTimer);
-      var hm=homeOf(St);
-      queueUpdate(function(s){
-        var h2=homeOf(s);
-        s.loc={lat:h2.lat, lng:h2.lng};
-        s.guide.active=false; s.guide.step=0;
-      });
-      void hm;
-      break;
+
     case "logout":
       if(confirm(D.logoutAsk)) await hardExit();
       break;
 
     case "lang":
       var nl = (St?St.lang:lang)==="zh" ? "en" : "zh";
-      lang=nl;
+      lang=nl; langTouched=true;
       if(St){
         var old=St.lang;
         queueUpdate(function(s){

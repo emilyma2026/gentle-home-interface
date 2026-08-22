@@ -606,9 +606,10 @@ input,textarea,select{font:inherit}
   background:var(--blue-soft); color:var(--blue-d); font-size:10px; font-weight:800; vertical-align:middle}
 
 /* ---- 头像上传 ---- */
-.avatar-picker{position:relative; display:grid; place-items:center; width:70px; height:70px;
-  margin:0 auto 14px; border-radius:50%; background:var(--well); color:var(--faint);
-  font-size:26px; cursor:pointer; overflow:hidden; background-size:cover; background-position:center}
+.avatar-picker{position:relative; display:grid; place-items:center; width:84px; height:84px;
+  margin:0 auto 14px; border-radius:50%; background:#E8E3DE; color:#928A82;
+  font-size:34px; font-weight:500; line-height:1; cursor:pointer; overflow:hidden;
+  background-size:cover; background-position:center}
 .avatar-picker input{position:absolute; inset:0; opacity:0; cursor:pointer}
 .avatar-picker.has{color:transparent}
 .avatar.photo{background-size:cover; background-position:center; color:transparent}
@@ -772,20 +773,21 @@ zh:{
   fsCreateT:"创建家庭", fsCreateD:"首次使用，填写老人信息",
   fsJoinT:"加入家庭", fsJoinD:"输入六位家庭码",
 
-  obElderTitle:"关于老人", obElderSub:"四项就够，之后随时可以改。",
+  obElderTitle:"关于老人", obElderSub:"先填写基本信息，之后随时可以改。",
   fName:"称呼", fAddr:"家庭住址", fRange:"安全范围",
-  fElderPhone:"她的手机号", elderPhoneHint:"平台内呼叫打不通时，家人可以直接拨这个号码。",
+  fElderPhone:"老人手机号", elderPhoneHint:"平台内呼叫打不通时，家人可以直接拨这个号码。",
   fHome:"家在哪里", homeHint:"在地图上点一下，或者拖动图钉，把它放到家的位置。",
   mapTipPick:"点一下或拖动图钉", mapTipLive:"实时位置",
   mapFallback:"地图暂时不可用，下面是示意图",
-  rangeHint:"走出这个范围并且持续远离，系统先提醒她，再通知你。范围以家为中心。",
+  rangeHint:"老人走出这个范围并且持续远离时，系统会先提供帮助，再通知家人。范围以家为中心。",
   rangeMin:"200 米", rangeMax:"2000 米", rangeUnit:"米",
-  obMeTitle:"关于你自己", obMeSub:"这些会出现在老人的来电卡片上，帮她认出你。",
+  obMeTitle:"关于你自己", obMeSub:"这些会出现在老人的来电卡片上，帮助老人认出你。",
   speakT:"说一句话，我来整理", speakD:"不想打字就按这里，说完自动填进下面的字段",
   speakOn:"正在听……", speakDone:"已经按这段话把下面的字段填好了，可以直接改。",
-  fNick:"称呼", fRel:"关系", fPhone:"电话", fRecent:"近况", fHint:"想让她记起的事",
+  fNick:"称呼", fRel:"关系", fPhone:"电话", fRecent:"近况", fHint:"一段共同回忆",
   addPhoto:"添加照片",
-  hintHint:"越久远的事越容易被记起。",
+  hintHint:"熟悉的往事能帮助老人认出你。",
+  fillSample:"填入示例",
   sampleTag:"示例",
 
   codeTitle:"家庭码", codeSub:"其他家人和老人的手机，用这串数字加入同一个家庭。",
@@ -874,10 +876,10 @@ zh:{
   speakHeard:"听到的是这段话，可以直接改",
   speakUse:"用这段话填写", speakAgain:"重新说一次",
   speakWorking:"正在整理……",
-  speakNoMic:"这台设备不能录音，下面给你一段示例，可以直接改。",
+  speakNoMic:"这台设备暂时不能录音，请手动填写或使用示例。",
   speakFailed:"没有听清，再说一次试试。",
   aiTag:"AI 整理",
-  addPhoto:"加一张照片", photoHint2:"点一下选照片，老人来电时会看到",
+  addPhoto:"加一张照片", photoHint2:"点一下选择本地照片，老人会在来电时看到。",
   eSetEntry:"设置", eSetTitle:"这台手机", eSetBack:"返回",
   eSetRole:"当前身份", eSetRoleV:"老人端",
   eSetCode:"家庭码", eSetCodeD:"家人用这串数字加入同一个家庭",
@@ -951,20 +953,21 @@ en:{
   fsCreateT:"Create family", fsCreateD:"First time: add elder details",
   fsJoinT:"Join family", fsJoinD:"Enter the six-digit code",
 
-  obElderTitle:"About the elder", obElderSub:"Four things is enough. You can change them any time.",
+  obElderTitle:"About the elder", obElderSub:"Add the basics now. You can change them any time.",
   fName:"Name", fAddr:"Home address", fRange:"Safe range",
-  fElderPhone:"Her phone number", elderPhoneHint:"A fallback, so family can dial her directly if the in-app call fails.",
-  fHome:"Where home is", homeHint:"Tap the map, or drag the pin onto her home.",
+  fElderPhone:"Elder's phone number", elderPhoneHint:"A fallback number family can call if the in-app call fails.",
+  fHome:"Where home is", homeHint:"Tap the map, or drag the pin onto the elder's home.",
   mapTipPick:"Tap or drag the pin", mapTipLive:"Live location",
   mapFallback:"Map unavailable, showing a schematic instead",
-  rangeHint:"If she leaves this range and keeps moving away, the system talks to her first, then tells you. The range is centred on home.",
+  rangeHint:"If the elder leaves this range and keeps moving away, the system offers help first, then tells the family. The range is centred on home.",
   rangeMin:"200 m", rangeMax:"2000 m", rangeUnit:"m",
-  obMeTitle:"About you", obMeSub:"This is what she sees when you call, so she can recognise you.",
+  obMeTitle:"About you", obMeSub:"The elder sees this when you call, helping them recognise you.",
   speakT:"Say it out loud instead", speakD:"Tap and talk. The fields below fill themselves in.",
   speakOn:"Listening…", speakDone:"The fields below were filled in from what you said. Edit them freely.",
-  fNick:"Name", fRel:"Relationship", fPhone:"Phone", fRecent:"Recent life", fHint:"Something she may remember",
+  fNick:"Name", fRel:"Relationship", fPhone:"Phone", fRecent:"Recent life", fHint:"A memory to share",
   addPhoto:"Add photo",
-  hintHint:"Older memories last longer.",
+  hintHint:"A familiar moment from the past can help the elder recognise you.",
+  fillSample:"Fill sample",
   sampleTag:"Sample",
 
   codeTitle:"Family code", codeSub:"Other relatives and the elder's phone join with these digits.",
@@ -1053,10 +1056,10 @@ en:{
   speakHeard:"Here's what I heard. Edit it freely.",
   speakUse:"Use this", speakAgain:"Say it again",
   speakWorking:"Sorting it out…",
-  speakNoMic:"This device can't record. Here's a sample you can edit.",
+  speakNoMic:"Recording isn't available on this device. Fill the fields manually or use the sample.",
   speakFailed:"I didn't catch that. Try again.",
   aiTag:"AI",
-  addPhoto:"Add a photo", photoHint2:"Tap to choose. She sees it when you call.",
+  addPhoto:"Add a photo", photoHint2:"Tap to choose a local photo. The elder sees it when you call.",
   eSetEntry:"Settings", eSetTitle:"This phone", eSetBack:"Back",
   eSetRole:"Signed in as", eSetRoleV:"Elder",
   eSetCode:"Family code", eSetCodeD:"Family members join with these digits",
@@ -1159,11 +1162,10 @@ function homeOf(s){ return asLL(s && s.elder ? s.elder.home : null); }
 function locOf(s){ return asLL(s ? s.loc : null, homeOf(s)); }
 
 function newFamily(code, lang){
-  var s=SEED[lang]||SEED.en;
   return {
     code:code, lang:lang, rev:0,
     setup:false, paired:false,
-    elder:{ name:s.elderName, phone:s.elderPhone, address:s.address,
+    elder:{ name:"", phone:"", address:"",
             home:{ lat:HOME_LL.lat, lng:HOME_LL.lng }, radius:"800" },
     people:[],
     facts:[], pending:[],
@@ -1187,7 +1189,7 @@ function connectionCopy(state){
 }
 function protectedActionSelector(){
   return '[data-f],[data-range],[data-ask],[data-item-do],[data-item-edit],[data-item-skip],[data-item-save],[data-item-cancel],'
-    +'[data-go="create"],[data-go="pair"],[data-go="finishSetup"],[data-go="addPerson"],[data-go="clearPending"],'
+    +'[data-go="create"],[data-go="pair"],[data-go="finishSetup"],[data-go="fillElderSample"],[data-go="fillPersonSample"],[data-go="addPerson"],[data-go="clearPending"],'
     +'[data-go="call"],[data-go="answer"],[data-go="decline"],[data-go="hangup"],[data-go="arrived"],'
     +'[data-go="ackHome"],[data-go="walk"],[data-go="goHome"],[data-go="reset"],[data-go="speak"]';
 }
@@ -1565,7 +1567,7 @@ function aiJSON(text){
 }
 
 /* =====================================================================
-   3e. 语音转写：优先浏览器语音识别，不支持就给一段可编辑的示例
+   3e. 语音转写：只保留真实识别结果，不自动注入示例内容
    ===================================================================== */
 var Speech={ rec:null, active:false };
 function speechSupported(){
@@ -1737,6 +1739,7 @@ function viewObElder(){
     +   mapBox("picker")
     +   '<p class="hint">'+esc(D.homeHint)+'</p></div>'
     + rangeFieldHTML()
+    + '<button class="btn ghost" data-go="fillElderSample">'+esc(D.fillSample)+'</button>'
     + '<div class="spacer"></div>'
     + '<button class="btn" data-go="obMe">'+esc(D.next)+'</button>'
     + '<button class="link" data-go="familyStart">'+esc(D.back)+'</button>';
@@ -1785,8 +1788,10 @@ function viewObMe(){
     + fieldHTML("per.phone", D.fPhone, "text", {seedKey:"phone"})
     + fieldHTML("per.recent", D.fRecent, "textarea", {seedKey:"recent"})
     + fieldHTML("per.hint", D.fHint, "textarea", {seedKey:"hint", hint:D.hintHint})
+    + '<button class="btn ghost" data-go="fillPersonSample">'+esc(D.fillSample)+'</button>'
     + '<div class="spacer"></div>'
-    + '<button class="btn" data-go="finishSetup">'+esc(D.done)+'</button>';
+    + '<button class="btn" data-go="finishSetup">'+esc(D.done)+'</button>'
+    + '<button class="link" data-go="backPerson">'+esc(D.back)+'</button>';
 }
 
 function viewCode(){
@@ -2618,11 +2623,47 @@ function bindInputs(){
 /* =====================================================================
    9. 行为
    ===================================================================== */
-function newPerson(lang, blank){
-  var s=SEED[lang];
+function newPerson(){
   return { id:"p"+Date.now()+Math.floor(Math.random()*100),
-    nick: blank?"":s.nick, relation: blank?"":s.relation, phone: blank?"":s.phone,
-    recent: blank?"":s.recent, hint: blank?"":s.hint };
+    nick:"", relation:"", phone:"", recent:"", hint:"" };
+}
+
+async function fillElderSample(){
+  var seed=SEED[St.lang]||SEED.en;
+  await persistUpdate(function(s){
+    s.elder.name=seed.elderName;
+    s.elder.phone=seed.elderPhone;
+    s.elder.address=seed.address;
+    s.elder.home={lat:HOME_LL.lat,lng:HOME_LL.lng};
+    s.elder.radius="800";
+  });
+  render();
+}
+
+async function fillPersonSample(){
+  var seed=SEED[St.lang]||SEED.en, personId=App.editingPerson;
+  await persistUpdate(function(s){
+    for(var i=0;i<s.people.length;i++){
+      if(s.people[i].id!==personId) continue;
+      s.people[i].nick=seed.nick;
+      s.people[i].relation=seed.relation;
+      s.people[i].phone=seed.phone;
+      s.people[i].recent=seed.recent;
+      s.people[i].hint=seed.hint;
+    }
+  });
+  render();
+}
+
+function backFromPerson(){
+  App.speak=0;
+  if(St.setup){
+    App.editingPerson=null;
+    App.tab=3;
+    App.route="family";
+  }else{
+    App.route="obElder";
+  }
 }
 
 function syncSubs(){
@@ -2908,7 +2949,6 @@ function doSpeak(){
   if(App.speak===1) return;
   App.transcript=""; App.speakErr="";
   if(!speechSupported()){
-    App.transcript=SEED[St.lang].spoken;
     App.speakErr=D.speakNoMic;
     App.speak=2; render(); return;
   }
@@ -2917,18 +2957,17 @@ function doSpeak(){
     App.transcript=text;
     if(final){
       if(!App.transcript.trim()){
-        App.transcript=SEED[St.lang].spoken;
         App.speakErr=D.speakFailed;
       }
       App.speak=2; render();
     } else patchTranscript();
   }, function(){
-    App.transcript=SEED[St.lang].spoken;
+    App.transcript="";
     App.speakErr=D.speakFailed;
     App.speak=2; render();
   });
   if(!ok){
-    App.transcript=SEED[St.lang].spoken;
+    App.transcript="";
     App.speakErr=D.speakNoMic;
     App.speak=2; render();
   }
@@ -2936,7 +2975,7 @@ function doSpeak(){
 
 function doSpeakStop(){ stopSpeech(); }
 
-/* 把口述整理成字段。AI 不可用时回落到示例值，流程不中断。 */
+/* 把口述整理成字段。只写入口述里实际提到的内容。 */
 async function doSpeakUse(){
   var box=document.getElementById("transcriptBox");
   var said=(box ? box.value : App.transcript || "").trim();
@@ -2947,32 +2986,33 @@ async function doSpeakUse(){
   var text = await aiAsk({
     json:true,
     system: zh
-      ? "你在帮一位家人整理自己的资料，这些内容会显示在阿尔茨海默患者的来电卡片上，帮她认出打来电话的人。只输出 JSON，不要解释。"
-      : "You help a family member tidy up their own details. These appear on an Alzheimer's patient's incoming-call card so she can recognise the caller. Output JSON only.",
+      ? "你在帮一位家人整理自己的资料，这些内容会显示在老人的来电卡片上，帮助老人认出来电的人。只输出 JSON，不要解释。"
+      : "You help a family member tidy up their own details. These appear on the elder's incoming-call card to help them recognise the caller. Output JSON only.",
     user: (zh
       ? "这是这位家人对自己的介绍：\n" + said +
-        "\n\n请提取成 JSON：{\"nick\":\"她平时怎么称呼这个人\",\"relation\":\"与老人的关系\",\"recent\":\"近况，一句话，20字以内\",\"hint\":\"一件久远的、老人更可能记得的事，一句话，30字以内\"}。" +
+        "\n\n请提取成 JSON：{\"nick\":\"老人平时怎么称呼这个人\",\"relation\":\"与老人的关系\",\"phone\":\"电话号码\",\"recent\":\"近况，一句话，20字以内\",\"hint\":\"一段共同回忆，一句话，30字以内\"}。" +
         "找不到的字段用空字符串。用中文。"
       : "Here is how the family member describes themselves:\n" + said +
-        "\n\nExtract JSON: {\"nick\":\"what she calls this person\",\"relation\":\"relationship to the elder\",\"recent\":\"one short sentence about their life now\",\"hint\":\"one older memory she is more likely to recall\"}. " +
+        "\n\nExtract JSON: {\"nick\":\"what the elder calls this person\",\"relation\":\"relationship to the elder\",\"phone\":\"phone number\",\"recent\":\"one short sentence about their life now\",\"hint\":\"one shared memory from the past\"}. " +
         "Use empty strings for anything missing. Answer in English.")
   });
 
   var got=aiJSON(text);
-  var seed=SEED[St.lang];
-  var fill4 = got || { recent:seed.recent, hint:seed.hint };
-  if(!got) App.speakErr=D.speakFailed;
+  if(!got){
+    App.speakErr=D.speakFailed;
+    App.speak=2;
+    render();
+    return;
+  }
 
   await persistUpdate(function(x){
     for(var i=0;i<x.people.length;i++){
       if(x.people[i].id!==App.editingPerson) continue;
       var p=x.people[i];
-      ["nick","relation","recent","hint"].forEach(function(k){
-        var v=fill4[k];
+      ["nick","relation","phone","recent","hint"].forEach(function(k){
+        var v=got[k];
         if(typeof v==="string" && v.trim()) p[k]=v.trim();
       });
-      if(!p.nick) p.nick=seed.nick;
-      if(!p.relation) p.relation=seed.relation;
     }
   }).catch(function(){});
 
@@ -3016,7 +3056,7 @@ async function pair(code){
         await persistUpdate(function(s){ s.paired=true; });
         App.paired=true; App.route="elder"; render();
       } else {
-        var p=newPerson(St.lang,true);
+        var p=newPerson();
         await persistUpdate(function(s){ s.people.push(p); });
         rememberDevice("family",code,p.id);
         App.editingPerson=p.id; App.speak=0; App.route="obMe"; render();
@@ -3128,7 +3168,7 @@ document.addEventListener("click", async function(e){
           var code=await Store.create(langTouched ? lang : "en");
           if(!code) return;
           St=Store.get();
-          var p0=newPerson(lang,false);
+          var p0=newPerson();
           await persistUpdate(function(s){ s.people.push(p0); });
           rememberDevice("family",code,p0.id);
           App.editingPerson=p0.id; App.speak=0; App.route="obElder"; render();
@@ -3140,6 +3180,9 @@ document.addEventListener("click", async function(e){
     case "pair": await pair(el("codeIn").value); break;
 
     case "obMe": App.route="obMe"; render(); break;
+    case "backPerson": backFromPerson(); render(); break;
+    case "fillElderSample": await fillElderSample(); break;
+    case "fillPersonSample": await fillPersonSample(); break;
     case "speak": doSpeak(); break;
     case "speakStop": doSpeakStop(); break;
     case "speakUse": await doSpeakUse(); break;
@@ -3154,7 +3197,7 @@ document.addEventListener("click", async function(e){
     case "enterFamily": App.route="family"; App.tab=0; render(); break;
     case "enterElder": App.paired=false; render(); break;
     case "addPerson":
-      var np=newPerson(St.lang,true);
+      var np=newPerson();
       queueUpdate(function(s){ s.people.push(np); });
       App.editingPerson=np.id; App.speak=0; render();
       break;
@@ -3231,7 +3274,7 @@ document.addEventListener("click", async function(e){
         try{
           await Store.resetFamily();
           if(storeRole()==="family"){
-            var np2=newPerson(St.lang,false);
+            var np2=newPerson();
             await persistUpdate(function(s){ s.people.push(np2); });
             rememberDevice("family",St.code,np2.id);
             App.editingPerson=np2.id; App.route="obElder";

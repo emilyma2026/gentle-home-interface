@@ -174,13 +174,12 @@ test("profile form centers a neutral add-photo placeholder without the old expla
     editTarget: () => null,
     esc: (value) => String(value),
     fieldHTML: () => '<div class="field"></div>',
-    initial: () => "",
-    waveEl: () => "",
+    speakBlock: () => "",
   };
   const output = vm.runInNewContext(`${viewProfileSource}\nviewObMe();`, context);
   const placeholderStyles = declarations(".avatar-picker");
 
-  assert.match(output, /class="avatar-picker"[^>]*>\+<\/div>/);
+  assert.match(output, /class="avatar-picker"[^>]*>\+<input[^>]*type="file"/);
   assert.doesNotMatch(output, /只用于来电匹配/);
   assert.equal(placeholderStyles["margin-left"], "auto");
   assert.equal(placeholderStyles["margin-right"], "auto");

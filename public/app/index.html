@@ -962,6 +962,24 @@ function setHomePoint(point){
     s.home.radiusM=parseInt(s.elder.radius,10)||800;
   });
 }
+function ensureHomePointFromAddress(){
+  var home=homePoint(St);
+  if(home) return Promise.resolve(home);
+  var address=St&&St.elder&&St.elder.address?String(St.elder.address).trim():"";
+  if(!address || !window.Navigation || typeof window.Navigation.geocodeAddress!=="function") return Promise.resolve(null);
+  if(App.homeGeocodePromise) return App.homeGeocodePromise;
+  if(App.homeGeocodeRequested===address) return Promise.resolve(null);
+  App.homeGeocodeRequested=address;
+  App.homeGeocodePromise=window.Navigation.geocodeAddress(address).then(function(point){
+    setHomePoint(point);
+    if(App.homeMapController) App.homeMapController.setHome(point);
+    return point;
+  },function(){ return null; }).then(function(point){
+    App.homeGeocodePromise=null;
+    return point;
+  });
+  return App.homeGeocodePromise;
+}
 function homeMapStatus(){
   return homePoint(St) ? D.mapReady : D.mapPickHint;
 }
@@ -969,13 +987,10 @@ function initHomeMap(){
   var node=el("homeMap");
   if(!node || !window.Navigation || App.homeMapElement===node) return;
   App.homeMapElement=node;
-  var address=St&&St.elder&&St.elder.address?String(St.elder.address).trim():"";
-  if(!homePoint(St) && address && App.homeGeocodeRequested!==address){
-    App.homeGeocodeRequested=address;
-    window.Navigation.geocodeAddress(address).then(function(point){ setHomePoint(point); }).catch(function(){
-      var status=el("homeMapStatus"); if(status) status.textContent=D.mapPickHint;
-    });
-  }
+  ensureHomePointFromAddress().then(function(){
+    var status=el("homeMapStatus");
+    if(status && homePoint(St)) status.textContent=D.mapReady;
+  });
   var center=homePoint(St)||{lat:1.2931,lng:103.7758};
   window.Navigation.createMap(node,{center:center,homeTitle:D.mapHome,currentTitle:D.gpsReady,onHomeSelect:setHomePoint})
     .then(function(controller){
@@ -1065,16 +1080,21 @@ function applyGpsPosition(position){
   if(speak && App.route==="elder" && window.Voice) window.Voice.speak(D.riskLeaving,{lang:St.lang});
 }
 function startGps(){
-  if(!window.Navigation || window.Navigation.isWatching()) return;
+  if(!window.Navigation || window.Navigation.isWatching() || App.gpsStartPending) return;
+  App.gpsStartPending=true;
   App.gpsStatus="starting"; App.gpsError=""; render();
-  window.Navigation.start(applyGpsPosition,function(positionError){
-    App.gpsStatus="error";
-    App.gpsError=positionError&&positionError.code==="permission_denied"?D.gpsDenied:D.gpsFailed;
-    if(St){ queueUpdate(function(s){ s.loc=s.loc||{}; s.loc.status="error"; }); }
-    render();
+  ensureHomePointFromAddress().then(function(){
+    App.gpsStartPending=false;
+    if(App.route!=="elder" || window.Navigation.isWatching()) return;
+    window.Navigation.start(applyGpsPosition,function(positionError){
+      App.gpsStatus="error";
+      App.gpsError=positionError&&positionError.code==="permission_denied"?D.gpsDenied:D.gpsFailed;
+      if(St){ queueUpdate(function(s){ s.loc=s.loc||{}; s.loc.status="error"; }); }
+      render();
+    });
   });
 }
-function stopGps(){ if(window.Navigation) window.Navigation.stop(); App.gpsStatus="idle"; }
+function stopGps(){ App.gpsStartPending=false; if(window.Navigation) window.Navigation.stop(); App.gpsStatus="idle"; }
 
 var IC = {
   voice:'<svg viewBox="0 0 24 24"><path d="M11 5 6 9H3v6h3l5 4zM15.5 8.5a5 5 0 0 1 0 7M18 6a8.5 8.5 0 0 1 0 12"/></svg>',
@@ -1112,6 +1132,8 @@ var App = {
   homeMapElement:null,
   homeMapController:null,
   homeGeocodeRequested:"",
+  homeGeocodePromise:null,
+  gpsStartPending:false,
   guideMapElement:null,
   guideMapController:null,
   guideRouteRequested:false

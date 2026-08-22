@@ -966,6 +966,15 @@ function ensureHomePointFromAddress(){
   var home=homePoint(St);
   if(home) return Promise.resolve(home);
   var address=St&&St.elder&&St.elder.address?String(St.elder.address).trim():"";
+  if(!address && St){
+    address=(SEED[St.lang]||SEED.zh).address;
+    queueUpdate(function(s){
+      s.elder=s.elder||{};
+      if(!s.elder.address) s.elder.address=address;
+      s.home=s.home||{};
+      if(!s.home.label) s.home.label=address;
+    });
+  }
   if(!address || !window.Navigation || typeof window.Navigation.geocodeAddress!=="function") return Promise.resolve(null);
   if(App.homeGeocodePromise) return App.homeGeocodePromise;
   if(App.homeGeocodeRequested===address) return Promise.resolve(null);
@@ -1260,11 +1269,16 @@ function viewCode(){
 
 function viewJoin(){
   var forElder = App.joinAs==="elder";
+  var demoCode=DEMO_CODE;
+  try{
+    var cachedCode=window.localStorage&&window.localStorage.getItem("alz:code");
+    if(/^\d{6}$/.test(cachedCode||"")) demoCode=cachedCode;
+  }catch(_error){ /* The static fallback keeps the demo form usable offline. */ }
   var h='<p class="eyebrow'+(forElder?' warm':'')+'">'+esc(forElder?D.roleElderT:D.fsJoinT)+'</p>'
     + '<p class="h1">'+esc(D.joinTitle)+'</p>'
     + '<p class="sub">'+esc(forElder?D.joinSubE:D.joinSubF)+'</p>'
-    + '<input class="codein" id="codeIn" inputmode="numeric" maxlength="6" value="'+DEMO_CODE+'" placeholder="'+esc(D.joinPh)+'">'
-    + '<p class="demo-sample">'+esc(D.demoCode)+' · <b>'+DEMO_CODE+'</b></p>'
+    + '<input class="codein" id="codeIn" inputmode="numeric" maxlength="6" value="'+demoCode+'" placeholder="'+esc(D.joinPh)+'">'
+    + '<p class="demo-sample">'+esc(D.demoCode)+' · <b>'+demoCode+'</b></p>'
     + (App.err?'<p class="err">'+esc(App.err)+'</p>':'')
     + '<div style="height:16px"></div>'
     + '<button class="btn'+(forElder?' warm':'')+'" data-go="pair">'+esc(D.next)+'</button>';

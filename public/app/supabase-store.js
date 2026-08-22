@@ -471,10 +471,10 @@
 
         let result;
         try {
-          result = await client.rpc("create_family", {
+          result = await withRequestTimeout(client.rpc("create_family", {
             initial_payload: newFamily("", lang),
             requested_role: "family",
-          });
+          }));
         } catch (_error) {
           result = { data: null, error: true };
         }
@@ -511,10 +511,10 @@
 
         let result;
         try {
-          result = await client.rpc("join_family", {
+          result = await withRequestTimeout(client.rpc("join_family", {
             family_code: normalizedCode,
             requested_role: selectedRole,
-          });
+          }));
         } catch (_error) {
           result = { data: null, error: true };
         }
@@ -620,11 +620,11 @@
       try {
         return {
           offline: false,
-          result: await client.rpc("replace_family_state", {
+          result: await withRequestTimeout(client.rpc("replace_family_state", {
             target_family_id: selection.familyId,
             expected_revision: expectedRevision,
             next_payload: nextPayload,
-          }),
+          })),
         };
       } catch (_error) {
         return { offline: true, result: { data: null, error: true } };

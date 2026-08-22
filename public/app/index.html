@@ -424,6 +424,37 @@ input,textarea,select{font:inherit}
 .setrow small{color:var(--muted); font-size:11.5px}
 .setrow .val{color:var(--blue-d); font-size:13px; font-weight:800; flex:0 0 auto}
 
+/* ---- 老人端默认页 ---- */
+.e-home{display:flex; flex-direction:column; gap:9px}
+.e-date{padding:13px 18px; border-radius:22px;
+  background:linear-gradient(150deg,var(--warm-soft),var(--rose-soft))}
+.e-date small{display:block; color:var(--ink-2); font-size:14px; font-weight:700; opacity:.75}
+.e-date b{display:block; margin-top:1px; font-size:27px; font-weight:800; line-height:1.22}
+.e-date span{display:block; margin-top:3px; color:var(--ink-2); font-size:16px}
+.e-panel{display:flex; align-items:center; gap:13px; padding:12px 16px; border-radius:20px;
+  background:#fff; box-shadow:var(--sh-card)}
+.e-panel .ico{flex:0 0 auto; width:46px; height:46px; border-radius:14px; display:grid;
+  place-items:center; font-size:23px; background:var(--blue-soft)}
+.e-panel .ico.warm{background:var(--warm-soft)}
+.e-panel .ico.rose{background:var(--rose-soft)}
+.e-panel .txt{min-width:0}
+.e-panel small{display:block; color:var(--muted); font-size:13px; font-weight:700; margin-bottom:2px}
+.e-panel b{display:block; font-size:19px; font-weight:800; line-height:1.4}
+.e-panel p{margin:3px 0 0; color:var(--ink-2); font-size:15px; line-height:1.45}
+.e-todo{display:block; padding:12px 16px; border-radius:20px; background:#fff; box-shadow:var(--sh-card)}
+.e-todo .row{display:flex; align-items:center; gap:13px}
+.e-todo .done-btn{width:100%; margin-top:10px; padding:12px; border-radius:99px;
+  background:var(--green); color:#fff; font-size:18px; font-weight:800}
+.e-todo .done-btn:active{opacity:.9}
+.e-todo.ok{background:var(--green-soft); box-shadow:none}
+.e-todo.ok b{color:var(--green)}
+.e-read{align-self:center; display:inline-flex; align-items:center; gap:8px; margin:0;
+  padding:7px 16px; border-radius:99px; background:#fff; box-shadow:var(--sh-card);
+  color:var(--warm); font-size:15px; font-weight:800}
+.e-read svg{width:18px; height:18px; fill:none; stroke:currentColor; stroke-width:2;
+  stroke-linecap:round; stroke-linejoin:round}
+.e-actions{margin-top:auto; padding-top:8px}
+
 /* ---- 老人端：给家人打电话 ---- */
 .callpick{display:grid; gap:11px; margin:10px 0 4px}
 .callpick button{display:flex; align-items:center; gap:14px; padding:16px; text-align:left;
@@ -617,6 +648,7 @@ zh:{
 
   todayT:"今天", todaySub:"整体平稳",
   tlMorning:"起床活动正常",
+  tlTodo:"完成了一件待办",
   tlCall:"与{nick}通话，整理出 2 条内容",
   tlQa:"重复询问{rel}来访时间 {n} 次",
   tlUnknown:"问了一个记忆里没有的问题",
@@ -643,6 +675,19 @@ zh:{
 
   eGreet:"你好", eGreetD:"有事就按下面的按钮跟我说。",
   eTalk:"说话", eBack:"不问了",
+  eTodayT:"今天是",
+  eWeekdays:["星期日","星期一","星期二","星期三","星期四","星期五","星期六"],
+  eMorning:"上午", eAfternoon:"下午", eEvening:"晚上",
+  eDateFmt:"{m} 月 {d} 日",
+  eWeatherT:"今天天气",
+  eWeather:{clear:"晴",cloud:"多云",overcast:"阴",fog:"有雾",rain:"有雨",shower:"阵雨",snow:"下雪",storm:"雷雨"},
+  eTipCold:"很冷，出门要穿厚外套。", eTipCool:"有点凉，出门加件外套。",
+  eTipMild:"不冷不热，穿薄外套就好。", eTipWarm:"有点热，穿轻便一点。",
+  eTipRain:"今天有雨，出门记得带伞。",
+  eNextT:"接下来", eNextNone:"今天没有特别要做的事。",
+  eDoneBtn:"我做好了", eDoneOk:"已经做好了，很棒。",
+  eNewsT:"家人说",
+  eReadAloud:"读给我听",
   eCallFamily:"找家人", eChooseT:"想给谁打电话？",
   eChooseD:"按一下就打过去，不用记号码。",
   eCalling:"正在呼叫", eCancelCall:"取消", eInApp:"正在通过守护助手通话",
@@ -752,6 +797,7 @@ en:{
 
   todayT:"Today", todaySub:"Calm day",
   tlMorning:"Normal morning activity",
+  tlTodo:"Finished one reminder",
   tlCall:"Call with {nick}, 2 items captured",
   tlQa:"Asked when her {rel} is visiting {n} times",
   tlUnknown:"Asked something that is not in memory",
@@ -778,6 +824,19 @@ en:{
 
   eGreet:"Hello", eGreetD:"Press the button below whenever you need me.",
   eTalk:"Talk", eBack:"Never mind",
+  eTodayT:"Today is",
+  eWeekdays:["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"],
+  eMorning:"Morning", eAfternoon:"Afternoon", eEvening:"Evening",
+  eDateFmt:"{m}/{d}",
+  eWeatherT:"Weather today",
+  eWeather:{clear:"Clear",cloud:"Cloudy",overcast:"Overcast",fog:"Foggy",rain:"Rain",shower:"Showers",snow:"Snow",storm:"Thunderstorm"},
+  eTipCold:"It's cold. Wear a warm coat if you go out.", eTipCool:"A bit chilly. Take a jacket.",
+  eTipMild:"Mild today. A light jacket is enough.", eTipWarm:"Warm today. Dress light.",
+  eTipRain:"Rain today. Take an umbrella if you go out.",
+  eNextT:"Next", eNextNone:"Nothing special to do today.",
+  eDoneBtn:"I've done it", eDoneOk:"All done. Well done.",
+  eNewsT:"From your family",
+  eReadAloud:"Read it to me",
   eCallFamily:"Call family", eChooseT:"Who would you like to call?",
   eChooseD:"One tap. No numbers to remember.",
   eCalling:"Calling", eCancelCall:"Cancel", eInApp:"Talking through the app",
@@ -1147,6 +1206,64 @@ function commitHome(lat,lng){
 }
 
 /* =====================================================================
+   3c. 天气：Open-Meteo 公开接口，不需要 key。取不到就不显示这一块。
+   ===================================================================== */
+var Weather={ state:"idle", data:null, at:0, key:"" };
+
+function weatherBucket(code){
+  if(code===0 || code===1) return "clear";
+  if(code===2) return "cloud";
+  if(code===3) return "overcast";
+  if(code===45 || code===48) return "fog";
+  if(code>=95) return "storm";
+  if(code>=71 && code<=77) return "snow";
+  if(code>=80 && code<=82) return "shower";
+  if(code>=51) return "rain";
+  return "cloud";
+}
+function weatherEmoji(b){
+  return {clear:"☀️",cloud:"⛅",overcast:"☁️",fog:"🌫️",rain:"🌧️",shower:"🌦️",snow:"❄️",storm:"⛈️"}[b] || "⛅";
+}
+function weatherTip(temp, bucket){
+  if(bucket==="rain" || bucket==="shower" || bucket==="storm") return D.eTipRain;
+  if(temp<10) return D.eTipCold;
+  if(temp<19) return D.eTipCool;
+  if(temp<=26) return D.eTipMild;
+  return D.eTipWarm;
+}
+function ensureWeather(){
+  if(!St) return;
+  var home=homeOf(St);
+  var key=home.lat.toFixed(3)+","+home.lng.toFixed(3);
+  var fresh = Weather.data && Weather.key===key && (Date.now()-Weather.at) < 30*60*1000;
+  if(fresh || Weather.state==="loading") return;
+  Weather.state="loading"; Weather.key=key;
+  var url="https://api.open-meteo.com/v1/forecast?latitude="+home.lat.toFixed(4)
+        + "&longitude="+home.lng.toFixed(4)
+        + "&current=temperature_2m,weather_code&timezone=auto";
+  fetch(url).then(function(r){ return r.ok ? r.json() : null; }).then(function(j){
+    var cur = j && j.current;
+    if(cur && typeof cur.temperature_2m==="number"){
+      Weather.data={ temp:Math.round(cur.temperature_2m), bucket:weatherBucket(cur.weather_code) };
+      Weather.at=Date.now(); Weather.state="ready";
+      if(App.route==="elder") render(St);
+    } else { Weather.state="failed"; }
+  }).catch(function(){ Weather.state="failed"; });
+}
+
+/* 读给我听：浏览器自带语音，慢一点，读不了就静默 */
+function speakSummary(text){
+  try{
+    if(!window.speechSynthesis) return;
+    window.speechSynthesis.cancel();
+    var u=new SpeechSynthesisUtterance(text);
+    u.lang = (St && St.lang==="en") ? "en-US" : "zh-CN";
+    u.rate = 0.85;
+    window.speechSynthesis.speak(u);
+  }catch(_error){ /* 不支持就当没这个按钮 */ }
+}
+
+/* =====================================================================
    4. 应用状态
    ===================================================================== */
 var App = {
@@ -1393,7 +1510,8 @@ function confirmCard(){
 }
 
 function tabToday(){
-  var map={morning:"tlMorning",call:"tlCall",qa:"tlQa",unknown:"tlUnknown",guide:"tlGuide",home:"tlHome"};
+  var map={morning:"tlMorning",call:"tlCall",qa:"tlQa",unknown:"tlUnknown",
+           guide:"tlGuide",home:"tlHome",todo:"tlTodo"};
   var h='<div class="f-head"><p class="eyebrow">'+esc(D.todayT)+'</p><p class="h1">'+esc(D.todaySub)+'</p></div>'
     + '<div class="card"><div class="tl">';
   for(var i=0;i<St.timeline.length;i++){
@@ -1495,12 +1613,89 @@ function elderScreen(){
   return "standby";
 }
 
+/* 已确认的待办里，最近一条还没做完的；全做完了就返回最后一条 */
+function todayTodo(){
+  var done=null;
+  for(var i=0;i<St.facts.length;i++){
+    var f=St.facts[i];
+    if(f.type!=="todo" || f.status!=="done") continue;
+    if(!f.checked) return f;
+    done=f;
+  }
+  return done;
+}
+function todayNews(){
+  for(var i=St.facts.length-1;i>=0;i--){
+    var f=St.facts[i];
+    if(f.type==="fact" && f.status==="done") return f;
+  }
+  return null;
+}
+function factLine(f){ return f.text!=null ? f.text : D[f.key]; }
+
+function dayParts(){
+  var now=new Date(), h=now.getHours();
+  return {
+    week: D.eWeekdays[now.getDay()],
+    date: fill(D.eDateFmt,{m:now.getMonth()+1, d:now.getDate()}),
+    part: h<12 ? D.eMorning : (h<18 ? D.eAfternoon : D.eEvening)
+  };
+}
+
+function homeSummaryText(){
+  var d=dayParts(), out=[D.eTodayT+" "+d.date+" "+d.week+" "+d.part];
+  if(Weather.data){
+    out.push(D.eWeatherT+"，"+D.eWeather[Weather.data.bucket]+" "+Weather.data.temp+"°，"
+      + weatherTip(Weather.data.temp, Weather.data.bucket));
+  }
+  var t=todayTodo();
+  if(t) out.push(D.eNextT+"，"+tp(factLine(t)));
+  var n=todayNews();
+  if(n) out.push(D.eNewsT+"，"+tp(factLine(n)));
+  return out.join("。");
+}
+
 function viewStandby(){
-  return '<div class="e-hello"><div class="e-ring">'+esc(initial(St.elder.name))+'</div>'
-    + '<p class="e-h1">'+esc(D.eGreet)+'</p><p class="e-copy">'+esc(D.eGreetD)+'</p></div>'
-    + '<button class="e-btn" data-go="openQa">'+esc(D.eTalk)+'</button>'
-    + '<button class="e-btn soft" data-go="openPick" style="margin-top:10px">'+esc(D.eCallFamily)+'</button>'
-    + elderSettings();
+  ensureWeather();
+  var d=dayParts(), t=todayTodo(), n=todayNews();
+
+  var h='<div class="e-home">'
+    + '<div class="e-date"><small>'+esc(D.eTodayT)+'</small>'
+    +   '<b>'+esc(d.date)+' '+esc(d.week)+'</b>'
+    +   '<span>'+esc(d.part)+' · '+clockNow()+'</span></div>';
+
+  if(Weather.data){
+    var b=Weather.data.bucket;
+    h+='<div class="e-panel"><span class="ico">'+weatherEmoji(b)+'</span>'
+     + '<span class="txt"><small>'+esc(D.eWeatherT)+'</small>'
+     + '<b>'+esc(D.eWeather[b])+' '+Weather.data.temp+'°</b>'
+     + '<p>'+esc(weatherTip(Weather.data.temp,b))+'</p></span></div>';
+  }
+
+  h+='<div class="e-todo'+(t&&t.checked?" ok":"")+'"><div class="row">'
+   + '<span class="ico" style="flex:0 0 auto;width:46px;height:46px;border-radius:14px;display:grid;place-items:center;font-size:23px;background:var(--warm-soft)">'
+   + (t&&t.checked?"✓":"💊")+'</span>'
+   + '<span class="txt"><small>'+esc(D.eNextT)+'</small>'
+   + '<b>'+esc(t?factLine(t):D.eNextNone)+'</b></span></div>';
+  if(t && !t.checked) h+='<button class="done-btn" data-go="todoDone">'+esc(D.eDoneBtn)+'</button>';
+  else if(t) h+='<p style="margin:9px 0 0;color:var(--green);font-size:14px;font-weight:700">'+esc(D.eDoneOk)+'</p>';
+  h+='</div>';
+
+  if(n){
+    h+='<div class="e-panel"><span class="ico rose">💬</span>'
+     + '<span class="txt"><small>'+esc(D.eNewsT)+'</small>'
+     + '<b>'+esc(factLine(n))+'</b></span></div>';
+  }
+
+  h+='<button class="e-read" data-go="readHome">'+IC.voice+esc(D.eReadAloud)+'</button>'
+   + '</div>';
+
+  h+='<div class="e-actions">'
+   + '<button class="e-btn" data-go="openQa">'+esc(D.eTalk)+'</button>'
+   + '<button class="e-btn soft" data-go="openPick" style="margin-top:10px">'+esc(D.eCallFamily)+'</button>'
+   + elderSettings()
+   + '</div>';
+  return h;
 }
 
 function callerCard(){
@@ -1989,6 +2184,18 @@ document.addEventListener("click", async function(e){
     case "decline": App.pick=false; queueUpdate(function(s){ s.call.phase="idle"; s.call.line=-1; }); break;
     case "hangup": stopSubs(); App.pick=false; endCall(); break;
 
+    case "todoDone":
+      queueUpdate(function(x){
+        for(var i=0;i<x.facts.length;i++){
+          var f=x.facts[i];
+          if(f.type==="todo" && f.status==="done" && !f.checked){ f.checked=true; break; }
+        }
+        var seen=false;
+        for(var k=0;k<x.timeline.length;k++) if(x.timeline[k].kind==="todo") seen=true;
+        if(!seen) x.timeline.push({t:clockNow(), kind:"todo"});
+      });
+      break;
+    case "readHome": speakSummary(homeSummaryText()); break;
     case "openQa": App.qa=true; App.pick=false; render(); break;
     case "closeQa": App.qa=false; render(); break;
     case "openPick": App.pick=true; App.qa=false; render(); break;

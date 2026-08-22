@@ -537,6 +537,9 @@ zh:{
   mapUseGps:"用此设备当前位置",
   mapReady:"已设置家的位置",
   mapMissing:"还没有设置家的位置，暂时无法判断距离。",
+  mapGeocodeFailed:"家庭地址解析失败，请检查地址或地图 API 配置。",
+  routeLoading:"正在加载步行路线……",
+  routeFailed:"步行路线暂时加载失败，请稍后重试或联系家人。",
   gpsStarting:"正在请求定位权限……",
   gpsReady:"定位已开启",
   gpsDenied:"定位权限未开启，请在浏览器设置中允许。",
@@ -671,6 +674,9 @@ en:{
   mapUseGps:"Use this device's location",
   mapReady:"Home location is set",
   mapMissing:"Home location is not set, so distance cannot be checked yet.",
+  mapGeocodeFailed:"The home address could not be located. Check the address or Maps API setup.",
+  routeLoading:"Loading the walking route…",
+  routeFailed:"The walking route could not load. Try again or contact family.",
   gpsStarting:"Requesting location permission…",
   gpsReady:"Location is on",
   gpsDenied:"Location permission is off. Allow it in browser settings.",
@@ -959,6 +965,7 @@ function gpsStatusHTML(){
 }
 function setHomePoint(point){
   if(!point || !Number.isFinite(Number(point.lat)) || !Number.isFinite(Number(point.lng))) return;
+  App.homeGeocodeError="";
   queueUpdate(function(s){
     s.home=s.home||{};
     s.home.lat=Number(point.lat); s.home.lng=Number(point.lng);
@@ -978,8 +985,9 @@ function ensureHomePointFromAddress(){
     });
   }
   var home=homePoint(St), homeLabel=St&&St.home&&St.home.label?String(St.home.label).trim():"";
-  if(home && homeLabel===address) return Promise.resolve(home);
-  if(home && homeLabel!==address){
+  var isDefaultAddress=address===seedAddress;
+  if(home && homeLabel===address && !isDefaultAddress) return Promise.resolve(home);
+  if(home && (homeLabel!==address || isDefaultAddress)){
     queueUpdate(function(s){
       s.home=s.home||{};
       s.home.lat=null; s.home.lng=null; s.home.label=address;
@@ -990,17 +998,23 @@ function ensureHomePointFromAddress(){
   if(App.homeGeocodePromise) return App.homeGeocodePromise;
   if(App.homeGeocodeRequested===address) return Promise.resolve(null);
   App.homeGeocodeRequested=address;
+  App.homeGeocodeError="";
   App.homeGeocodePromise=window.Navigation.geocodeAddress(address).then(function(point){
     setHomePoint(point);
     if(App.homeMapController) App.homeMapController.setHome(point);
     return point;
-  },function(){ return null; }).then(function(point){
+  },function(){
+    App.homeGeocodeRequested="";
+    App.homeGeocodeError=D.mapGeocodeFailed;
+    return null;
+  }).then(function(point){
     App.homeGeocodePromise=null;
     return point;
   });
   return App.homeGeocodePromise;
 }
 function homeMapStatus(){
+  if(App.homeGeocodeError) return App.homeGeocodeError;
   return homePoint(St) ? D.mapReady : D.mapPickHint;
 }
 function initHomeMap(){
@@ -1009,7 +1023,7 @@ function initHomeMap(){
   App.homeMapElement=node;
   ensureHomePointFromAddress().then(function(){
     var status=el("homeMapStatus");
-    if(status && homePoint(St)) status.textContent=D.mapReady;
+    if(status) status.textContent=homePoint(St)?D.mapReady:(App.homeGeocodeError||D.mapPickHint);
   });
   var center=homePoint(St)||{lat:1.2931,lng:103.7758};
   window.Navigation.createMap(node,{center:center,homeTitle:D.mapHome,currentTitle:D.gpsReady,onHomeSelect:setHomePoint})
@@ -1034,6 +1048,8 @@ function initGuideMap(){
       App.guideMapController=controller; controller.setHome(home); controller.setCurrent(current);
       if(App.guideRouteRequested) return;
       App.guideRouteRequested=true;
+      App.guideRouteStatus="loading";
+      App.guideRouteError="";
       return controller.routeHome(current,home).then(function(route){
         var steps=[];
         var legs=route&&route.legs||[];
@@ -1043,13 +1059,22 @@ function initGuideMap(){
           var end=raw[i].end_location;
           if(text && end) steps.push({text:text,end:{lat:end.lat(),lng:end.lng()},distanceM:raw[i].distance?raw[i].distance.value:null});
         }
-        if(steps.length){
-          queueUpdate(function(s){ s.guide.instructions=steps; s.guide.routeId="google-walking"; s.guide.step=0; });
-          if(window.Voice) window.Voice.speak(steps[0].text,{lang:St.lang});
-        }
-      }).catch(function(){ /* fixed landmark instructions remain the fallback */ });
+        if(!steps.length) throw new Error("route_steps_missing");
+        App.guideRouteStatus="ready";
+        App.guideRouteError="";
+        queueUpdate(function(s){ s.guide.instructions=steps; s.guide.routeId="google-walking"; s.guide.step=0; });
+        if(window.Voice) window.Voice.speak(steps[0].text,{lang:St.lang});
+      }).catch(function(){
+        App.guideRouteStatus="error";
+        App.guideRouteError=D.routeFailed;
+        setTimeout(function(){ if(App.route==="elder"&&St&&St.guide&&St.guide.active) render(); },0);
+      });
     })
-    .catch(function(){ /* no map key or unavailable API: use the original guide */ });
+    .catch(function(){
+      App.guideRouteStatus="error";
+      App.guideRouteError=D.routeFailed;
+      setTimeout(function(){ if(App.route==="elder"&&St&&St.guide&&St.guide.active) render(); },0);
+    });
 }
 function setHomeFromGps(){
   if(!window.Navigation) return;
@@ -1082,6 +1107,7 @@ function applyGpsPosition(position){
       if(oldRisk==="safe"||oldRisk==="returned"){
         s.risk.triggeredAt=new Date().toISOString(); speak=true;
         App.guideRouteRequested=false;
+        App.guideRouteStatus="idle"; App.guideRouteError="";
         s.guide.active=true; s.guide.done=false; s.guide.step=0;
         var seen=false; for(var i=0;i<s.timeline.length;i++) if(s.timeline[i].kind==="guide") seen=true;
         if(!seen) s.timeline.push({t:clockNow(),kind:"guide"});
@@ -1153,10 +1179,13 @@ var App = {
   homeMapController:null,
   homeGeocodeRequested:"",
   homeGeocodePromise:null,
+  homeGeocodeError:"",
   gpsStartPending:false,
   guideMapElement:null,
   guideMapController:null,
-  guideRouteRequested:false
+  guideRouteRequested:false,
+  guideRouteError:"",
+  guideRouteStatus:"idle"
 };
 var St=null, D=null, lang="en";
 var DEMO_CODE="527487";
@@ -1555,11 +1584,12 @@ function viewGuide(){
   var routeStep=St.guide.instructions&&St.guide.instructions[St.guide.step];
   var instruction=routeStep ? guideText(routeStep) : g.copy;
   var remaining=routeStep&&routeStep.end?guideDistance(routeStep,currentPoint(St)):null;
+  var routeNote=App.guideRouteError||(App.guideRouteStatus==="loading"?D.routeLoading:(remaining!==null?fill(D.riskDistance,{n:remaining}):D.eGuideNote));
   return '<p class="stepno" style="margin-top:10px">'+esc(fill(D.eStep,{n:St.guide.step+1,total:guideTotal(St)}))+'</p>'
     + '<div class="lmk"><div class="shape '+g.cls+'"></div><span class="nm">'+esc(g.lm)+'</span></div>'
     + '<div class="vr-line">'+IC.voice+'<span>'+esc(D.eGuiding)+'</span></div>'
     + '<p class="stepcopy">'+esc(instruction)+'</p>'
-    + '<p class="stepnote">'+esc(remaining!==null?fill(D.riskDistance,{n:remaining}):D.eGuideNote)+'</p>'
+    + '<p class="stepnote">'+esc(routeNote)+'</p>'
     + '<div class="live-map" id="guideMap" aria-label="route map"></div>'
     + '<div class="spacer"></div>'
     + '<button class="e-btn" data-go="arrived">'+esc(D.eArrived)+'</button>';
@@ -1707,6 +1737,7 @@ function setLoc(x,y){
     if(!s.guide.active && !s.guide.done && distOf(s)>rangeM(s)){
       s.guide.active=true; s.guide.step=0;
       s.guide.instructions=[]; s.guide.routeId=null; App.guideRouteRequested=false;
+      App.guideRouteStatus="idle"; App.guideRouteError="";
       s.timeline.push({t:clockNow(),kind:"guide"});
       started=true;
     }

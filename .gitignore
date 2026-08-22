@@ -37,3 +37,6 @@ dist-ssr
 
 # 由 scripts/gen-maps-config.mjs 生成，含 API key，不提交
 public/app/maps-config.js
+
+# AI 与地图的本地前端配置，由脚本生成，含 key，不提交
+public/app/ai-config.js

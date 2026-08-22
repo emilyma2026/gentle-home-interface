@@ -425,13 +425,13 @@ input,textarea,select{font:inherit}
 .setrow .val{color:var(--blue-d); font-size:13px; font-weight:800; flex:0 0 auto}
 
 /* ---- 老人端默认页 ---- */
-.e-home{display:flex; flex-direction:column; gap:9px}
+.e-home{display:flex; flex-direction:column; gap:8px}
 .e-date{padding:13px 18px; border-radius:22px;
   background:linear-gradient(150deg,var(--warm-soft),var(--rose-soft))}
 .e-date small{display:block; color:var(--ink-2); font-size:14px; font-weight:700; opacity:.75}
-.e-date b{display:block; margin-top:1px; font-size:27px; font-weight:800; line-height:1.22}
+.e-date b{display:block; margin-top:1px; font-size:26px; font-weight:800; line-height:1.22}
 .e-date span{display:block; margin-top:3px; color:var(--ink-2); font-size:16px}
-.e-panel{display:flex; align-items:center; gap:13px; padding:12px 16px; border-radius:20px;
+.e-panel{display:flex; align-items:center; gap:13px; padding:11px 15px; border-radius:20px;
   background:#fff; box-shadow:var(--sh-card)}
 .e-panel .ico{flex:0 0 auto; width:46px; height:46px; border-radius:14px; display:grid;
   place-items:center; font-size:23px; background:var(--blue-soft)}
@@ -441,8 +441,9 @@ input,textarea,select{font:inherit}
 .e-panel small{display:block; color:var(--muted); font-size:13px; font-weight:700; margin-bottom:2px}
 .e-panel b{display:block; font-size:19px; font-weight:800; line-height:1.4}
 .e-panel p{margin:3px 0 0; color:var(--ink-2); font-size:15px; line-height:1.45}
-.e-todo{display:block; padding:12px 16px; border-radius:20px; background:#fff; box-shadow:var(--sh-card)}
+.e-todo{display:block; padding:11px 15px; border-radius:20px; background:#fff; box-shadow:var(--sh-card)}
 .e-todo .row{display:flex; align-items:center; gap:13px}
+.e-todo .txt p{margin:2px 0 0; color:var(--muted); font-size:14px; line-height:1.4}
 .e-todo .done-btn{width:100%; margin-top:10px; padding:12px; border-radius:99px;
   background:var(--green); color:#fff; font-size:18px; font-weight:800}
 .e-todo .done-btn:active{opacity:.9}
@@ -454,6 +455,53 @@ input,textarea,select{font:inherit}
 .e-read svg{width:18px; height:18px; fill:none; stroke:currentColor; stroke-width:2;
   stroke-linecap:round; stroke-linejoin:round}
 .e-actions{margin-top:auto; padding-top:8px}
+
+/* ---- 家人端待办 ---- */
+.todo-card{border-radius:var(--r-lg); background:var(--card); box-shadow:var(--sh-card);
+  padding:15px 16px; margin-bottom:12px}
+.todo-card > b{display:block; font-size:14px; margin-bottom:2px}
+.todo-card > small{display:block; margin-bottom:11px; color:var(--muted); font-size:11.5px}
+.todo-item{padding:12px 13px; border-radius:14px; background:var(--paper); margin-bottom:9px}
+.todo-item:last-of-type{margin-bottom:0}
+.todo-item.done{background:var(--green-soft)}
+.todo-head{display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:9px}
+.todo-head .state{font-size:11px; font-weight:800; color:var(--muted)}
+.todo-head .state.ok{color:var(--green)}
+.todo-head .del{padding:3px 9px; border-radius:99px; background:#fff; color:var(--faint);
+  font-size:11px; font-weight:700}
+.todo-head .del:hover{color:var(--red)}
+.todo-fields{display:grid; grid-template-columns:1fr 1fr; gap:8px}
+.todo-fields .wide{grid-column:1 / -1}
+.tf{display:grid; gap:3px}
+.tf label{color:var(--muted); font-size:10.5px; font-weight:700}
+.tf input{width:100%; padding:8px 10px; border:1px solid var(--line); border-radius:10px;
+  background:#fff; color:var(--ink); font:inherit; font-size:13px}
+.tf input:focus{border-color:var(--blue); outline:none; box-shadow:0 0 0 3px var(--blue-soft)}
+.todo-add{width:100%; margin-top:10px; padding:11px; border-radius:99px; background:var(--paper);
+  color:var(--blue-d); font-size:13px; font-weight:700; box-shadow:inset 0 0 0 1px var(--line)}
+.todo-empty{padding:16px; text-align:center; color:var(--faint); font-size:12.5px}
+
+/* ---- 说一句话：转写确认 ---- */
+.speak-box{margin:-4px 0 14px; padding:14px 15px; border-radius:18px; background:#fff; box-shadow:var(--sh-card)}
+.speak-box small{display:block; margin-bottom:7px; color:var(--muted); font-size:11.5px; font-weight:700}
+.speak-box textarea{width:100%; min-height:74px; padding:11px 13px; border:1px solid var(--line);
+  border-radius:12px; background:var(--paper); color:var(--ink); font:inherit; font-size:14px; line-height:1.55; resize:vertical}
+.speak-box textarea:focus{border-color:var(--blue); outline:none; box-shadow:0 0 0 3px var(--blue-soft)}
+.speak-acts{display:flex; gap:8px; margin-top:10px}
+.speak-acts button{flex:1; padding:11px; border-radius:99px; font-size:13.5px; font-weight:700}
+.speak-acts .go{background:var(--blue); color:#fff}
+.speak-acts .again{background:var(--paper); color:var(--muted); box-shadow:inset 0 0 0 1px var(--line)}
+.speak-err{margin:8px 0 0; color:var(--red); font-size:11.5px}
+.ai-tag{display:inline-flex; align-items:center; gap:5px; padding:2px 8px; border-radius:99px;
+  background:var(--blue-soft); color:var(--blue-d); font-size:10px; font-weight:800; vertical-align:middle}
+
+/* ---- 头像上传 ---- */
+.avatar-picker{position:relative; display:grid; place-items:center; width:70px; height:70px;
+  margin:0 auto 14px; border-radius:50%; background:var(--well); color:var(--faint);
+  font-size:26px; cursor:pointer; overflow:hidden; background-size:cover; background-position:center}
+.avatar-picker input{position:absolute; inset:0; opacity:0; cursor:pointer}
+.avatar-picker.has{color:transparent}
+.avatar.photo{background-size:cover; background-position:center; color:transparent}
 
 /* ---- 老人端设置入口与设置页 ---- */
 .e-quiet{align-self:center; display:inline-flex; align-items:center; gap:7px; margin:9px auto 0;
@@ -624,7 +672,7 @@ zh:{
   rangeMin:"200 米", rangeMax:"2000 米", rangeUnit:"米",
   obMeTitle:"关于你自己", obMeSub:"这些会出现在老人的来电卡片上，帮她认出你。",
   speakT:"说一句话，我来整理", speakD:"不想打字就按这里，说完自动填进下面的字段",
-  speakOn:"正在听……", speakDone:"已经从这句话里整理出 2 个字段，可以直接改。",
+  speakOn:"正在听……", speakDone:"已经按这段话把下面的字段填好了，可以直接改。",
   fNick:"称呼", fRel:"关系", fPhone:"电话", fRecent:"近况", fHint:"想让她记起的事",
   addPhoto:"添加照片",
   hintHint:"越久远的事越容易被记起。",
@@ -694,6 +742,19 @@ zh:{
 
   eGreet:"你好", eGreetD:"有事就按下面的按钮跟我说。",
   eTalk:"说话", eBack:"不问了",
+  todosT:"今天的待办", todosD:"确认过的待办会出现在她的首页，她做完你这里会看到",
+  fWhen:"时间", fWhere:"地点", fWhat:"事情",
+  phWhen:"例如 上午 10 点", phWhere:"例如 家里", phWhat:"例如 吃降压药",
+  todoAdd:"加一条待办", todoEmpty:"今天还没有待办。",
+  todoWaiting:"等她完成", todoDoneBy:"她已经做好了", todoDel:"删除",
+  speakListening:"正在听……", speakStop:"我说完了",
+  speakHeard:"听到的是这段话，可以直接改",
+  speakUse:"用这段话填写", speakAgain:"重新说一次",
+  speakWorking:"正在整理……",
+  speakNoMic:"这台设备不能录音，下面给你一段示例，可以直接改。",
+  speakFailed:"没有听清，再说一次试试。",
+  aiTag:"AI 整理",
+  addPhoto:"加一张照片", photoHint2:"点一下选照片，老人来电时会看到",
   eSetEntry:"设置", eSetTitle:"这台手机", eSetBack:"返回",
   eSetRole:"当前身份", eSetRoleV:"老人端",
   eSetCode:"家庭码", eSetCodeD:"家人用这串数字加入同一个家庭",
@@ -776,7 +837,7 @@ en:{
   rangeMin:"200 m", rangeMax:"2000 m", rangeUnit:"m",
   obMeTitle:"About you", obMeSub:"This is what she sees when you call, so she can recognise you.",
   speakT:"Say it out loud instead", speakD:"Tap and talk. The fields below fill themselves in.",
-  speakOn:"Listening…", speakDone:"Two fields were pulled from that sentence. Edit them freely.",
+  speakOn:"Listening…", speakDone:"The fields below were filled in from what you said. Edit them freely.",
   fNick:"Name", fRel:"Relationship", fPhone:"Phone", fRecent:"Recent life", fHint:"Something she may remember",
   addPhoto:"Add photo",
   hintHint:"Older memories last longer.",
@@ -846,6 +907,19 @@ en:{
 
   eGreet:"Hello", eGreetD:"Press the button below whenever you need me.",
   eTalk:"Talk", eBack:"Never mind",
+  todosT:"Today's reminders", todosD:"Confirmed reminders show on her home screen. You'll see when she's done.",
+  fWhen:"Time", fWhere:"Place", fWhat:"What",
+  phWhen:"e.g. 10 am", phWhere:"e.g. at home", phWhat:"e.g. take the pills",
+  todoAdd:"Add a reminder", todoEmpty:"No reminders today.",
+  todoWaiting:"Waiting for her", todoDoneBy:"She's done it", todoDel:"Delete",
+  speakListening:"Listening…", speakStop:"I'm done",
+  speakHeard:"Here's what I heard. Edit it freely.",
+  speakUse:"Use this", speakAgain:"Say it again",
+  speakWorking:"Sorting it out…",
+  speakNoMic:"This device can't record. Here's a sample you can edit.",
+  speakFailed:"I didn't catch that. Try again.",
+  aiTag:"AI",
+  addPhoto:"Add a photo", photoHint2:"Tap to choose. She sees it when you call.",
   eSetEntry:"Settings", eSetTitle:"This phone", eSetBack:"Back",
   eSetRole:"Signed in as", eSetRoleV:"Elder",
   eSetCode:"Family code", eSetCodeD:"Family members join with these digits",
@@ -1042,6 +1116,12 @@ try{
    ===================================================================== */
 function el(id){ return document.getElementById(id); }
 function fill(s,o){ return String(s).replace(/\{(\w+)\}/g,function(_,k){ return o[k]!==undefined?o[k]:"{"+k+"}"; }); }
+function avatarHTML(p, cls, extra){
+  var c="avatar "+(cls||"");
+  if(p && p.photo) return '<span class="'+c+' photo" style="background-image:url('+p.photo+')"'
+    + (extra||"") + '></span>';
+  return '<span class="'+c+'"'+(extra||"")+'>'+esc(initial(p?p.nick:""))+'</span>';
+}
 function initial(n){
   n=(n||"").trim(); if(!n) return "?";
   return /[一-龥]/.test(n) ? n.charAt(n.length-1) : n.charAt(0).toUpperCase();
@@ -1292,6 +1372,78 @@ function speakSummary(text){
 }
 
 /* =====================================================================
+   3d. AI：统一走服务端 /api/ai，key 不进浏览器。
+       任何一步失败都返回 null，调用方回落到不依赖模型的行为。
+   ===================================================================== */
+var AI={ endpoint:"/api/ai", provider:null, lastError:null };
+
+function aiAsk(opts){
+  var ctrl = window.AbortController ? new AbortController() : null;
+  var timer = setTimeout(function(){ if(ctrl) ctrl.abort(); }, opts.timeout || 15000);
+  return fetch(AI.endpoint,{
+    method:"POST",
+    headers:{"content-type":"application/json"},
+    body:JSON.stringify({ system:opts.system, user:opts.user, json:!!opts.json }),
+    signal: ctrl ? ctrl.signal : undefined
+  }).then(function(r){
+    if(!r.ok) throw new Error("AI_HTTP_"+r.status);
+    return r.json();
+  }).then(function(d){
+    AI.provider=d.provider||null; AI.lastError=null;
+    return (d && typeof d.text==="string") ? d.text : null;
+  }).catch(function(e){
+    AI.lastError=String(e && e.message || e);
+    return null;
+  }).finally(function(){ clearTimeout(timer); });
+}
+
+/* 模型偶尔会在 JSON 外面包一层反引号，这里容错解析 */
+function aiJSON(text){
+  if(!text) return null;
+  var t=String(text).trim().replace(/^```(?:json)?/i,"").replace(/```$/,"").trim();
+  try{ return JSON.parse(t); }catch(_e){}
+  var a=t.indexOf("{"), b=t.lastIndexOf("}");
+  if(a>=0 && b>a){ try{ return JSON.parse(t.slice(a,b+1)); }catch(_e2){} }
+  return null;
+}
+
+/* =====================================================================
+   3e. 语音转写：优先浏览器语音识别，不支持就给一段可编辑的示例
+   ===================================================================== */
+var Speech={ rec:null, active:false };
+function speechSupported(){
+  return !!(window.SpeechRecognition || window.webkitSpeechRecognition);
+}
+function startSpeech(onText, onFail){
+  var Ctor = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if(!Ctor){ onFail("nomic"); return false; }
+  try{
+    var rec=new Ctor();
+    rec.lang = (St && St.lang==="en") ? "en-US" : "zh-CN";
+    rec.interimResults=true; rec.continuous=true; rec.maxAlternatives=1;
+    var buf="";
+    rec.onresult=function(ev){
+      var interim="";
+      for(var i=ev.resultIndex;i<ev.results.length;i++){
+        var r=ev.results[i];
+        if(r.isFinal) buf += r[0].transcript;
+        else interim += r[0].transcript;
+      }
+      onText(buf+interim, false);
+    };
+    rec.onerror=function(){ Speech.active=false; onFail("error"); };
+    rec.onend=function(){ Speech.active=false; onText(buf, true); };
+    Speech.rec=rec; Speech.active=true;
+    rec.start();
+    return true;
+  }catch(_e){ onFail("error"); return false; }
+}
+function stopSpeech(){
+  try{ if(Speech.rec && Speech.active) Speech.rec.stop(); }catch(_e){}
+  Speech.active=false;
+}
+
+/* =====================================================================
    4. 应用状态
    ===================================================================== */
 var App = {
@@ -1299,7 +1451,8 @@ var App = {
   joinAs:"family",     // 输码之后的身份
   tab:0,
   err:"",
-  speak:0,             // 0 未说 1 正在听 2 已填
+  speak:0,             // 0 未开始 1 正在听 2 转写待确认 3 正在整理 4 已填入
+  transcript:"", speakErr:"",
   qa:false, pick:false, eset:false,
   editingPerson:null,  // 正在编辑的人物 id，null 表示列表
   addingPerson:false
@@ -1398,18 +1551,44 @@ function viewObElder(){
     + '<button class="link" data-go="familyStart">'+esc(D.back)+'</button>';
 }
 
+function speakBlock(){
+  var st=App.speak;
+  var head, cls="";
+  if(st===1){ cls=" on"; head='<span><b>'+esc(D.speakListening)+'</b></span>'+waveEl(); }
+  else if(st===3){ cls=" on"; head='<span><b>'+esc(D.speakWorking)+'</b></span>'+waveEl(); }
+  else head='<span><b>'+esc(D.speakT)+'</b><span>'+esc(D.speakD)+'</span></span>';
+
+  var h='<button class="speak'+cls+'" data-go="'+(st===1?"speakStop":"speak")+'">'
+      + '<span class="mic">'+IC.mic+'</span>'+head+'</button>';
+
+  if(st===1){
+    h+='<div class="speak-box"><small>'+esc(D.speakListening)+'</small>'
+     + '<textarea data-live="1" readonly>'+esc(App.transcript)+'</textarea>'
+     + '<div class="speak-acts"><button class="go" data-go="speakStop">'+esc(D.speakStop)+'</button></div></div>';
+  }
+  if(st===2){
+    h+='<div class="speak-box"><small>'+esc(D.speakHeard)+'</small>'
+     + '<textarea id="transcriptBox">'+esc(App.transcript)+'</textarea>'
+     + (App.speakErr?'<p class="speak-err">'+esc(App.speakErr)+'</p>':'')
+     + '<div class="speak-acts"><button class="again" data-go="speak">'+esc(D.speakAgain)+'</button>'
+     + '<button class="go" data-go="speakUse">'+esc(D.speakUse)+'</button></div></div>';
+  }
+  if(st===4){
+    h+='<p class="filled">✓ '+esc(D.speakDone)+' <span class="ai-tag">'+esc(D.aiTag)+'</span></p>';
+  }
+  return h;
+}
+
 function viewObMe(){
   var p=editTarget()||{nick:"",relation:"",phone:"",recent:"",hint:""};
-  var speakCls = App.speak===1 ? " on" : "";
-  var speakBody = App.speak===1
-    ? '<span><b>'+esc(D.speakOn)+'</b></span>'+waveEl()
-    : '<span><b>'+esc(D.speakT)+'</b><span>'+esc(D.speakD)+'</span></span>';
   return '<p class="eyebrow">'+(St.setup?'':'2 / 2')+'</p>'
     + '<p class="h1">'+esc(D.obMeTitle)+'</p>'
     + '<p class="sub">'+esc(D.obMeSub)+'</p>'
-    + '<button class="speak'+speakCls+'" data-go="speak"><span class="mic">'+IC.mic+'</span>'+speakBody+'</button>'
-    + (App.speak===2 ? '<p class="filled">✓ '+esc(D.speakDone)+'</p>' : '')
-    + '<div class="avatar-picker" role="img" aria-label="'+esc(D.addPhoto)+'">+</div>'
+    + speakBlock()
+    + '<label class="avatar-picker'+(p.photo?" has":"")+'"'
+    +   (p.photo?' style="background-image:url('+p.photo+')"':'')+'>'
+    +   (p.photo?'':'+')+'<input type="file" accept="image/*" data-photo="1" aria-label="'+esc(D.addPhoto)+'"></label>'
+    + '<p class="hint" style="text-align:center;margin:-8px 0 14px">'+esc(D.photoHint2)+'</p>'
     + fieldHTML("per.nick", D.fNick, "text")
     + fieldHTML("per.relation", D.fRel, "text", {seedKey:"relation"})
     + fieldHTML("per.phone", D.fPhone, "text", {seedKey:"phone"})
@@ -1481,7 +1660,7 @@ function tabHome(){
   var rs=riskState(), m=me();
   var h='<div class="f-head"><p class="eyebrow">'+esc(D.greet)+'</p>'
     + '<p class="h1">'+esc(statusText())+'</p>'
-    + '<div class="who"><span class="avatar av-sm">'+esc(initial(m.nick))+'</span>'
+    + '<div class="who">'+avatarHTML(m,"av-sm")
     + '<span><b>'+esc(m.nick)+'</b><small>'+esc(D.meIs)+' '+esc(m.relation)+'</small></span></div></div>';
 
   if(!St.paired){
@@ -1508,14 +1687,48 @@ function tabHome(){
   } else {
     h+='<button class="btn" data-go="call">'+esc(D.callBtn)+'</button>';
   }
-  if(St.facts.length) h+='<div style="height:12px"></div>'+confirmCard();
+  h+='<div style="height:12px"></div>'+todoCard();
+  h+=confirmCard();
   return h;
 }
 
+/* 家人端首页的待办：三段结构，原位可编辑，老人做完这里会显示 */
+function todoFields(t){
+  return '<div class="todo-fields">'
+    + '<div class="tf"><label>'+esc(D.fWhen)+'</label>'
+    +   '<input type="text" data-todo="'+t.id+'|when" value="'+esc(t.when||"")+'" placeholder="'+esc(D.phWhen)+'"></div>'
+    + '<div class="tf"><label>'+esc(D.fWhere)+'</label>'
+    +   '<input type="text" data-todo="'+t.id+'|where" value="'+esc(t.where||"")+'" placeholder="'+esc(D.phWhere)+'"></div>'
+    + '<div class="tf wide"><label>'+esc(D.fWhat)+'</label>'
+    +   '<input type="text" data-todo="'+t.id+'|what" value="'+esc(t.what||todoWhat(t))+'" placeholder="'+esc(D.phWhat)+'"></div>'
+    + '</div>';
+}
+
+function todoCard(){
+  var list=allTodos(St);
+  var h='<div class="todo-card"><b>'+esc(D.todosT)+'</b><small>'+esc(D.todosD)+'</small>';
+  if(!list.length){
+    h+='<div class="todo-empty">'+esc(D.todoEmpty)+'</div>';
+  } else {
+    for(var i=0;i<list.length;i++){
+      var t=list[i];
+      h+='<div class="todo-item'+(t.checked?" done":"")+'">'
+       + '<div class="todo-head"><span class="state'+(t.checked?" ok":"")+'">'
+       +   (t.checked?"✓ "+esc(D.todoDoneBy):esc(D.todoWaiting))+'</span>'
+       + '<button class="del" data-todo-del="'+t.id+'">'+esc(D.todoDel)+'</button></div>'
+       + todoFields(t) + '</div>';
+    }
+  }
+  h+='<button class="todo-add" data-go="addTodo">'+esc(D.todoAdd)+'</button>';
+  return h+'</div>';
+}
+
 function confirmCard(){
+  var list=callItems(St);
+  if(!list.length) return "";
   var h='<div class="confirm"><b>'+esc(D.cfT)+'</b><small>'+esc(D.cfD)+'</small>';
-  for(var i=0;i<St.facts.length;i++){
-    var it=St.facts[i], txt = it.text!=null ? it.text : D[it.key];
+  for(var i=0;i<list.length;i++){
+    var it=list[i], txt = it.type==="todo" ? todoLine(it) : (it.text!=null ? it.text : tp(D[it.key]));
     h+='<div class="item"><span class="chiptype'+(it.type==="todo"?" todo":"")+'">'
      + esc(it.type==="todo"?D.tTodo:D.tFact)+'</span>';
     if(it.status==="editing"){
@@ -1586,7 +1799,7 @@ function tabPeople(){
     + '<p class="sub" style="margin-bottom:12px">'+esc(D.peopleSub)+'</p>';
   for(var i=0;i<St.people.length;i++){
     var p=St.people[i];
-    h+='<button class="person-row" data-person="'+p.id+'"><span class="avatar av-md">'+esc(initial(p.nick))+'</span>'
+    h+='<button class="person-row" data-person="'+p.id+'">'+avatarHTML(p,"av-md")
      + '<span><b>'+esc(p.nick)+'</b><small>'+esc(p.relation)+'</small></span>'
      + (p.id===selectedMemberId()?'<span class="me">'+esc(D.meTag)+'</span>':'<span class="go">›</span>')+'</button>';
   }
@@ -1643,16 +1856,7 @@ function elderScreen(){
 }
 
 /* 已确认的待办里，最近一条还没做完的；全做完了就返回最后一条 */
-function todayTodo(){
-  var done=null;
-  for(var i=0;i<St.facts.length;i++){
-    var f=St.facts[i];
-    if(f.type!=="todo" || f.status!=="done") continue;
-    if(!f.checked) return f;
-    done=f;
-  }
-  return done;
-}
+function todayTodo(){ return todayTodoOf(St); }
 function todayNews(){
   for(var i=St.facts.length-1;i>=0;i--){
     var f=St.facts[i];
@@ -1660,7 +1864,49 @@ function todayNews(){
   }
   return null;
 }
-function factLine(f){ return f.text!=null ? f.text : D[f.key]; }
+function factLine(f){
+  if(f.type==="todo") return todoLine(f);
+  return f.text!=null ? f.text : tp(D[f.key]);
+}
+/* 待办由时间、地点、事情三段组成，缺哪段就跳过哪段 */
+function todoLine(t){
+  var parts=[t.when, t.where, t.what].filter(function(v){ return v && String(v).trim(); });
+  if(parts.length) return parts.join(" · ");
+  return t.text!=null ? t.text : tp(D[t.key]);
+}
+function todoWhat(t){
+  if(t.what && t.what.trim()) return t.what.trim();
+  return t.text!=null ? t.text : tp(D[t.key]);
+}
+function todoMeta(t){
+  return [t.when, t.where].filter(function(v){ return v && String(v).trim(); }).join(" · ");
+}
+function newTodo(){
+  return { id:"t"+Date.now()+Math.floor(Math.random()*100), type:"todo", origin:"manual",
+    key:"factPill", text:null, when:"", where:"", what:"", status:"done", checked:false };
+}
+/* 通话抽取出来的条目要家人确认；家人自己加的待办直接生效。两者靠 origin 区分。 */
+function callItems(s){
+  var src=(s||St).facts||[], out=[];
+  for(var i=0;i<src.length;i++) if(src[i].origin==="call") out.push(src[i]);
+  return out;
+}
+function hasPendingCallItem(s){
+  var list=callItems(s);
+  for(var i=0;i<list.length;i++) if(list[i].status==="open"||list[i].status==="editing") return true;
+  return false;
+}
+function allTodos(s){
+  var out=[]; var src=(s||St).facts||[];
+  for(var i=0;i<src.length;i++) if(src[i].type==="todo" && src[i].status==="done") out.push(src[i]);
+  return out;
+}
+/* 老人端「接下来」取第一条还没做完的；都做完了显示最后一条 */
+function todayTodoOf(s){
+  var list=allTodos(s), done=null;
+  for(var i=0;i<list.length;i++){ if(!list[i].checked) return list[i]; done=list[i]; }
+  return done;
+}
 
 function dayParts(){
   var now=new Date(), h=now.getHours();
@@ -1705,7 +1951,9 @@ function viewStandby(){
    + '<span class="ico" style="flex:0 0 auto;width:46px;height:46px;border-radius:14px;display:grid;place-items:center;font-size:23px;background:var(--warm-soft)">'
    + (t&&t.checked?"✓":"💊")+'</span>'
    + '<span class="txt"><small>'+esc(D.eNextT)+'</small>'
-   + '<b>'+esc(t?factLine(t):D.eNextNone)+'</b></span></div>';
+   + '<b>'+esc(t?todoWhat(t):D.eNextNone)+'</b>'
+   + (t && todoMeta(t) ? '<p>'+esc(todoMeta(t))+'</p>' : '')
+   + '</span></div>';
   if(t && !t.checked) h+='<button class="done-btn" data-go="todoDone">'+esc(D.eDoneBtn)+'</button>';
   else if(t) h+='<p style="margin:9px 0 0;color:var(--green);font-size:14px;font-weight:700">'+esc(D.eDoneOk)+'</p>';
   h+='</div>';
@@ -1729,7 +1977,7 @@ function viewStandby(){
 
 function callerCard(){
   var p=focusPerson(St);
-  return '<div class="pcard"><div class="top"><span class="avatar av-lg">'+esc(initial(p.nick))+'</span>'
+  return '<div class="pcard"><div class="top">'+avatarHTML(p,"av-lg")
     + '<b>'+esc(p.nick)+esc(D.eIsYour)+esc(p.relation)+'</b></div>'
     + '<p>'+esc(p.recent)+'</p><p>'+esc(p.hint)+'</p></div>';
 }
@@ -1772,7 +2020,7 @@ function viewQa(){
     var m=St.thread[i];
     if(m.role==="me"){ th+='<div class="bub me">'+esc(D.asks[m.ask])+'</div>'; }
     else {
-      var body = m.text ? fill(D[m.key],{text:m.text}) : D[m.key];
+      var body = m.key==="ansRaw" ? m.text : (m.text ? fill(D[m.key],{text:m.text}) : D[m.key]);
       th+='<div class="bub ai"><div class="vr">'+IC.voice+'<span>'+esc(D.eSpeaking)+'</span></div>'
         + '<p>'+esc(body)+'</p></div>'
         + '<p class="src'+(m.src==="srcUnk"?" unk":"")+'">'+esc(D[m.src])+'</p>';
@@ -1800,7 +2048,7 @@ function viewPick(){
     h+='<div class="callpick">';
     for(var j=0;j<named.length;j++){
       var p=named[j];
-      h+='<button data-callfamily="'+p.id+'"><span class="avatar av-lg">'+esc(initial(p.nick))+'</span>'
+      h+='<button data-callfamily="'+p.id+'">'+avatarHTML(p,"av-lg")
        + '<span><b>'+esc(p.nick)+'</b><small>'+esc(p.relation)+'</small></span>'
        + '<span class="dial">'+IC.phoneUp+'</span></button>';
     }
@@ -1960,7 +2208,25 @@ function patchLight(){
   if(av){ var p=editTarget(); if(p) av.textContent=initial(p.nick); }
 }
 
+function bindTodos(){
+  var ns=el("view").querySelectorAll("[data-todo]");
+  Array.prototype.forEach.call(ns,function(n){
+    n.addEventListener("input",function(){
+      var parts=n.getAttribute("data-todo").split("|");
+      typing=true;
+      queueUpdate(function(s){
+        for(var i=0;i<s.facts.length;i++) if(s.facts[i].id===parts[0]){
+          s.facts[i][parts[1]]=n.value;
+          if(parts[1]==="what") s.facts[i].text=null;
+        }
+      });
+      typing=false;
+    });
+  });
+}
+
 function bindInputs(){
+  bindTodos();
   var ns=el("view").querySelectorAll("[data-f]");
   Array.prototype.forEach.call(ns,function(n){
     n.addEventListener("input",function(){
@@ -1995,24 +2261,90 @@ function syncSubs(){
     subTimer=setInterval(function(){
       var s=Store.get();
       if(!s || s.call.phase!=="talking"){ stopSubs(); return; }
-      if(s.call.line+1 >= I18N[s.lang].callLines.length){ stopSubs(); endCall(); return; }
+      if(s.call.line+1 >= I18N[s.lang].callLines.length){ stopSubs(); void endCall(); return; }
       queueUpdate(function(x){ x.call.line++; });
     },2200);
   } else if(!talking && subTimer){ stopSubs(); }
 }
 function stopSubs(){ clearInterval(subTimer); subTimer=null; }
 
-function endCall(){
+function fallbackItems(){
+  return [
+    {id:"visit"+Date.now(), type:"fact", origin:"call", key:"factVisit", text:null, status:"open"},
+    {id:"pill"+Date.now(), type:"todo", origin:"call", key:"factPill", text:null, status:"open",
+     checked:false, when:"", where:"", what:""}
+  ];
+}
+
+/* 把这通电话的内容交给模型，抽成待家人确认的事实与待办。
+   抽取失败就用默认的两条，演示流程不会断。 */
+async function extractCallItems(){
+  if(!St) return fallbackItems();
+  var p=focusPerson(St), lines=[];
+  for(var i=0;i<D.callLines.length;i++){
+    var L=D.callLines[i];
+    lines.push((L[0]==="me" ? St.elder.name : p.nick) + "：" + tp(L[1]));
+  }
+  var zh = St.lang!=="en";
+  var text = await aiAsk({
+    json:true, timeout:14000,
+    system: zh
+      ? "你在帮阿尔茨海默患者的家人整理通话内容。只抽取通话里明确说过的信息，不要推断，不要补充。只输出 JSON。"
+      : "You help the family of a person with Alzheimer's summarise a phone call. Only extract what was explicitly said. Do not infer or add anything. Output JSON only.",
+    user: (zh
+      ? "这是一段通话记录：\n" + lines.join("\n") +
+        "\n\n抽成 JSON：{\"items\":[" +
+        "{\"type\":\"fact\",\"text\":\"一句话，20字以内\"}," +
+        "{\"type\":\"todo\",\"when\":\"时间，没说就留空\",\"where\":\"地点，没说就留空\",\"what\":\"要做的事，10字以内\"}" +
+        "]}。fact 是关于人或事的事实，todo 是要提醒老人做的事。最多 3 条。用中文，主语用具体的人名。不要推断没说过的时间和地点。"
+      : "Here is a call transcript:\n" + lines.join("\n") +
+        "\n\nExtract JSON: {\"items\":[" +
+        "{\"type\":\"fact\",\"text\":\"one short sentence\"}," +
+        "{\"type\":\"todo\",\"when\":\"time, empty if not said\",\"where\":\"place, empty if not said\",\"what\":\"what to do, short\"}" +
+        "]}. A fact is about a person or an event; a todo is something to remind her to do. At most 3. " +
+        "Do not invent a time or place that was not said. Answer in English.")
+  });
+
+  var got=aiJSON(text);
+  var arr = got && Array.isArray(got.items) ? got.items : null;
+  if(!arr || !arr.length) return fallbackItems();
+
+  var out=[];
+  for(var j=0;j<arr.length && out.length<3;j++){
+    var it=arr[j];
+    if(!it) continue;
+    var hasText = typeof it.text==="string" && it.text.trim();
+    var hasWhat = typeof it.what==="string" && it.what.trim();
+    if(!hasText && !hasWhat) continue;
+    if(it.type==="todo"){
+      out.push({
+        id:"ai"+Date.now()+j, type:"todo", origin:"call", key:"factPill", text:null,
+        status:"open", checked:false,
+        when:String(it.when||"").trim().slice(0,24),
+        where:String(it.where||"").trim().slice(0,24),
+        what:String(it.what||it.text||"").trim().slice(0,40)
+      });
+    } else {
+      out.push({ id:"ai"+Date.now()+j, type:"fact", origin:"call", key:"factVisit",
+        text:String(it.text||"").trim().slice(0,80), status:"open" });
+    }
+  }
+  return out.length ? out : fallbackItems();
+}
+
+var endingCall=false;
+async function endCall(){
+  if(endingCall) return;
+  endingCall=true;
+  var items = (St && hasPendingCallItem(St)) ? null : await extractCallItems();
   queueUpdate(function(s){
     s.call.phase="ended";
-    if(!s.facts.length) s.facts=[
-      {id:"visit",type:"fact",key:"factVisit",text:null,status:"open"},
-      {id:"pill", type:"todo",key:"factPill", text:null,status:"open"}
-    ];
+    if(items && items.length && !hasPendingCallItem(s)) s.facts=s.facts.concat(items);
     var seen=false;
     for(var i=0;i<s.timeline.length;i++) if(s.timeline[i].kind==="call") seen=true;
     if(!seen) s.timeline.push({t:clockNow(),kind:"call"});
   });
+  endingCall=false;
 }
 
 function setLoc(lat,lng){
@@ -2056,23 +2388,34 @@ function arrived(){
   });
 }
 
+/* 按类型取最近一条已确认的条目。AI 抽取出来的 id 是动态的，不能再按写死的 id 找。 */
+function latestConfirmed(s, type){
+  var src=s.facts||[];
+  for(var i=src.length-1;i>=0;i--){
+    var f=src[i];
+    if(f.type===type && f.status==="done") return f;
+  }
+  return null;
+}
 function factById(s,id){ for(var i=0;i<s.facts.length;i++) if(s.facts[i].id===id) return s.facts[i]; return null; }
 
-function ask(i){
+async function ask(i){
+  /* 先把问题和一个占位的回答放上去，模型回来之后再补写措辞 */
+  var pending=null;
   queueUpdate(function(s){
     s.thread.push({role:"me",ask:i});
     var key,src,text=null,f;
     if(i===0){
-      f=factById(s,"visit");
-      if(f && f.status==="done"){ if(f.text){ key="ansFromFact"; text=f.text; } else key="ansVisit"; src="srcFact"; }
+      f=latestConfirmed(s,"fact");
+      if(f){ key="ansFromFact"; text=factLine(f); src="srcFact"; }
       else { key="ansNoConfirm"; src="srcUnk"; }
       s.askCounts.visit=(s.askCounts.visit||0)+1;
       var row=null;
       for(var k=0;k<s.timeline.length;k++) if(s.timeline[k].kind==="qa") row=s.timeline[k];
       if(row) row.n=s.askCounts.visit; else s.timeline.push({t:clockNow(),kind:"qa",n:1});
     } else if(i===1){
-      f=factById(s,"pill");
-      if(f && f.status==="done"){ if(f.text){ key="ansFromTodo"; text=f.text; } else key="ansPill"; src="srcTodo"; }
+      f=latestConfirmed(s,"todo");
+      if(f){ key="ansFromTodo"; text=factLine(f); src="srcTodo"; }
       else { key="ansNoConfirm"; src="srcUnk"; }
     } else {
       key="ansUnknown"; src="srcUnk";
@@ -2083,29 +2426,142 @@ function ask(i){
       for(var q=0;q<s.timeline.length;q++) if(s.timeline[q].kind==="unknown") seen=true;
       if(!seen) s.timeline.push({t:clockNow(),kind:"unknown"});
     }
+    pending={key:key, src:src, text:text, index:s.thread.length};
     s.thread.push({role:"ai",key:key,src:src,text:text});
   });
+
+  if(!pending || pending.src==="srcUnk") return;   // 拒答不经过模型
+  var factText = pending.text || tp(D[pending.key]);
+  var nice = await phraseAnswer(factText, pending.key==="ansFromTodo"||pending.key==="ansPill" ? "todo" : "fact");
+  if(!nice) return;
+  queueUpdate(function(s){
+    var m=s.thread[pending.index];
+    if(m && m.role==="ai"){ m.key="ansRaw"; m.text=nice; }
+  });
+}
+
+/* 有确认过的事实时，让模型把它说成一句温和的短话；模型不可用就用默认措辞。
+   没有事实时不调用模型，直接走固定的拒答，避免任何编造。 */
+async function phraseAnswer(factText, kind){
+  if(!factText) return null;
+  var zh = St.lang!=="en";
+  var text = await aiAsk({
+    timeout:9000,
+    system: zh
+      ? "你在对一位阿尔茨海默中度早期的老人说话。只能使用给你的这条事实，不能补充任何其他信息，不能反问。两句话以内，短句，语气温和，先说事实再给一句安心的话。只输出这段话本身。"
+      : "You are speaking to a person with early-stage Alzheimer's. Use only the fact given. Add nothing else, ask nothing back. Two short sentences at most: state the fact, then one reassuring line. Output only the sentence.",
+    user: (zh ? "事实：" : "Fact: ") + factText
+       + (kind==="todo" ? (zh ? "\n这是一件要做的事。" : "\nThis is something to do.") : "")
+  });
+  return text && text.trim() ? text.trim().slice(0,120) : null;
 }
 
 function setItem(id,status){
   queueUpdate(function(s){ var f=factById(s,id); if(f) f.status=status; });
 }
 
+/* 录音中把识别结果直接写进输入框，不整页重绘 */
+function patchTranscript(){
+  var box=document.querySelector('[data-live="1"], #transcriptBox');
+  if(box && box.value!==App.transcript) box.value=App.transcript;
+}
+
 function doSpeak(){
   if(App.speak===1) return;
+  App.transcript=""; App.speakErr="";
+  if(!speechSupported()){
+    App.transcript=SEED[St.lang].spoken;
+    App.speakErr=D.speakNoMic;
+    App.speak=2; render(); return;
+  }
   App.speak=1; render();
-  clearTimeout(speakTimer);
-  speakTimer=setTimeout(function(){
-    var s=SEED[St.lang];
-    queueUpdate(function(x){
-      for(var i=0;i<x.people.length;i++) if(x.people[i].id===App.editingPerson){
-        x.people[i].recent=s.recent; x.people[i].hint=s.hint;
-        if(!x.people[i].nick) x.people[i].nick=s.nick;
-        if(!x.people[i].relation) x.people[i].relation=s.relation;
+  var ok=startSpeech(function(text, final){
+    App.transcript=text;
+    if(final){
+      if(!App.transcript.trim()){
+        App.transcript=SEED[St.lang].spoken;
+        App.speakErr=D.speakFailed;
       }
-    });
+      App.speak=2; render();
+    } else patchTranscript();
+  }, function(){
+    App.transcript=SEED[St.lang].spoken;
+    App.speakErr=D.speakFailed;
     App.speak=2; render();
-  },1800);
+  });
+  if(!ok){
+    App.transcript=SEED[St.lang].spoken;
+    App.speakErr=D.speakNoMic;
+    App.speak=2; render();
+  }
+}
+
+function doSpeakStop(){ stopSpeech(); }
+
+/* 把口述整理成字段。AI 不可用时回落到示例值，流程不中断。 */
+async function doSpeakUse(){
+  var box=document.getElementById("transcriptBox");
+  var said=(box ? box.value : App.transcript || "").trim();
+  if(!said){ App.speakErr=D.speakFailed; render(); return; }
+  App.transcript=said; App.speakErr=""; App.speak=3; render();
+
+  var zh = St.lang!=="en";
+  var text = await aiAsk({
+    json:true,
+    system: zh
+      ? "你在帮一位家人整理自己的资料，这些内容会显示在阿尔茨海默患者的来电卡片上，帮她认出打来电话的人。只输出 JSON，不要解释。"
+      : "You help a family member tidy up their own details. These appear on an Alzheimer's patient's incoming-call card so she can recognise the caller. Output JSON only.",
+    user: (zh
+      ? "这是这位家人对自己的介绍：\n" + said +
+        "\n\n请提取成 JSON：{\"nick\":\"她平时怎么称呼这个人\",\"relation\":\"与老人的关系\",\"recent\":\"近况，一句话，20字以内\",\"hint\":\"一件久远的、老人更可能记得的事，一句话，30字以内\"}。" +
+        "找不到的字段用空字符串。用中文。"
+      : "Here is how the family member describes themselves:\n" + said +
+        "\n\nExtract JSON: {\"nick\":\"what she calls this person\",\"relation\":\"relationship to the elder\",\"recent\":\"one short sentence about their life now\",\"hint\":\"one older memory she is more likely to recall\"}. " +
+        "Use empty strings for anything missing. Answer in English.")
+  });
+
+  var got=aiJSON(text);
+  var seed=SEED[St.lang];
+  var fill4 = got || { recent:seed.recent, hint:seed.hint };
+  if(!got) App.speakErr=D.speakFailed;
+
+  await persistUpdate(function(x){
+    for(var i=0;i<x.people.length;i++){
+      if(x.people[i].id!==App.editingPerson) continue;
+      var p=x.people[i];
+      ["nick","relation","recent","hint"].forEach(function(k){
+        var v=fill4[k];
+        if(typeof v==="string" && v.trim()) p[k]=v.trim();
+      });
+      if(!p.nick) p.nick=seed.nick;
+      if(!p.relation) p.relation=seed.relation;
+    }
+  }).catch(function(){});
+
+  App.speak=4; render();
+}
+
+/* 选一张照片，压成 96 见方的小图再存，避免撑爆家庭状态的体积上限 */
+function readPhoto(file, cb){
+  if(!file || !/^image\//.test(file.type)) return cb(null);
+  var reader=new FileReader();
+  reader.onload=function(){
+    var img=new Image();
+    img.onload=function(){
+      try{
+        var S=96, c=document.createElement("canvas");
+        c.width=S; c.height=S;
+        var ctx=c.getContext("2d");
+        var side=Math.min(img.width, img.height);
+        ctx.drawImage(img,(img.width-side)/2,(img.height-side)/2,side,side,0,0,S,S);
+        cb(c.toDataURL("image/jpeg",0.72));
+      }catch(_e){ cb(null); }
+    };
+    img.onerror=function(){ cb(null); };
+    img.src=reader.result;
+  };
+  reader.onerror=function(){ cb(null); };
+  reader.readAsDataURL(file);
 }
 
 async function pair(code){
@@ -2149,14 +2605,32 @@ async function hardExit(){
 /* =====================================================================
    10. 事件
    ===================================================================== */
+document.addEventListener("change", function(e){
+  var input=e.target.closest && e.target.closest("[data-photo]");
+  if(!input || !input.files || !input.files[0]) return;
+  var pid=App.editingPerson;
+  readPhoto(input.files[0], function(dataUrl){
+    if(!dataUrl || !pid) return;
+    queueUpdate(function(x){
+      for(var i=0;i<x.people.length;i++) if(x.people[i].id===pid) x.people[i].photo=dataUrl;
+    });
+  });
+});
+
 document.addEventListener("click", async function(e){
-  var b=e.target.closest("[data-go],[data-tab],[data-ask],[data-callfamily],[data-person],[data-item-do],[data-item-edit],[data-item-skip],[data-item-save],[data-item-cancel]");
+  var b=e.target.closest("[data-go],[data-tab],[data-ask],[data-callfamily],[data-person],[data-todo-del],[data-item-do],[data-item-edit],[data-item-skip],[data-item-save],[data-item-cancel]");
   if(!b || b.disabled) return;
   var g=function(n){ return b.getAttribute(n); }, id;
 
   if(g("data-tab")!==null){ App.tab=parseInt(g("data-tab"),10); App.editingPerson=null; render(); return; }
-  if(g("data-ask")!==null){ ask(parseInt(g("data-ask"),10)); return; }
+  if(g("data-ask")!==null){ void ask(parseInt(g("data-ask"),10)); return; }
   if((id=g("data-person"))){ App.editingPerson=id; App.speak=0; render(); return; }
+  if((id=g("data-todo-del"))){
+    queueUpdate(function(s){
+      s.facts=s.facts.filter(function(f){ return f.id!==id; });
+    });
+    return;
+  }
   if((id=g("data-callfamily"))){
     var target=id;
     App.pick=false;
@@ -2200,6 +2674,8 @@ document.addEventListener("click", async function(e){
 
     case "obMe": App.route="obMe"; render(); break;
     case "speak": doSpeak(); break;
+    case "speakStop": doSpeakStop(); break;
+    case "speakUse": await doSpeakUse(); break;
     case "finishSetup":
       var first=!St.setup;
       await persistUpdate(function(s){ s.setup=true; });
@@ -2215,6 +2691,10 @@ document.addEventListener("click", async function(e){
       queueUpdate(function(s){ s.people.push(np); });
       App.editingPerson=np.id; App.speak=0; render();
       break;
+    case "addTodo":
+      App.tab=0;
+      queueUpdate(function(s){ s.facts.push(newTodo()); });
+      break;
     case "clearPending": queueUpdate(function(s){ s.pending=[]; }); break;
 
     case "call":
@@ -2226,13 +2706,13 @@ document.addEventListener("click", async function(e){
       break;
     case "answer": queueUpdate(function(s){ s.call.phase="talking"; s.call.line=-1; }); break;
     case "decline": App.pick=false; queueUpdate(function(s){ s.call.phase="idle"; s.call.line=-1; }); break;
-    case "hangup": stopSubs(); App.pick=false; endCall(); break;
+    case "hangup": stopSubs(); App.pick=false; void endCall(); break;
 
     case "todoDone":
       queueUpdate(function(x){
+        var target=todayTodoOf(x);
         for(var i=0;i<x.facts.length;i++){
-          var f=x.facts[i];
-          if(f.type==="todo" && f.status==="done" && !f.checked){ f.checked=true; break; }
+          if(target && x.facts[i].id===target.id){ x.facts[i].checked=true; break; }
         }
         var seen=false;
         for(var k=0;k<x.timeline.length;k++) if(x.timeline[k].kind==="todo") seen=true;

@@ -37,6 +37,23 @@ node scripts/gen-maps-config.mjs
 
 没有配置 key 时地图会自动降级为示意图，其余功能不受影响。
 
+## AI 配置
+
+通话抽取、老人端问答、口述整理都走服务端 `/api/ai`，API key 只留在服务端，不进浏览器。
+在 .env 里配置其中一个即可，优先使用 Gemini：
+
+```
+GEMINI_API_KEY=你的key
+# 或
+OPENAI_API_KEY=你的key
+# 可选，覆盖默认模型
+AI_MODEL=gemini-2.5-flash
+```
+
+本地 `npm run dev` 时 Vite 会把 `/api/ai` 交给 `server/ai-provider.mjs` 处理。
+部署时请在托管平台提供同路径的接口，或复用同一个模块。
+没有配置任何 key 时，三处都会回落到不依赖模型的固定行为，功能不中断。
+
 ## 构建
 
 ```sh

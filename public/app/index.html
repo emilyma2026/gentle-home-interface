@@ -73,9 +73,12 @@ input,textarea,select{font:inherit}
   margin:-1px!important; overflow:hidden!important; clip:rect(0,0,0,0)!important; white-space:nowrap!important; border:0!important}
 .view{background:transparent; flex:1 1 auto; min-height:0; overflow-y:auto; display:flex; flex-direction:column;
   justify-content:safe center; gap:clamp(4px,.8vh,10px); padding:clamp(18px,4vh,36px) 22px clamp(28px,5vh,44px)}
+/* 带底色的页头是导航条性质，要贴住屏幕上沿，不留缝 */
+.view.pad0{padding-top:0}
+.view.pad0 > .f-head:first-child{margin-top:0}
 .view::-webkit-scrollbar{width:0}
-.view.pad0{padding-top:clamp(18px,3.5vh,30px); padding-right:22px;
-  padding-bottom:clamp(30px,5vh,46px); padding-left:22px; justify-content:safe center}
+.view.pad0{padding-top:0; padding-right:22px;
+  padding-bottom:clamp(30px,5vh,46px); padding-left:22px; justify-content:safe start}
 
 /* 演示外壳（在手机框外，不属于产品界面） */
 .demo-chrome{position:absolute; right:14px; top:58px; z-index:6;
@@ -204,7 +207,7 @@ input,textarea,select{font:inherit}
   font-size:12px; font-weight:700}
 
 /* ================= 家人端 ================= */
-.f-head{margin:0 -22px 14px; padding:16px 22px 20px;
+.f-head{margin:0 -22px 14px; padding:18px 22px 20px;
   background:linear-gradient(155deg,var(--blue-soft) 0%, var(--rose-soft) 100%)}
 .f-head .eyebrow{color:var(--blue-d); opacity:.85}
 .f-head .h1{font-size:23px}
@@ -297,7 +300,7 @@ input,textarea,select{font:inherit}
 
 /* ================= 老人端 ================= */
 .screen.elder{background:#FFFCF8}
-.e-view{flex:1 1 auto; min-height:0; overflow-y:auto; display:flex; flex-direction:column; padding:8px 24px 28px}
+.e-view{flex:1 1 auto; min-height:0; overflow-y:auto; display:flex; flex-direction:column; padding:0 24px 28px}
 .e-hello{flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center;
   text-align:center; gap:14px}
 .e-ring{width:132px; height:132px; border-radius:50%; display:grid; place-items:center;
@@ -426,7 +429,8 @@ input,textarea,select{font:inherit}
 
 /* ---- 老人端默认页 ---- */
 .e-home{display:flex; flex-direction:column; gap:8px}
-.e-date{padding:13px 18px; border-radius:22px;
+/* 老人端的今天是一条页头，贴住上沿并做满宽 */
+.e-date{margin:0 -24px 2px; padding:14px 24px 16px; border-radius:0;
   background:linear-gradient(150deg,var(--warm-soft),var(--rose-soft))}
 .e-date small{display:block; color:var(--ink-2); font-size:14px; font-weight:700; opacity:.75}
 .e-date b{display:block; margin-top:1px; font-size:26px; font-weight:800; line-height:1.22}
@@ -455,6 +459,21 @@ input,textarea,select{font:inherit}
 .e-read svg{width:18px; height:18px; fill:none; stroke:currentColor; stroke-width:2;
   stroke-linecap:round; stroke-linejoin:round}
 .e-actions{margin-top:auto; padding-top:8px}
+
+/* ---- 首页的今日摘要 ---- */
+.sum-card{border-radius:var(--r-lg); background:var(--card); box-shadow:var(--sh-card);
+  padding:14px 15px; margin-bottom:12px}
+.sum-head{display:flex; align-items:baseline; justify-content:space-between; gap:10px; margin-bottom:9px}
+.sum-head b{font-size:14px}
+.sum-head span{color:var(--green); font-size:11.5px; font-weight:800}
+.sum-list{display:grid}
+.sum-list .row{display:flex; gap:11px; padding:7px 0; border-bottom:1px solid var(--line)}
+.sum-list .row:last-child{border-bottom:0}
+.sum-list time{flex:0 0 auto; width:40px; color:var(--blue); font-size:11.5px; font-weight:800;
+  font-variant-numeric:tabular-nums; padding-top:1px}
+.sum-list p{margin:0; font-size:13px; line-height:1.45}
+.sum-more{width:100%; margin-top:8px; padding:8px; border-radius:99px; background:var(--paper);
+  color:var(--muted); font-size:12px; font-weight:700}
 
 /* ---- 月历式待办 ---- */
 .cal-head{display:flex; align-items:center; justify-content:space-between; gap:10px; margin:0 0 10px}
@@ -766,7 +785,7 @@ zh:{
   goFamily:"进入家人端", goElder:"进入老人端",
   pairedT:"配对完成", pairedD:"现在把手机交给老人。她不需要再打开任何东西，需要帮忙的时候屏幕会自己亮起来。",
 
-  tabs:["首页","今天","待办","家人"],
+  tabs:["首页","警报","待办","我的"],
   greet:"你好", greetSub:"{elder}今天怎么样",
   stHome:"在家，一切正常", stOut:"在活动范围外", stGuide:"正在回家 · 第 {n} 步",
   stArrived:"已经到家", stRing:"正在呼叫", stTalk:"通话中",
@@ -818,6 +837,7 @@ zh:{
 
   eGreet:"你好", eGreetD:"有事就按下面的按钮跟我说。",
   eTalk:"说话", eBack:"不问了",
+  sumMore:"还有 {n} 条，查看全部", sumLess:"收起",
   calT:"待办", calMonths:["1 月","2 月","3 月","4 月","5 月","6 月","7 月","8 月","9 月","10 月","11 月","12 月"],
   calWeek:["日","一","二","三","四","五","六"],
   calToday:"今天", calMore:"还有 {n} 件",
@@ -941,7 +961,7 @@ en:{
   goFamily:"Go to the family side", goElder:"Go to the elder side",
   pairedT:"Paired", pairedD:"Now hand the phone to her. She never has to open anything; the screen wakes up when she needs help.",
 
-  tabs:["Home","Today","Reminders","Family"],
+  tabs:["Home","Alerts","Reminders","Mine"],
   greet:"Hello", greetSub:"How {elder} is doing today",
   stHome:"At home, all normal", stOut:"Outside her range", stGuide:"Heading home · step {n}",
   stArrived:"Back home", stRing:"Calling", stTalk:"On a call",
@@ -993,6 +1013,7 @@ en:{
 
   eGreet:"Hello", eGreetD:"Press the button below whenever you need me.",
   eTalk:"Talk", eBack:"Never mind",
+  sumMore:"{n} more, show all", sumLess:"Show less",
   calT:"Reminders", calMonths:["January","February","March","April","May","June","July","August","September","October","November","December"],
   calWeek:["S","M","T","W","T","F","S"],
   calToday:"Today", calMore:"{n} more",
@@ -1130,7 +1151,8 @@ function newFamily(code, lang){
     lastCaller:null,
     thread:[], askCounts:{},
     loc:{ lat:HOME_LL.lat, lng:HOME_LL.lng },
-    guide:{ active:false, step:0, done:false }
+    guide:{ active:false, step:0, done:false },
+    alertCleared:false
   };
 }
 
@@ -1551,7 +1573,7 @@ var App = {
   transcript:"", speakErr:"",
   qa:false, pick:false, eset:false,
   cal:{ ym:"", sel:"", open:null },
-  alertOpen:false, alertSeen:"", alertCleared:false,
+  alertOpen:false, alertSeen:"", sumAll:false,
   editingPerson:null,  // 正在编辑的人物 id，null 表示列表
   addingPerson:false
 };
@@ -1762,7 +1784,7 @@ function alertState(){
 }
 function alertBar(){
   var a=alertState();
-  if(a==="none" || App.alertCleared) return "";
+  if(a==="none" || St.alertCleared) return "";
   var on = a==="on";
   return '<button class="alert-bar'+(on?"":" ok")+'" data-go="openAlert">'
     + '<span class="dotpulse"></span>'
@@ -1801,12 +1823,9 @@ function tabHome(){
      + '<small>'+esc(fill(D.notPairedD,{code:St.code}))+'</small></div>';
   }
 
-  h+='<div class="tiles">'
-   + '<button class="tile" data-tab="1"><small>'+esc(D.tileToday)+'</small><b>'+esc(D.tileTodayV)+'</b></button>'
-   + '<button class="tile '+(rs==="on"?"alert":(rs==="done"?"good":""))+'" data-tab="2"><small>'+esc(D.tileAlert)+'</small><b>'
-   + esc(rs==="on"?D.tileAlertOn:(rs==="done"?D.tileAlertDone:D.tileAlertV))+'</b></button></div>'
-   + '<div class="map-card">'+mapSVG()+'</div>'
-   + testRangeCard();
+  h+=confirmCard();
+  h+=todaySummary();
+  h+=todoCard();
 
   if(St.call.phase==="ringing" && callDir(St)==="out"){
     h+='<div class="banner warn">'+waveEl()+'<span><b>'+esc(D.inRingT)+'</b>'
@@ -1821,8 +1840,6 @@ function tabHome(){
   } else {
     h+='<button class="btn" data-go="call">'+esc(D.callBtn)+'</button>';
   }
-  h+='<div style="height:12px"></div>'+todoCard();
-  h+=confirmCard();
   return h;
 }
 
@@ -1884,17 +1901,45 @@ function confirmCard(){
   return h+'</div>';
 }
 
-function tabToday(){
+/* 今日摘要：首页上的一张轻卡，默认只露最近三条 */
+function todaySummary(){
   var map={morning:"tlMorning",call:"tlCall",qa:"tlQa",unknown:"tlUnknown",
            guide:"tlGuide",home:"tlHome",todo:"tlTodo"};
-  var h='<div class="f-head"><p class="eyebrow">'+esc(D.todayT)+'</p><p class="h1">'+esc(D.todaySub)+'</p></div>'
-    + '<div class="card"><div class="tl">';
-  for(var i=0;i<St.timeline.length;i++){
-    var r=St.timeline[i], t=D[map[r.kind]]||"";
+  var rows=St.timeline.slice();
+  var shown = App.sumAll ? rows : rows.slice(Math.max(0, rows.length-3));
+  var h='<div class="sum-card"><div class="sum-head"><b>'+esc(D.todayT)+'</b>'
+      + '<span>'+esc(D.todaySub)+'</span></div><div class="sum-list">';
+  for(var i=0;i<shown.length;i++){
+    var r=shown[i], t=D[map[r.kind]]||"";
     if(r.kind==="qa") t=fill(t,{n:r.n||1});
     h+='<div class="row"><time>'+r.t+'</time><p>'+esc(t)+'</p></div>';
   }
-  return h+'</div></div>';
+  h+='</div>';
+  if(rows.length>3){
+    h+='<button class="sum-more" data-go="toggleSum">'
+     + esc(App.sumAll ? D.sumLess : fill(D.sumMore,{n:rows.length-3}))+'</button>';
+  }
+  return h+'</div>';
+}
+
+/* 警报页：现在只有一种，走出安全范围 */
+function tabAlerts(){
+  var a=alertState();
+  var h='<div class="f-head"><p class="eyebrow">'+esc(D.alertT)+'</p>'
+    + '<p class="h1">'+esc(a==="on"?D.alertOnT:(a==="done"?D.alertDoneT:D.alertNone))+'</p></div>';
+  if(a==="on"){
+    h+='<dl class="detail"><dt>'+esc(D.dWhy)+'</dt><dd>'+esc(D.dWhyV)+'</dd>'
+     + '<dt>'+esc(D.dWhere)+'</dt><dd>'+esc(fill(D.mapDist,{n:distOf(St)}))+'</dd>'
+     + '<dt>'+esc(D.dProg)+'</dt><dd>'+esc(fill(D.dProgV,{n:Math.min(St.guide.step+1,3)}))+'</dd></dl>';
+  } else if(a==="done"){
+    h+='<dl class="detail ok"><dt>✓ '+esc(D.tileAlertDone)+'</dt><dd>'+esc(D.dDoneV)+'</dd></dl>';
+  } else {
+    h+='<div class="empty">'+esc(D.alertNoneD)+'</div>';
+  }
+  h+='<div class="map-card">'+mapSVG()+'</div>';
+  if(a!=="none") h+='<button class="btn" data-go="call">'+esc(D.callBtn)+'</button>';
+  h+=testRangeCard();
+  return h;
 }
 
 function tabTodos(){
@@ -1996,10 +2041,10 @@ function tabPeople(){
 }
 
 function tabbar(){
-  var ics=[IC.home,IC.cal,IC.bell,IC.users], h='<div class="tabbar">';
+  var ics=[IC.home,IC.bell,IC.cal,IC.users], h='<div class="tabbar">';
   for(var i=0;i<4;i++){
     var dot="";
-    if(i===2 && todosOn(St, todayKey()).length) dot='<span class="dot"></span>';
+    if(i===1 && alertState()!=="none" && !St.alertCleared) dot='<span class="dot"></span>';
     if(i===3 && St.pending.length) dot='<span class="dot"></span>';
     h+='<button data-tab="'+i+'" aria-selected="'+(App.tab===i)+'">'+ics[i]+'<span>'+esc(D.tabs[i])+'</span>'+dot+'</button>';
   }
@@ -2356,13 +2401,13 @@ function render(s){
   else if(App.route==="family"){
     if(St && St.call.phase==="ringing" && callDir(St)==="out"){ App.tab=0; App.editingPerson=null; }
     if(!App.cal.ym){ App.cal.sel=todayKey(); App.cal.ym=ymOf(App.cal.sel); }
-    body = (App.tab===0?tabHome() : App.tab===1?tabToday() : App.tab===2?tabTodos() : tabPeople());
+    body = (App.tab===0?tabHome() : App.tab===1?tabAlerts() : App.tab===2?tabTodos() : tabPeople());
     if(App.tab===2) body += '<button class="fab" data-go="addTodo">+</button>';
     /* 老人走出范围时自动弹一次，关掉之后不再自动弹 */
     var st2=alertState();
-    if(st2==="on" && App.alertSeen!=="on"){ App.alertOpen=true; App.alertSeen="on"; App.alertCleared=false; }
-    if(st2==="none"){ App.alertSeen=""; App.alertCleared=false; }
-    if(App.alertOpen && st2!=="none") body += alertSheet();
+    if(st2==="on" && App.alertSeen!=="on"){ App.alertOpen=true; App.alertSeen="on"; }
+    if(st2==="none") App.alertSeen="";
+    if(App.alertOpen && st2!=="none" && !St.alertCleared) body += alertSheet();
   }
 
   screen.classList.toggle("elder", isElder);
@@ -2583,6 +2628,7 @@ function setLoc(lat,lng){
     s.loc={lat:lat, lng:lng};
     if(!s.guide.active && !s.guide.done && distOf(s)>rangeM(s)){
       s.guide.active=true; s.guide.step=0;
+      s.alertCleared=false;
       s.timeline.push({t:clockNow(),kind:"guide"});
     }
   });
@@ -2955,8 +3001,12 @@ document.addEventListener("click", async function(e){
       queueUpdate(function(s){ s.facts.push(fresh); });
       break;
     case "openAlert": App.alertOpen=true; render(); break;
+    case "toggleSum": App.sumAll=!App.sumAll; render(); break;
     case "closeAlert": App.alertOpen=false; render(); break;
-    case "clearAlert": App.alertOpen=false; App.alertCleared=true; render(); break;
+    case "clearAlert":
+      App.alertOpen=false;
+      queueUpdate(function(s){ s.alertCleared=true; });
+      break;
     case "clearPending": queueUpdate(function(s){ s.pending=[]; }); break;
 
     case "call":

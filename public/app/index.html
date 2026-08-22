@@ -460,6 +460,21 @@ input,textarea,select{font:inherit}
   stroke-linecap:round; stroke-linejoin:round}
 .e-actions{margin-top:auto; padding-top:8px}
 
+/* ---- 待你补充：直接写答案 ---- */
+.pend-item{padding:11px 12px; border-radius:13px; background:rgba(255,255,255,.6); margin-bottom:9px}
+.pend-item:last-of-type{margin-bottom:10px}
+.pend-q{display:flex; align-items:baseline; gap:7px; margin:0 0 8px}
+.pend-q b{font-size:14px; font-weight:700; line-height:1.4}
+.pend-q span{flex:0 0 auto; color:var(--muted); font-size:11px}
+.pend-row{display:flex; gap:7px}
+.pend-row input{flex:1; min-width:0; padding:9px 11px; border:1px solid var(--line); border-radius:11px;
+  background:#fff; color:var(--ink); font:inherit; font-size:13.5px}
+.pend-row input:focus{border-color:var(--blue); outline:none; box-shadow:0 0 0 3px var(--blue-soft)}
+.pend-row button{flex:0 0 auto; padding:9px 15px; border-radius:11px; background:var(--blue);
+  color:#fff; font-size:13px; font-weight:700}
+.pend-row button.skip{background:rgba(255,255,255,.75); color:var(--muted)}
+.pend-hint{margin:7px 0 0; color:var(--muted); font-size:11px; line-height:1.5}
+
 /* ---- 首页的今日摘要 ---- */
 .sum-card{border-radius:var(--r-lg); background:var(--card); box-shadow:var(--sh-card);
   padding:14px 15px; margin-bottom:12px}
@@ -825,8 +840,11 @@ zh:{
 
   peopleT:"家人", peopleSub:"这些人会出现在老人的来电卡片上",
   addPerson:"再加一位家人", editPerson:"编辑资料", meTag:"你",
-  pendingT:"等你补充", pendingD:"{elder}问了这个，记忆里没有：",
-  pendingOk:"我已经补上了", pendingTimes:"问了 {n} 次",
+  pendingT:"等你补充", pendingD:"{elder}问了这些，记忆里没有。写一句答案，她下次问就能听到。",
+  pendingOk:"全部先放着", pendingTimes:"问了 {n} 次",
+  pendingPh:"写下答案", pendingSave:"保存", pendingSkip:"跳过",
+  pendingHint:"保存之后她再问这个问题，就能听到你写的答案。",
+  tlAnswered:"补上了一条她问过的信息",
   familyCodeT:"家庭码", familyCodeD:"分享给其他家人或用来配对老人的手机",
   settingsT:"设置", langRow:"界面语言", langRowV:"中文",
   logoutT:"退出登录", logoutD:"回到最初的身份选择页。重新进入需要家庭码。",
@@ -904,6 +922,7 @@ zh:{
   ansUnknown:"这个我先帮你问问{nick}，等她回话我马上告诉你。",
   ansNoConfirm:"这条{nick}还没有确认，我先帮你问问她。",
   ansFromFact:"{text}。她一直记着呢，你不用担心。",
+  ansPlain:"{text}",
   ansFromTodo:"{text}。别落下。",
   guide:[{lm:"红色健身器材",cls:"",copy:"向前走，看到红色健身器材就停下。"},
          {lm:"蓝色雨棚的小卖部",cls:"shop",copy:"从健身器材右转，走到蓝色雨棚的小卖部。"},
@@ -1000,8 +1019,11 @@ en:{
 
   peopleT:"Family", peopleSub:"These people show up on her incoming-call card",
   addPerson:"Add another relative", editPerson:"Edit details", meTag:"You",
-  pendingT:"Needs your input", pendingD:"{elder} asked this and it is not in memory:",
-  pendingOk:"I've added it", pendingTimes:"asked {n} times",
+  pendingT:"Needs your input", pendingD:"{elder} asked these and they are not in memory. Write an answer and she'll hear it next time.",
+  pendingOk:"Leave them for now", pendingTimes:"asked {n} times",
+  pendingPh:"Type the answer", pendingSave:"Save", pendingSkip:"Skip",
+  pendingHint:"Once saved, she'll hear your answer the next time she asks.",
+  tlAnswered:"Answered something she had asked",
   familyCodeT:"Family code", familyCodeD:"Share it with relatives or use it to pair her phone",
   settingsT:"Settings", langRow:"Language", langRowV:"English",
   logoutT:"Log out", logoutD:"Go back to the role picker. You will need the family code to sign in again.",
@@ -1079,6 +1101,7 @@ en:{
   ansUnknown:"Let me ask {nick} about that. I'll tell you as soon as she answers.",
   ansNoConfirm:"{nick} hasn't confirmed that yet. Let me ask her.",
   ansFromFact:"{text}. She remembers, you don't need to worry.",
+  ansPlain:"{text}",
   ansFromTodo:"{text}. Don't skip it.",
   guide:[{lm:"Red exercise bars",cls:"",copy:"Walk straight ahead. Stop when you see the red exercise bars."},
          {lm:"Shop with the blue awning",cls:"shop",copy:"Turn right at the bars and walk to the shop with the blue awning."},
@@ -1616,7 +1639,7 @@ var App = {
   transcript:"", speakErr:"",
   qa:false, pick:false, eset:false,
   cal:{ ym:"", sel:"", open:null },
-  alertOpen:false, alertSeen:"", sumAll:false,
+  alertOpen:false, alertSeen:"", sumAll:false, pendDraft:{},
   editingPerson:null,  // 正在编辑的人物 id，null 表示列表
   addingPerson:false
 };
@@ -1939,11 +1962,17 @@ function pendingCard(){
     + '<b style="font-size:13.5px;color:var(--amber)">'+esc(D.pendingT)+'</b>'
     + '<p style="margin:6px 0 9px;font-size:12.5px;color:var(--ink-2)">'+esc(D.pendingD)+'</p>';
   for(var j=0;j<list.length;j++){
-    h+='<p style="margin:0 0 4px;font-size:14px;font-weight:700">「'+esc(D.asks[list[j].ask])+'」'
-     + (list[j].n>1 ? '<span style="margin-left:6px;color:var(--muted);font-size:11.5px;font-weight:400">'
-         + esc(fill(D.pendingTimes,{n:list[j].n}))+'</span>' : '')
-     + '</p>';
+    var a=list[j].ask, draft=App.pendDraft[a]||"";
+    h+='<div class="pend-item"><p class="pend-q"><b>「'+esc(D.asks[a])+'」</b>'
+     + (list[j].n>1 ? '<span>'+esc(fill(D.pendingTimes,{n:list[j].n}))+'</span>' : '')
+     + '</p>'
+     + '<div class="pend-row">'
+     +   '<input type="text" data-ans="'+a+'" value="'+esc(draft)+'" placeholder="'+esc(D.pendingPh)+'">'
+     +   '<button data-ans-save="'+a+'">'+esc(D.pendingSave)+'</button>'
+     +   '<button class="skip" data-ans-skip="'+a+'">'+esc(D.pendingSkip)+'</button>'
+     + '</div></div>';
   }
+  h+='<p class="pend-hint">'+esc(D.pendingHint)+'</p>';
   return h+'<div class="acts" style="margin-top:8px"><button class="go" data-go="clearPending">'+esc(D.pendingOk)+'</button></div></div>';
 }
 
@@ -1977,7 +2006,7 @@ function confirmCard(){
 /* 今日摘要：首页上的一张轻卡，默认只露最近三条 */
 function todaySummary(){
   var map={morning:"tlMorning",call:"tlCall",qa:"tlQa",unknown:"tlUnknown",
-           guide:"tlGuide",home:"tlHome",todo:"tlTodo"};
+           guide:"tlGuide",home:"tlHome",todo:"tlTodo",answered:"tlAnswered"};
   var rows=St.timeline.slice();
   var shown = App.sumAll ? rows : rows.slice(Math.max(0, rows.length-3));
   var h='<div class="sum-card"><div class="sum-head"><b>'+esc(D.todayT)+'</b>'
@@ -2534,6 +2563,15 @@ function patchLight(){
   if(av){ var p=editTarget(); if(p) av.textContent=initial(p.nick); }
 }
 
+function bindPendingAnswers(){
+  var ns=el("view").querySelectorAll("[data-ans]");
+  Array.prototype.forEach.call(ns,function(n){
+    n.addEventListener("input",function(){
+      App.pendDraft[n.getAttribute("data-ans")]=n.value;   /* 只记在本地，不写库 */
+    });
+  });
+}
+
 function bindTodos(){
   var ns=el("view").querySelectorAll("[data-todo]");
   Array.prototype.forEach.call(ns,function(n){
@@ -2553,6 +2591,7 @@ function bindTodos(){
 
 function bindInputs(){
   bindTodos();
+  bindPendingAnswers();
   var ns=el("view").querySelectorAll("[data-f]");
   Array.prototype.forEach.call(ns,function(n){
     n.addEventListener("input",function(){
@@ -2721,14 +2760,21 @@ async function ask(i){
   queueUpdate(function(s){
     s.thread.push({role:"me",ask:i});
     var key,src,text=null,f;
+    var bound=factForAsk(s,i);
     if(i===0){
-      f=latestConfirmed(s,"fact");
-      if(f){ key="ansFromFact"; text=factLine(f); src="srcFact"; }
-      else { key="ansNoConfirm"; src="srcUnk"; }
+      /* 重复提问只在今日概况里累加一条计数，不打扰家人 */
       s.askCounts.visit=(s.askCounts.visit||0)+1;
       var row=null;
       for(var k=0;k<s.timeline.length;k++) if(s.timeline[k].kind==="qa") row=s.timeline[k];
       if(row) row.n=s.askCounts.visit; else s.timeline.push({t:clockNow(),kind:"qa",n:1});
+    }
+    if(bound){
+      key = bound.origin==="family" ? "ansPlain" : "ansFromFact";
+      text=factLine(bound); src="srcFact";
+    } else if(i===0){
+      f=latestConfirmed(s,"fact");
+      if(f){ key="ansFromFact"; text=factLine(f); src="srcFact"; }
+      else { key="ansNoConfirm"; src="srcUnk"; }
     } else if(i===1){
       f=latestConfirmed(s,"todo");
       if(f){ key="ansFromTodo"; text=factLine(f); src="srcTodo"; }
@@ -2770,6 +2816,38 @@ async function phraseAnswer(factText, kind){
        + (kind==="todo" ? (zh ? "\n这是一件要做的事。" : "\nThis is something to do.") : "")
   });
   return text && text.trim() ? text.trim().slice(0,120) : null;
+}
+
+/* 家人补的答案绑定在具体问题上，只回答那一个问题，不会串到别的问题去 */
+function factForAsk(s, i){
+  var src=s.facts||[];
+  for(var k=src.length-1;k>=0;k--){
+    var f=src[k];
+    if(f.type==="fact" && f.status==="done" && f.ask===i) return f;
+  }
+  return null;
+}
+
+function saveAnswer(ask){
+  var box=document.querySelector('[data-ans="'+ask+'"]');
+  var text=(box ? box.value : App.pendDraft[ask] || "").trim();
+  if(!text) return;
+  delete App.pendDraft[ask];
+  queueUpdate(function(s){
+    s.facts.push({ id:"fa"+Date.now(), type:"fact", origin:"family", ask:Number(ask),
+      key:"factVisit", text:text.slice(0,120), status:"done" });
+    s.pending=s.pending.filter(function(p){ return p.ask!==Number(ask); });
+    var seen=false;
+    for(var i=0;i<s.timeline.length;i++) if(s.timeline[i].kind==="answered") seen=true;
+    if(!seen) s.timeline.push({ t:clockNow(), kind:"answered" });
+  });
+}
+
+function skipAnswer(ask){
+  delete App.pendDraft[ask];
+  queueUpdate(function(s){
+    s.pending=s.pending.filter(function(p){ return p.ask!==Number(ask); });
+  });
 }
 
 function setItem(id,status){
@@ -2936,7 +3014,7 @@ document.addEventListener("change", function(e){
 document.addEventListener("click", async function(e){
   if(e.target.closest('[data-stop="1"]') && e.target.getAttribute && e.target.getAttribute("data-go")===null
      && !e.target.closest("[data-go]")) return;
-  var b=e.target.closest("[data-go],[data-tab],[data-ask],[data-callfamily],[data-person],[data-todo-del],[data-day],[data-cal],[data-todo-open],[data-todo-rep],[data-item-do],[data-item-edit],[data-item-skip],[data-item-save],[data-item-cancel]");
+  var b=e.target.closest("[data-go],[data-tab],[data-ask],[data-callfamily],[data-person],[data-todo-del],[data-day],[data-cal],[data-todo-open],[data-todo-rep],[data-ans-save],[data-ans-skip],[data-item-do],[data-item-edit],[data-item-skip],[data-item-save],[data-item-cancel]");
   if(!b || b.disabled) return;
   var g=function(n){ return b.getAttribute(n); }, id;
 
@@ -2968,6 +3046,8 @@ document.addEventListener("click", async function(e){
     });
     return;
   }
+  if((id=g("data-ans-save"))!==null && id!==undefined && g("data-ans-save")){ saveAnswer(g("data-ans-save")); return; }
+  if(g("data-ans-skip")){ skipAnswer(g("data-ans-skip")); return; }
   if((id=g("data-todo-del"))){
     queueUpdate(function(s){
       s.facts=s.facts.filter(function(f){ return f.id!==id; });

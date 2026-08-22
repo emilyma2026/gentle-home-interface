@@ -967,17 +967,24 @@ function setHomePoint(point){
   });
 }
 function ensureHomePointFromAddress(){
-  var home=homePoint(St);
-  if(home) return Promise.resolve(home);
   var address=St&&St.elder&&St.elder.address?String(St.elder.address).trim():"";
-  if(!address && St){
-    address=(SEED[St.lang]||SEED.zh).address;
+  var seedAddress=(SEED[St&&St.lang]||SEED.zh).address;
+  var legacyAddresses=["广州市天河区兴华路 12 号 3 栋","12 Xinghua Rd, Building 3, Guangzhou"];
+  if((!address || legacyAddresses.indexOf(address)>=0) && St){
+    address=seedAddress;
     queueUpdate(function(s){
       s.elder=s.elder||{};
-      if(!s.elder.address) s.elder.address=address;
-      s.home=s.home||{};
-      if(!s.home.label) s.home.label=address;
+      s.elder.address=address;
     });
+  }
+  var home=homePoint(St), homeLabel=St&&St.home&&St.home.label?String(St.home.label).trim():"";
+  if(home && homeLabel===address) return Promise.resolve(home);
+  if(home && homeLabel!==address){
+    queueUpdate(function(s){
+      s.home=s.home||{};
+      s.home.lat=null; s.home.lng=null; s.home.label=address;
+    });
+    home=null;
   }
   if(!address || !window.Navigation || typeof window.Navigation.geocodeAddress!=="function") return Promise.resolve(null);
   if(App.homeGeocodePromise) return App.homeGeocodePromise;

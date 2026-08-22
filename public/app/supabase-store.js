@@ -3,6 +3,7 @@
   const FAMILY_CODE_KEY = "alz:code";
   const FAMILY_ROLE_KEY = "alz:role";
   const BACKEND_MESSAGE = "Unable to connect to your family right now.";
+  const REQUEST_TIMEOUT_MS = 12000;
 
   function errorMessage(error) {
     return error && error.message ? error.message : "Unable to initialize Supabase authentication.";
@@ -16,6 +17,17 @@
 
   function backendError() {
     return lifecycleError("BACKEND_ERROR", BACKEND_MESSAGE);
+  }
+
+  function withRequestTimeout(request) {
+    if (typeof setTimeout !== "function" || typeof clearTimeout !== "function") {
+      return Promise.resolve(request);
+    }
+    let timer;
+    const timeout = new Promise((_, reject) => {
+      timer = setTimeout(() => reject(lifecycleError("REQUEST_TIMEOUT", BACKEND_MESSAGE)), REQUEST_TIMEOUT_MS);
+    });
+    return Promise.race([Promise.resolve(request), timeout]).finally(() => clearTimeout(timer));
   }
 
   function revisionConflictError() {
@@ -382,13 +394,13 @@
 
     async function readMembership(selectedFamilyId, selectedCode) {
       try {
-        return await client
+        return await withRequestTimeout(client
           .from("family_members")
           .select("family_id, role, families!inner(code)")
           .eq("family_id", selectedFamilyId)
           .eq("user_id", user.id)
           .eq("families.code", selectedCode)
-          .maybeSingle();
+          .maybeSingle());
       } catch (_error) {
         return { data: null, error: true };
       }
@@ -422,13 +434,13 @@
       reportStatus("connecting");
 
       try {
-        const sessionResult = await client.auth.getSession();
+        const sessionResult = await withRequestTimeout(client.auth.getSession());
         if (sessionResult.error) throw sessionResult.error;
 
         if (sessionResult.data.session?.user) {
           user = sessionResult.data.session.user;
         } else {
-          const signInResult = await client.auth.signInAnonymously();
+          const signInResult = await withRequestTimeout(client.auth.signInAnonymously());
           if (signInResult.error) throw signInResult.error;
           user = signInResult.data.user;
         }
@@ -576,11 +588,11 @@
 
       let stateResult;
       try {
-        stateResult = await client
+        stateResult = await withRequestTimeout(client
           .from("family_states")
           .select("family_id, revision, payload")
           .eq("family_id", cachedFamilyId)
-          .maybeSingle();
+          .maybeSingle());
       } catch (_error) {
         stateResult = { data: null, error: true };
       }
@@ -617,11 +629,11 @@
     async function readFamilyState(targetFamilyId, selectedCode) {
       let result;
       try {
-        result = await client
+        result = await withRequestTimeout(client
           .from("family_states")
           .select("family_id, revision, payload")
           .eq("family_id", targetFamilyId)
-          .maybeSingle();
+          .maybeSingle());
       } catch (_error) {
         return { offline: true, row: null };
       }

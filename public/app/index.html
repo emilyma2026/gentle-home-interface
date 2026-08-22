@@ -538,6 +538,7 @@ zh:{
   mapReady:"已设置家的位置",
   mapMissing:"还没有设置家的位置，暂时无法判断距离。",
   mapGeocodeFailed:"家庭地址解析失败，请检查地址或地图 API 配置。",
+  mapGeocoding:"正在解析家庭地址……",
   routeLoading:"正在加载步行路线……",
   routeFailed:"步行路线暂时加载失败，请稍后重试或联系家人。",
   routeStraight:"沿“{road}”直行约 {distance}。地标：{landmark}，看到它后停下。",
@@ -680,6 +681,7 @@ en:{
   mapReady:"Home location is set",
   mapMissing:"Home location is not set, so distance cannot be checked yet.",
   mapGeocodeFailed:"The home address could not be located. Check the address or Maps API setup.",
+  mapGeocoding:"Locating the home address…",
   routeLoading:"Loading the walking route…",
   routeFailed:"The walking route could not load. Try again or contact family.",
   routeStraight:"Walk straight along {road} for about {distance}. Stop when you see {landmark}.",
@@ -847,8 +849,17 @@ function localDemoRequested(){
     return (own==="1"||parent==="1") && /^(localhost|127\.0\.0\.1)$/.test(window.location.hostname);
   }catch(_error){ return false; }
 }
+function localDemoElderRequested(){
+  if(!localDemoRequested()) return false;
+  try{
+    var own=new URLSearchParams(window.location.search).get("localElder");
+    var parent=window.top&&window.top!==window?new URLSearchParams(window.top.location.search).get("localElder"):null;
+    return own==="1"||parent==="1";
+  }catch(_error){ return false; }
+}
 function createLocalDemoStore(){
-  var state=newFamily("527487","zh"), selectedRole="family", subscribers=[];
+  var elderMode=localDemoElderRequested(), state=newFamily("527487","zh"), selectedRole=elderMode?"elder":"family", subscribers=[];
+  if(elderMode){ state.setup=true; state.paired=true; }
   function emit(){ for(var i=0;i<subscribers.length;i++) subscribers[i](state); }
   function setStatus(status){ if(status&&typeof status==="string") setConnectionStatus(status); }
   return {
@@ -1068,13 +1079,16 @@ function homeMapStatus(){
   if(App.homeGeocodeError) return App.homeGeocodeError;
   return homePoint(St) ? D.mapReady : D.mapPickHint;
 }
+function refreshHomeMapStatus(){
+  var status=el("homeMapStatus");
+  if(status) status.textContent=homeMapStatus();
+}
 function initHomeMap(){
   var node=el("homeMap");
   if(!node || !window.Navigation || App.homeMapElement===node) return;
   App.homeMapElement=node;
   ensureHomePointFromAddress().then(function(){
-    var status=el("homeMapStatus");
-    if(status) status.textContent=homePoint(St)?D.mapReady:(App.homeGeocodeError||D.mapPickHint);
+    refreshHomeMapStatus();
   });
   var center=homePoint(St)||{lat:1.2931,lng:103.7758};
   window.Navigation.createMap(node,{center:center,homeTitle:D.mapHome,currentTitle:D.gpsReady,onHomeSelect:setHomePoint})
@@ -1311,6 +1325,7 @@ var App = {
   homeGeocodePromise:null,
   homeGeocodeError:"",
   homeGeocodeResolvedAddress:"",
+  homeGeocodeTimer:null,
   gpsStartPending:false,
   guideMapElement:null,
   guideMapController:null,
@@ -1818,6 +1833,17 @@ function bindInputs(){
         App.homeGeocodeError="";
       }
       queueUpdate(function(s){ setPath(s,path,n.value); });
+      if(path==="elder.address"){
+        if(App.homeGeocodeTimer) clearTimeout(App.homeGeocodeTimer);
+        var typedAddress=n.value;
+        var status=el("homeMapStatus");
+        if(status) status.textContent=D.mapGeocoding;
+        App.homeGeocodeTimer=setTimeout(function(){
+          App.homeGeocodeTimer=null;
+          if(App.route!=="obElder"||!St||String(St.elder.address||"").trim()!==String(typedAddress||"").trim()) return;
+          ensureHomePointFromAddress().then(refreshHomeMapStatus);
+        },500);
+      }
       typing=false;
       var tag=n.parentNode.querySelector(".tag");
       if(tag){

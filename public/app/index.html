@@ -69,16 +69,20 @@ input,textarea,select{font:inherit}
 .connection-status[data-state="offline"] .connection-dot,.connection-status[data-state="error"] .connection-dot{background:var(--red)}
 .connection-retry{flex:0 0 auto; padding:3px 8px; border-radius:99px; background:var(--red-soft);
   color:var(--red); font-size:11px; font-weight:800}
+.app-notice{position:absolute; top:78px; left:50%; z-index:9; width:max-content; max-width:calc(100% - 40px);
+  transform:translateX(-50%); padding:10px 14px; border-radius:14px; background:rgba(58,44,34,.94);
+  color:#fff; box-shadow:0 10px 26px rgba(58,44,34,.22); font-size:12px; font-weight:700;
+  line-height:1.45; text-align:center}
+.app-notice[hidden]{display:none}
 .visually-hidden{position:absolute!important; width:1px!important; height:1px!important; padding:0!important;
   margin:-1px!important; overflow:hidden!important; clip:rect(0,0,0,0)!important; white-space:nowrap!important; border:0!important}
 .view{background:transparent; flex:1 1 auto; min-height:0; overflow-y:auto; display:flex; flex-direction:column;
   justify-content:safe center; gap:clamp(4px,.8vh,10px); padding:clamp(18px,4vh,36px) 22px clamp(28px,5vh,44px)}
 /* 家人端短页面保持上下呼吸空间，内容较长时仍可自然滚动 */
-.view.pad0{padding-top:clamp(18px,4vh,34px)}
 .view.pad0 > .f-head:first-child{margin-top:0}
 .view::-webkit-scrollbar{width:0}
-.view.pad0{padding-top:clamp(18px,4vh,34px); padding-right:22px;
-  padding-bottom:clamp(30px,5vh,46px); padding-left:22px; justify-content:safe center}
+.view.pad0{padding-top:8px; padding-right:22px;
+  padding-bottom:clamp(30px,5vh,46px); padding-left:22px; justify-content:flex-start}
 
 /* 演示外壳（在手机框外，不属于产品界面） */
 .demo-chrome{position:absolute; right:14px; top:58px; z-index:6;
@@ -167,6 +171,7 @@ input,textarea,select{font:inherit}
   color:var(--blue-d); font-weight:800}
 .avatar{display:grid; place-items:center; flex:0 0 auto; border-radius:50%;
   background:var(--rose-soft); color:var(--rose); font-weight:800}
+.avatar.photo,.avatar-picker.has{background-position:center; background-size:cover; background-repeat:no-repeat}
 .av-lg{width:58px; height:58px; font-size:22px}
 .av-md{width:44px; height:44px; font-size:17px}
 .av-sm{width:34px; height:34px; font-size:13px}
@@ -344,18 +349,23 @@ input,textarea,select{font:inherit}
 
 .e-call{flex:1; display:flex; flex-direction:column; text-align:center}
 .e-call .lbl{margin:14px 0 18px; color:var(--muted); font-size:16px; font-weight:700}
-.pcard{text-align:left; padding:20px; border-radius:26px; background:#fff; box-shadow:var(--sh-card)}
-.pcard .top{display:flex; align-items:center; gap:15px; padding-bottom:17px; border-bottom:1px solid var(--line)}
-.pcard .identity{display:flex; flex-direction:column; min-width:0}
-.pcard .caller-name{font-size:25px; line-height:1.2; overflow-wrap:anywhere}
-.pcard .caller-relation{margin-top:2px; color:var(--warm); font-size:16px; font-weight:800}
-.pcard .avatar{flex:0 0 auto; width:72px; height:72px; font-size:27px; background:var(--warm-soft); color:var(--warm)}
+.pcard{text-align:center; padding:18px 20px; border-radius:26px; background:#fff; box-shadow:var(--sh-card)}
+.pcard .top{display:flex; flex-direction:column; align-items:center; gap:10px}
+.pcard .identity{display:flex; flex-direction:column; align-items:center; min-width:0}
+.pcard .caller-name{font-size:28px; line-height:1.2; overflow-wrap:anywhere}
+.pcard .caller-relation{margin-top:3px; color:var(--warm); font-size:17px; font-weight:800}
+.pcard .avatar{flex:0 0 auto; width:128px; height:128px; border:4px solid #fff; font-size:38px;
+  background:var(--warm-soft); color:var(--warm); box-shadow:0 8px 24px rgba(94,63,38,.15)}
 .caller-details{margin:0}
-.caller-details > div{padding:13px 0; border-bottom:1px solid var(--line)}
-.caller-details > div:last-child{padding-bottom:0; border-bottom:0}
-.caller-details dt{margin:0 0 3px; color:var(--muted); font-size:12px; font-weight:800; letter-spacing:.02em}
-.caller-details dd{margin:0; color:var(--ink-2); font-size:16px; font-weight:600; line-height:1.42; overflow-wrap:anywhere}
-.caller-details .caller-phone{font-size:18px; font-variant-numeric:tabular-nums; letter-spacing:.02em}
+.caller-details > div{margin-top:14px; padding:12px 14px; border-radius:16px; background:var(--warm-soft)}
+.caller-details dt{margin:0 0 4px; color:var(--warm); font-size:12px; font-weight:800; letter-spacing:.02em}
+.caller-details dd{margin:0; color:var(--ink-2); font-size:16px; font-weight:700; line-height:1.42; overflow-wrap:anywhere}
+.talking-person{display:flex; align-items:center; gap:14px; margin:4px 0 10px; padding:13px 15px;
+  border-radius:22px; background:#fff; box-shadow:var(--sh-card); text-align:left}
+.talking-person .avatar{width:82px; height:82px; font-size:29px; background:var(--warm-soft); color:var(--warm)}
+.talking-person .identity{display:flex; flex-direction:column; min-width:0}
+.talking-person b{font-size:25px; line-height:1.22; overflow-wrap:anywhere}
+.talking-person .identity > span{margin-top:3px; color:var(--warm); font-size:16px; font-weight:800}
 .ctrl{display:flex; justify-content:space-around; margin-top:auto; padding-top:26px}
 .ctrl button{display:grid; justify-items:center; gap:8px; color:var(--muted); font-size:13px; font-weight:700}
 .ctrl i{width:70px; height:70px; border-radius:50%; display:grid; place-items:center; color:#fff}
@@ -543,6 +553,10 @@ input,textarea,select{font:inherit}
 .chat-bar input:focus{border-color:var(--blue); outline:none; box-shadow:0 0 0 3px var(--blue-soft)}
 .chat-bar button{flex:0 0 auto; width:44px; height:44px; border-radius:50%; background:var(--blue);
   color:#fff; display:grid; place-items:center; font-size:17px}
+.chat-bar .chat-mic{background:var(--blue-soft); color:var(--blue-d); box-shadow:inset 0 0 0 1px var(--line)}
+.chat-bar .chat-mic.on{background:var(--warm); color:#fff; box-shadow:none}
+.chat-voice-status{min-height:18px; margin:5px 4px 0; color:var(--muted); font-size:11.5px; line-height:1.45}
+.chat-voice-status.err{color:var(--red)}
 .chat-bar button[disabled]{opacity:.45}
 .chat-tips{display:flex; flex-wrap:wrap; gap:6px; margin-top:9px}
 .chat-tips button{padding:7px 12px; border-radius:99px; background:var(--card);
@@ -691,6 +705,11 @@ input,textarea,select{font:inherit}
 .todo-add{width:100%; margin-top:12px; padding:11px; border-radius:99px; background:var(--blue-soft);
   color:var(--blue-d); font-size:13px; font-weight:700; box-shadow:none}
 .todo-empty{padding:16px; text-align:center; color:var(--faint); font-size:12.5px}
+.todo-draft-actions{display:flex; gap:8px; justify-content:flex-end; margin-top:11px}
+.todo-draft-actions button{padding:9px 14px; border-radius:99px; background:var(--paper);
+  color:var(--muted); font-size:12px; font-weight:800}
+.todo-draft-actions .save{background:var(--blue); color:#fff}
+.todo-error{margin:8px 0 0; color:var(--red); font-size:11.5px}
 
 /* ---- 说一句话：转写确认 ---- */
 .speak-box{margin:-4px 0 14px; padding:14px 15px; border-radius:18px; background:#fff; box-shadow:var(--sh-card)}
@@ -745,6 +764,15 @@ input,textarea,select{font:inherit}
   display:grid; place-items:center; color:#fff; flex:0 0 auto}
 .callpick .dial svg{width:21px; height:21px; fill:none; stroke:currentColor; stroke-width:2;
   stroke-linecap:round; stroke-linejoin:round}
+.call-actions{display:grid; grid-template-columns:1fr 1fr; gap:9px; margin-top:10px}
+.call-actions .btn{margin:0; min-width:0; padding-inline:12px}
+.call-actions .phone-link{display:flex; align-items:center; justify-content:center; gap:7px}
+.call-actions .phone-link svg{width:18px; height:18px; fill:none; stroke:currentColor; stroke-width:1.9}
+.callpick .callpick-row{display:grid; grid-template-columns:minmax(0,1fr) auto; gap:8px; align-items:center}
+.callpick .callpick-row > button{min-width:0}
+.callpick .phone-dial{width:48px; height:48px; display:grid; place-items:center; border-radius:50%;
+  background:var(--green-soft); color:var(--green); box-shadow:var(--sh-card)}
+.callpick .phone-dial svg{width:21px; height:21px; fill:none; stroke:currentColor; stroke-width:1.9}
 .inapp-tag{display:inline-flex; align-items:center; gap:6px; margin:0 0 10px; padding:4px 11px;
   border-radius:99px; background:var(--green-soft); color:var(--green); font-size:11.5px; font-weight:800}
 
@@ -811,6 +839,7 @@ input,textarea,select{font:inherit}
       <span id="connectionStatusText" class="connection-copy">Connecting securely</span>
       <button class="connection-retry" type="button" data-go="retryConnection" hidden>Retry</button>
     </div>
+    <div id="appNotice" class="app-notice" role="status" aria-live="polite" hidden></div>
     <div class="view" id="view"></div>
     <div class="demo-chrome" id="chrome"></div>
   </div>
@@ -848,23 +877,28 @@ var SEED = {
   en:{ elderName:"Mom", address:"12 Xinghua Rd, Building 3, Guangzhou",
        elderPhone:"139 0000 4488",
        nick:"Yuki", relation:"Daughter", phone:"138 0000 7612",
-       recent:"Works in Guangzhou, lives on her own.",
-       hint:"You walked her to No.3 Primary School every morning, rain or shine.",
-       spoken:"I'm her daughter Yuki. I work in Guangzhou and live alone. She walked me to No.3 Primary School every morning, rain or shine." }
+       recent:"Works in Guangzhou, lives independently.",
+       hint:"You walked me to No.3 Primary School every morning, rain or shine.",
+       spoken:"I'm Yuki, your daughter. I work in Guangzhou and live independently. You walked me to No.3 Primary School every morning, rain or shine." }
 };
 
 var I18N = {
 zh:{
   appName:"Remember Us", appSub:"阿尔茨海默家庭双端陪伴",
-  langBtn:"EN", resetBtn:"重置演示", exitBtn:"换个角色",
+  langBtn:"EN", resetBtn:"重置演示", exitBtn:"换个角色", compareBtn:"双端对照",
   syncConnecting:"正在安全连接", syncLoading:"正在载入家庭", syncSaving:"正在同步更改",
   syncOffline:"网络已断开，更改尚未同步", syncError:"连接失败，请重试", syncConflict:"有新的家庭更改，请再试一次",
   syncSynced:"已同步", syncRetry:"重试",
+  collabAnswerKept:"另一位家人已经先回答，已保留先确认的答案。",
+  collabItemHandled:"这条内容已由另一位家人在其他设备上处理。",
+  collabFieldKept:"另一台设备已经先修改了这项内容，已保留先同步的版本。",
+  collabCallBusy:"已有一通家庭通话正在进行。",
+  photoSaved:"照片已保存，老人通话时会一直看到。", photoFailed:"无法读取这张照片，请换一张图片。",
   labelFamily:"家人端", labelElder:"老人端", labelEntry:"Remember Us",
 
   hintEntry:"演示用法：浏览器分屏，两个窗口都打开这一页。一个选家人端，一个选老人端，用家庭码连起来。地图本地演示可加 ?localDemo=1，老人端可再加 &localElder=1。",
   hintFamily:"这台是家人的手机。改任何字段，老人端立刻同步。",
-  hintElder:"这台是老人的手机。她不需要操作，需要帮忙时屏幕会自己亮起来。",
+  hintElder:"这台是老人的手机。老人不需要操作，需要帮忙时屏幕会自己亮起来。",
 
   entryTitle:"请选择您的身份", entrySub:"不一样的界面，不一样的服务。",
   stepsTitle:"三步就能连起来",
@@ -877,11 +911,24 @@ zh:{
   fsJoinT:"加入家庭", fsJoinD:"输入六位家庭码",
 
   obElderTitle:"关于老人", obElderSub:"先填写基本信息，之后随时可以改。",
-  fName:"称呼", fAddr:"家庭住址", fRange:"安全范围",
+  fName:"称呼", fPronouns:"如何称呼老人", pronounAuto:"根据称呼自动判断", pronounShe:"她", pronounHe:"他", pronounThey:"不限定性别",
+  fAddr:"家庭住址", fRange:"安全范围",
   fElderPhone:"老人手机号", elderPhoneHint:"平台内呼叫打不通时，家人可以直接拨这个号码。",
   fHome:"家在哪里", homeHint:"在地图上点一下，或者拖动图钉，把它放到家的位置。",
   mapTipPick:"点一下或拖动图钉", mapTipLive:"实时位置",
   mapFallback:"地图暂时不可用，下面是示意图",
+  mapUseGps:"用此设备当前位置", mapMissing:"还没有设置家的位置，暂时无法判断距离。",
+  mapPickHint:"点击地图或拖动标记，设置老人家。", mapReady:"已设置家的位置",
+  mapGeocodeFailed:"家庭地址解析失败，请检查地址或地图 API 配置。",
+  mapGeocoding:"正在解析家庭地址……",
+  routeLoading:"正在加载步行路线……",
+  routeStraight:"沿“{road}”直行约 {distance}。地标：{landmark}，看到它后停下。",
+  routeTurn:"走到“{landmark}”附近后{turn}，再沿“{road}”走约 {distance}。",
+  routeDestination:"沿“{road}”继续走到家庭地址，约 {distance}。",
+  routeRoad:"当前道路", routeIntersection:"下一个路口", routeFailed:"步行路线暂时加载失败，请稍后重试或联系家人。",
+  gpsStarting:"正在请求定位权限……", gpsReady:"定位已开启", gpsDenied:"定位权限未开启，请在浏览器设置中允许定位。", gpsFailed:"暂时拿不到位置，仍可使用演示定位。",
+  riskDistance:"距离家约 {n} 米", riskLeaving:"你离家有点远了，我们一起回家吧。", riskFamily:"老人可能已经离开安全范围。",
+  voiceAsk:"按住说话", voiceStop:"停止并识别", voiceRecord:"录制这段通话",
   rangeHint:"老人走出这个范围并且持续远离时，系统会先提供帮助，再通知家人。范围以家为中心。",
   rangeMin:"200 米", rangeMax:"2000 米", rangeUnit:"米",
   obMeTitle:"关于你自己", obMeSub:"这些会出现在老人的来电卡片上，帮助老人认出你。",
@@ -903,24 +950,26 @@ zh:{
   useIt:"进入",
   next:"下一步", back:"上一步", done:"完成", start:"开始",
   goFamily:"进入家人端", goElder:"进入老人端",
-  pairedT:"配对完成", pairedD:"现在把手机交给老人。她不需要再打开任何东西，需要帮忙的时候屏幕会自己亮起来。",
+  pairedT:"配对完成", pairedD:"现在把手机交给老人。之后不需要再打开任何东西，需要帮忙的时候屏幕会自己亮起来。",
 
   tabs:["首页","警报","待办","我的"],
-  greet:"你好", greetSub:"{elder}今天怎么样",
+  greet:"今天", greetSub:"{elder}今天怎么样？",
   stHome:"在家，一切正常", stOut:"在活动范围外", stGuide:"正在回家 · 第 {n} 步",
   stArrived:"已经到家", stRing:"正在呼叫", stTalk:"通话中",
   tileToday:"今天", tileTodayV:"整体平稳", tileAlert:"提醒", tileAlertV:"暂无",
   tileAlertOn:"1 条处理中", tileAlertDone:"已解除",
   meIs:"你在这个家庭里是",
-  mapNote:"位置由老人的手机上报，这里只展示",
+  mapNote:"位置由老人的手机上报，这里只展示", locationT:"当前位置", locationNormal:"目前在安全范围内",
   mapDist:"距家 {n} 米", mapHome:"家",
-  callBtn:"打给{elder}",
+  callBtn:"打给{elder}", callPhone:"拨打真实电话", callInApp:"应用内测试",
   ringT:"正在呼叫{elder}", ringD:"接通后她会看到你的卡片。",
+  inRingT:"{elder}打来了", inRingD:"接听后她会看到你的资料卡。",
+  fAnswer:"接听", fDecline:"拒绝",
   talkT:"通话中", talkD:"挂断之后，系统会把这通电话整理成待确认的内容。",
   hangup:"挂断",
   notPaired:"老人端还没有配对", notPairedD:"在老人的手机上打开这一页，用家庭码 {code} 配对。",
 
-  cfT:"通话结束，请确认", cfD:"系统从这通电话里整理出 2 条。确认之后老人问起才答得出来。",
+  cfT:"通话结束，请确认", cfD:"系统从这通电话里整理出 {n} 条。确认之后老人问起才答得出来。",
   tFact:"事实", tTodo:"待办",
   factVisit:"{nick}周六下午来看{elder}", factPill:"提醒{elder}把降压药吃完",
   aOk:"确认", aEdit:"修改", aSkip:"忽略", aCancel:"取消", aSave:"保存",
@@ -929,7 +978,7 @@ zh:{
   todayT:"今天", todaySub:"整体平稳",
   tlMorning:"起床活动正常",
   tlTodo:"完成了一件待办",
-  tlCall:"与{nick}通话，整理出 2 条内容",
+  tlCall:"与{nick}通话，整理出 {n} 条内容", todayEmpty:"今天还没有新的活动。",
   tlQa:"重复询问{rel}来访时间 {n} 次",
   tlUnknown:"问了一个记忆里没有的问题",
   tlGuide:"走出活动范围，开始回家引导",
@@ -946,13 +995,13 @@ zh:{
   pendingT:"等你补充", pendingD:"{elder}问了这些，记忆里没有。写一句答案，她下次问就能听到。",
   pendingOk:"全部先放着", pendingTimes:"问了 {n} 次",
   aiTab:"助手",
-  chatT:"补充记忆", chatD:"把关于{elder}的事说给我，我整理好存进她的记忆里。",
-  chatPh:"说点关于她的事", chatSend:"发送",
+  chatT:"补充记忆", chatD:"把关于{elder}的事说给我，我整理好存进记忆里。",
+  chatPh:"说点关于老人的事", chatSend:"发送", chatVoice:"语音输入", chatListening:"正在听，可以直接说……", chatVoiceFailed:"没有听清，请再试一次。",
   chatSeed:"{elder}问了「{q}」，记忆里没有。你知道答案吗？",
   chatThinking:"正在整理……",
   chatFailed:"刚才没连上，再说一次试试。",
   chatSaved:"已经存进记忆", chatSave:"存进记忆", chatDrop:"不用了",
-  chatTips:["她最近在忙什么","提醒她今天要做的事","她认识的一个人"],
+  chatTips:["老人最近在忙什么","提醒老人今天要做的事","老人认识的一个人"],
   pendingToChat:"用助手补充",
   pendingPh:"写下答案", pendingSave:"保存", pendingSkip:"跳过",
   pendingHint:"保存之后她再问这个问题，就能听到你写的答案。",
@@ -973,15 +1022,15 @@ zh:{
   dayEmpty:"这一天还没有待办。",
   repeatT:"每天重复", repeatD:"打开之后，从这一天起每天都会出现",
   todoNew:"新的待办",
-  alertPopT:"她走出了安全范围", alertPopClose:"知道了",
+  alertPopT:"老人走出了安全范围", alertPopClose:"知道了",
   alertBarOn:"正在协助{elder}回家", alertBarOnD:"点开看详情",
   alertBarOk:"{elder}已经到家", alertBarOkD:"确认之后可以清掉",
   alertClear:"清除",
-  todosT:"今天的待办", todosD:"确认过的待办会出现在她的首页，她做完你这里会看到",
+  todosT:"今天的待办", todosD:"只有保存后的待办才会出现在老人首页，完成后会同步勾选原待办。",
   fWhen:"时间", fWhere:"地点", fWhat:"事情",
   phWhen:"例如 上午 10 点", phWhere:"例如 家里", phWhat:"例如 吃降压药",
-  todoAdd:"加一条待办", todoEmpty:"今天还没有待办。",
-  todoWaiting:"等她完成", todoDoneBy:"她已经做好了", todoDel:"删除",
+  todoAdd:"加一条待办", todoEmpty:"今天还没有待办。", todoSave:"保存待办", todoCancel:"取消", todoNeedWhat:"请先填写要做的事情。",
+  todoWaiting:"等待完成", todoDoneBy:"已经完成", todoDel:"删除",
   speakListening:"正在听……", speakStop:"我说完了",
   speakHeard:"听到的是这段话，可以直接改",
   speakUse:"用这段话填写", speakAgain:"重新说一次",
@@ -997,7 +1046,7 @@ zh:{
   eWeekdays:["星期日","星期一","星期二","星期三","星期四","星期五","星期六"],
   eMorning:"上午", eAfternoon:"下午", eEvening:"晚上",
   eDateFmt:"{m} 月 {d} 日",
-  eWeatherT:"今天天气",
+  eWeatherT:"今天天气", eWeatherLive:"实时天气", eWeatherLoading:"正在获取实时天气……", eWeatherMissing:"设置家庭位置或允许定位后显示天气。", eWeatherFailed:"暂时无法获取天气。", eWeatherRetry:"重试",
   eWeather:{clear:"晴",cloud:"多云",overcast:"阴",fog:"有雾",rain:"有雨",shower:"阵雨",snow:"下雪",storm:"雷雨"},
   eTipCold:"很冷，出门要穿厚外套。", eTipCool:"有点凉，出门加件外套。",
   eTipMild:"不冷不热，穿薄外套就好。", eTipWarm:"有点热，穿轻便一点。",
@@ -1024,18 +1073,18 @@ zh:{
   eHomeT:"你到家了", eHomeD:"已经告诉{nick}你平安到家。", eGot:"知道了",
 
   devT:"演示控制", devOpen:"展开", devClose:"收起",
-  devD:"仅用于演示。正式版这台设备的位置由 GPS 上报，没有人需要操作它。",
+  devD:"仅用于演示。点击后两端会同时更新，正式版位置由 GPS 上报。",
   devWalk:"模拟外出", devHome:"回到家", devDist:"距家 {n} 米",
 
-  callLines:[["her","妈，是我，{nick}。"],["me","哎，{nick}啊。"],
+  callLines:[["her","{elder}，是我，{nick}。"],["me","哎，{nick}啊。"],
              ["her","我这周六下午过来看你，你在家等我。"],["me","周六啊，好，好。"],
              ["her","还有你那个降压药，记得吃完，别落下。"],["me","知道了知道了。"]],
   asks:["{nick}什么时候来？","我是不是该吃药了？","我的降压药放在哪里？"],
-  ansVisit:"{nick}周六下午来看你。她一直记着呢，你不用担心。",
+  ansVisit:"{nick}周六下午来看你。{nick}一直记着呢，你不用担心。",
   ansPill:"{nick}今天特意说了，降压药要吃完，别落下。",
   ansUnknown:"这个我先帮你问问{nick}，等她回话我马上告诉你。",
   ansNoConfirm:"这条{nick}还没有确认，我去问问{nick}。",
-  ansFromFact:"{text}。她一直记着呢，你不用担心。",
+  ansFromFact:"{text}。家人一直记着呢，你不用担心。",
   ansPlain:"{text}",
   ansFromTodo:"{text}。别落下。",
   guide:[{lm:"红色健身器材",cls:"",copy:"向前走，看到红色健身器材就停下。"},
@@ -1045,15 +1094,20 @@ zh:{
 },
 en:{
   appName:"Remember Us", appSub:"A two-sided companion for Alzheimer's care",
-  langBtn:"中文", resetBtn:"Reset demo", exitBtn:"Switch role",
+  langBtn:"中文", resetBtn:"Reset demo", exitBtn:"Switch role", compareBtn:"Compare both sides",
   syncConnecting:"Connecting securely", syncLoading:"Loading family", syncSaving:"Saving changes",
   syncOffline:"Offline — changes are not synced", syncError:"Connection failed. Please retry.", syncConflict:"Family data changed. Please try again.",
   syncSynced:"Synced", syncRetry:"Retry",
+  collabAnswerKept:"Another family member answered first. The first confirmed answer was kept.",
+  collabItemHandled:"This item was already handled by another family member on another device.",
+  collabFieldKept:"Another device changed this field first. The first synced version was kept.",
+  collabCallBusy:"A family call is already in progress.",
+  photoSaved:"Photo saved. It stays visible throughout the elder's call.", photoFailed:"This photo could not be read. Please choose another image.",
   labelFamily:"Family side", labelElder:"Elder side", labelEntry:"Remember Us",
 
   hintEntry:"To present: split the screen and open this page in two windows. Pick the family side in one, the elder side in the other, and link them with the family code. For a local map demo, add ?localDemo=1 and add &localElder=1 on the elder window.",
   hintFamily:"This is the family member's phone. Edit any field and the elder side updates at once.",
-  hintElder:"This is the elder's phone. She never operates it; the screen wakes up when she needs help.",
+  hintElder:"This is the elder's phone. The elder does not need to operate it; the screen wakes up when help is needed.",
 
   entryTitle:"Who is using this phone?", entrySub:"Different person, different interface.",
   stepsTitle:"Three steps to link",
@@ -1066,11 +1120,24 @@ en:{
   fsJoinT:"Join family", fsJoinD:"Enter the six-digit code",
 
   obElderTitle:"About the elder", obElderSub:"Add the basics now. You can change them any time.",
-  fName:"Name", fAddr:"Home address", fRange:"Safe range",
+  fName:"Name", fPronouns:"How should we refer to them?", pronounAuto:"Use the name automatically", pronounShe:"She / her", pronounHe:"He / him", pronounThey:"They / them",
+  fAddr:"Home address", fRange:"Safe range",
   fElderPhone:"Elder's phone number", elderPhoneHint:"A fallback number family can call if the in-app call fails.",
   fHome:"Where home is", homeHint:"Tap the map, or drag the pin onto the elder's home.",
   mapTipPick:"Tap or drag the pin", mapTipLive:"Live location",
   mapFallback:"Map unavailable, showing a schematic instead",
+  mapUseGps:"Use this device's location", mapMissing:"Home location is not set, so distance cannot be checked yet.",
+  mapPickHint:"Tap the map or drag the pin to set home.", mapReady:"Home location is set",
+  mapGeocodeFailed:"The home address could not be located. Check the address or Maps API setup.",
+  mapGeocoding:"Locating the home address…",
+  routeLoading:"Loading the walking route…",
+  routeStraight:"Walk straight along {road} for about {distance}. Stop when you see {landmark}.",
+  routeTurn:"{turn} near {landmark}, then walk along {road} for about {distance}.",
+  routeDestination:"Continue along {road} to the home address, about {distance}.",
+  routeRoad:"the current road", routeIntersection:"the next junction", routeFailed:"The walking route could not load. Try again or contact family.",
+  gpsStarting:"Requesting location permission…", gpsReady:"Location is on", gpsDenied:"Location permission is off. Allow it in the browser settings.", gpsFailed:"Location is unavailable. Demo movement is still available.",
+  riskDistance:"About {n} m from home", riskLeaving:"You are getting far from home. Let's go home together.", riskFamily:"The elder may have left the safe area.",
+  voiceAsk:"Hold to speak", voiceStop:"Stop and transcribe", voiceRecord:"Record this call",
   rangeHint:"If the elder leaves this range and keeps moving away, the system offers help first, then tells the family. The range is centred on home.",
   rangeMin:"200 m", rangeMax:"2000 m", rangeUnit:"m",
   obMeTitle:"About you", obMeSub:"The elder sees this when you call, helping them recognise you.",
@@ -1092,66 +1159,68 @@ en:{
   useIt:"Open",
   next:"Next", back:"Back", done:"Done", start:"Start",
   goFamily:"Go to the family side", goElder:"Go to the elder side",
-  pairedT:"Paired", pairedD:"Now hand the phone to her. She never has to open anything; the screen wakes up when she needs help.",
+  pairedT:"Paired", pairedD:"Now hand over the phone. Nothing else needs to be opened; the screen wakes up when help is needed.",
 
   tabs:["Home","Alerts","Reminders","Mine"],
-  greet:"Hello", greetSub:"How {elder} is doing today",
-  stHome:"At home, all normal", stOut:"Outside her range", stGuide:"Heading home · step {n}",
+  greet:"Today", greetSub:"How is {elder} doing today?",
+  stHome:"At home, all normal", stOut:"Outside the safe range", stGuide:"Heading home · step {n}",
   stArrived:"Back home", stRing:"Calling", stTalk:"On a call",
   tileToday:"Today", tileTodayV:"Calm day", tileAlert:"Alerts", tileAlertV:"None",
   tileAlertOn:"1 in progress", tileAlertDone:"Cleared",
   meIs:"In this family you are",
-  mapNote:"Reported by her phone. Read-only here.",
+  mapNote:"Reported by the elder's phone. Read-only here.", locationT:"Current location", locationNormal:"Currently inside the safe range",
   mapDist:"{n} m from home", mapHome:"Home",
-  callBtn:"Call {elder}",
-  ringT:"Calling {elder}", ringD:"Once she answers, your card is on her screen.",
+  callBtn:"Call {elder}", callPhone:"Call phone", callInApp:"Test in app",
+  ringT:"Calling {elder}", ringD:"Once answered, your profile card appears on the elder's screen.",
+  inRingT:"{elder} is calling", inRingD:"Answer to show your profile card.",
+  fAnswer:"Answer", fDecline:"Decline",
   talkT:"On a call", talkD:"After you hang up, the call becomes items for you to confirm.",
   hangup:"Hang up",
-  notPaired:"The elder's phone is not paired", notPairedD:"Open this page on her phone and pair with code {code}.",
+  notPaired:"The elder's phone is not paired", notPairedD:"Open this page on the elder's phone and pair with code {code}.",
 
-  cfT:"Call ended, please confirm", cfD:"Two items came out of this call. She can only be answered with what you confirm.",
+  cfT:"Call ended, please confirm", cfD:"{n} items came from this call. Only confirmed information can be used later.",
   tFact:"Fact", tTodo:"Reminder",
-  factVisit:"{nick} is visiting {elder} on Saturday afternoon", factPill:"Remind {elder} to finish her blood pressure pills",
+  factVisit:"{nick} is visiting {elder} on Saturday afternoon", factPill:"Remind {elder} to take the blood pressure medicine",
   aOk:"Confirm", aEdit:"Edit", aSkip:"Ignore", aCancel:"Cancel", aSave:"Save",
   okLine:"Confirmed and saved to memory", skipLine:"Ignored, will not be used",
 
   todayT:"Today", todaySub:"Calm day",
   tlMorning:"Normal morning activity",
   tlTodo:"Finished one reminder",
-  tlCall:"Call with {nick}, 2 items captured",
-  tlQa:"Asked when her {rel} is visiting {n} times",
+  tlCall:"Call with {nick}, {n} items captured", todayEmpty:"No new activity yet today.",
+  tlQa:"Asked when {rel} is visiting {n} times",
   tlUnknown:"Asked something that is not in memory",
-  tlGuide:"Left her range, home guidance started",
+  tlGuide:"Left the safe range, home guidance started",
   tlHome:"Back home, guidance finished",
 
-  alertT:"Alerts", alertNone:"No alerts", alertNoneD:"{elder} is inside her range. Everything is normal.",
+  alertT:"Alerts", alertNone:"No alerts", alertNoneD:"{elder} is inside the safe range. Everything is normal.",
   alertOnT:"Helping {elder} get home",
-  dWhy:"Why it fired", dWhyV:"She went past her range and kept moving away. Voice guidance has started.",
+  dWhy:"Why it fired", dWhyV:"The elder moved beyond the safe range and kept moving away. Voice guidance has started.",
   dWhere:"Current location", dProg:"Guidance progress", dProgV:"Step {n} of {total}",
   alertDoneT:"{elder} is home", dDoneV:"The step-by-step guidance completed without interruption.",
 
-  peopleT:"Family", peopleSub:"These people show up on her incoming-call card",
+  peopleT:"Family", peopleSub:"These people appear on the elder's incoming-call card",
   addPerson:"Add another relative", editPerson:"Edit details", meTag:"You",
-  pendingT:"Needs your input", pendingD:"{elder} asked these and they are not in memory. Write an answer and she'll hear it next time.",
+  pendingT:"Needs your input", pendingD:"{elder} asked these and they are not in memory. Write an answer to make it available next time.",
   pendingOk:"Leave them for now", pendingTimes:"asked {n} times",
   aiTab:"Assistant",
-  chatT:"Add to memory", chatD:"Tell me about {elder} and I'll file it into her memory.",
-  chatPh:"Tell me something about her", chatSend:"Send",
+  chatT:"Add to memory", chatD:"Tell me about {elder} and I'll file it into the shared memory.",
+  chatPh:"Tell me something about the elder", chatSend:"Send", chatVoice:"Voice input", chatListening:"Listening — speak naturally…", chatVoiceFailed:"I didn't catch that. Please try again.",
   chatSeed:"{elder} asked \"{q}\" and it is not in memory. Do you know the answer?",
   chatThinking:"Sorting it out…",
   chatFailed:"That didn't go through. Try saying it again.",
   chatSaved:"Saved to memory", chatSave:"Save to memory", chatDrop:"Not this one",
-  chatTips:["What she's been up to","Something she needs to do today","Someone she knows"],
+  chatTips:["What the elder has been doing","Something to do today","Someone the elder knows"],
   pendingToChat:"Use the assistant",
   pendingPh:"Type the answer", pendingSave:"Save", pendingSkip:"Skip",
-  pendingHint:"Once saved, she'll hear your answer the next time she asks.",
-  tlAnswered:"Answered something she had asked",
-  familyCodeT:"Family code", familyCodeD:"Share it with relatives or use it to pair her phone",
+  pendingHint:"Once saved, the answer is available the next time it is asked.",
+  tlAnswered:"Answered an earlier question",
+  familyCodeT:"Family code", familyCodeD:"Share it with relatives or use it to pair the elder's phone",
   settingsT:"Settings", langRow:"Language", langRowV:"English",
   logoutT:"Log out", logoutD:"Go back to the role picker. You will need the family code to sign in again.",
   logoutAsk:"Go back to the role picker? You will need the family code to sign in again.",
   logoutElder:"Log out", logoutElderD:"Go back to the role picker. You will need the family code to sign in again.",
-  mapWaiting:"Waiting for her phone to report its location", mapDenied:"Her phone has not allowed location yet",
+  mapWaiting:"Waiting for the elder's phone to report its location", mapDenied:"Location permission has not been granted on the elder's phone",
 
   eGreet:"Hello", eGreetD:"Press the button below whenever you need me.",
   eTalk:"Talk", eBack:"Never mind",
@@ -1162,15 +1231,15 @@ en:{
   dayEmpty:"Nothing planned for this day.",
   repeatT:"Repeat every day", repeatD:"From this day on, it appears every day",
   todoNew:"New reminder",
-  alertPopT:"She has left the safe range", alertPopClose:"Got it",
+  alertPopT:"The elder has left the safe range", alertPopClose:"Got it",
   alertBarOn:"Helping {elder} get home", alertBarOnD:"Tap for details",
   alertBarOk:"{elder} is home", alertBarOkD:"Clear it once you've seen it",
   alertClear:"Clear",
-  todosT:"Today's reminders", todosD:"Confirmed reminders show on her home screen. You'll see when she's done.",
+  todosT:"Today's reminders", todosD:"Only saved reminders appear on the elder's home screen. Completion checks the original reminder here.",
   fWhen:"Time", fWhere:"Place", fWhat:"What",
   phWhen:"e.g. 10 am", phWhere:"e.g. at home", phWhat:"e.g. take the pills",
-  todoAdd:"Add a reminder", todoEmpty:"No reminders today.",
-  todoWaiting:"Waiting for her", todoDoneBy:"She's done it", todoDel:"Delete",
+  todoAdd:"Add a reminder", todoEmpty:"No reminders today.", todoSave:"Save reminder", todoCancel:"Cancel", todoNeedWhat:"Add what needs to be done before saving.",
+  todoWaiting:"Waiting", todoDoneBy:"Completed", todoDel:"Delete",
   speakListening:"Listening…", speakStop:"I'm done",
   speakHeard:"Here's what I heard. Edit it freely.",
   speakUse:"Use this", speakAgain:"Say it again",
@@ -1186,7 +1255,7 @@ en:{
   eWeekdays:["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"],
   eMorning:"Morning", eAfternoon:"Afternoon", eEvening:"Evening",
   eDateFmt:"{m}/{d}",
-  eWeatherT:"Weather today",
+  eWeatherT:"Weather today", eWeatherLive:"Live weather", eWeatherLoading:"Getting live weather…", eWeatherMissing:"Set the home location or allow location access to see live weather.", eWeatherFailed:"Weather is temporarily unavailable.", eWeatherRetry:"Retry",
   eWeather:{clear:"Clear",cloud:"Cloudy",overcast:"Overcast",fog:"Foggy",rain:"Rain",shower:"Showers",snow:"Snow",storm:"Thunderstorm"},
   eTipCold:"It's cold. Wear a warm coat if you go out.", eTipCool:"A bit chilly. Take a jacket.",
   eTipMild:"Mild today. A light jacket is enough.", eTipWarm:"Warm today. Dress light.",
@@ -1213,18 +1282,18 @@ en:{
   eHomeT:"You're home", eHomeD:"{nick} has been told you got home safely.", eGot:"Got it",
 
   devT:"Demo control", devOpen:"Open", devClose:"Close",
-  devD:"Demo only. In the real app this device reports its own GPS position; nobody touches this.",
+  devD:"Demo only. These controls update both sides together; production location comes from GPS.",
   devWalk:"Simulate going out", devHome:"Back home", devDist:"{n} m from home",
 
-  callLines:[["her","Mom, it's me, {nick}."],["me","Oh, {nick}."],
+  callLines:[["her","{elder}, it's me, {nick}."],["me","Oh, {nick}."],
              ["her","I'm coming to see you Saturday afternoon. Wait for me at home."],["me","Saturday. Alright, alright."],
              ["her","And finish your blood pressure pills, don't skip them."],["me","I know, I know."]],
   asks:["When is {nick} coming?","Should I be taking my medicine?","Where are my blood pressure pills?"],
-  ansVisit:"{nick} is coming Saturday afternoon. She remembers. You don't need to worry.",
+  ansVisit:"{nick} is coming Saturday afternoon. {nick} remembers. You don't need to worry.",
   ansPill:"{nick} said today that your blood pressure pills should be finished, don't skip them.",
-  ansUnknown:"Let me ask {nick} about that. I'll tell you as soon as she answers.",
+  ansUnknown:"Let me ask {nick} about that. I'll tell you as soon as {nick} answers.",
   ansNoConfirm:"{nick} hasn't confirmed that yet. I'll ask {nick}.",
-  ansFromFact:"{text}. She remembers, you don't need to worry.",
+  ansFromFact:"{text}. Your family remembers, so you don't need to worry.",
   ansPlain:"{text}",
   ansFromTodo:"{text}. Don't skip it.",
   guide:[{lm:"Red exercise bars",cls:"",copy:"Walk straight ahead. Stop when you see the red exercise bars."},
@@ -1239,11 +1308,21 @@ en:{
       family payload 只保存在 Supabase；浏览器仅记住所选家庭和设备身份。
    ===================================================================== */
 var SROLE="alz:device-role", SCODE="alz:device-code", SME="alz:device-member";
+var QUERY_SEARCH=typeof window!=="undefined" && window.location ? String(window.location.search||"") : "";
+function queryValue(name){
+  var match=QUERY_SEARCH.match(new RegExp("(?:^|[?&])"+name.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")+"=([^&]*)"));
+  if(!match) return "";
+  try{ return decodeURIComponent(match[1].replace(/\+/g," ")); }catch(_error){ return match[1]; }
+}
+var EMBED_ROLE=/^(family|elder)$/.test(queryValue("dualRole"))?queryValue("dualRole"):"";
+var EMBED_CODE=/^\d{6}$/.test(queryValue("code"))?queryValue("code"):"";
+var EMBEDDED=queryValue("embedded")==="1";
 
 function sessionGet(key){
   try{ return sessionStorage.getItem(key); }catch(_error){ return null; }
 }
 function rememberDevice(role,code,memberId){
+  if(EMBED_ROLE) return;
   try{
     var previousCode=sessionStorage.getItem(SCODE);
     sessionStorage.setItem(SROLE,role); sessionStorage.setItem(SCODE,code);
@@ -1280,24 +1359,29 @@ function asLL(p, base){
 function offsetLL(base, eastM, northM){
   return { lat: base.lat + northM/111320, lng: base.lng + eastM/metersPerDegLng(base.lat) };
 }
-function homeOf(s){ return asLL(s && s.elder ? s.elder.home : null); }
+function homeOf(s){
+  var canonical=s&&s.home&&Number.isFinite(Number(s.home.lat))&&Number.isFinite(Number(s.home.lng))
+    ? s.home : (s&&s.elder?s.elder.home:null);
+  return asLL(canonical);
+}
 function locOf(s){ return asLL(s ? s.loc : null, homeOf(s)); }
 
 function newFamily(code, lang){
   return {
     code:code, lang:lang, rev:0,
     setup:false, paired:false,
-    elder:{ name:"", phone:"", address:"",
+    elder:{ name:"", pronouns:"auto", phone:"", address:"",
             home:{ lat:HOME_LL.lat, lng:HOME_LL.lng }, radius:"800" },
+    home:{ lat:HOME_LL.lat, lng:HOME_LL.lng, label:"", radiusM:800 },
     people:[],
     facts:[], pending:[],
-    timeline:[{t:"09:10", kind:"morning"}],
+    timeline:[],
     call:{ phase:"idle", personId:null, line:-1, transcript:"" },
     lastCaller:null,
     thread:[], askCounts:{},
     loc:{ lat:HOME_LL.lat, lng:HOME_LL.lng },
     guide:{ active:false, step:0, done:false },
-    alertCleared:false, locReported:false, homeSet:false
+    alertCleared:false, locReported:false, homeSet:false, timezone:""
   };
 }
 
@@ -1344,7 +1428,7 @@ function protectedActionSelector(){
   return '[data-f],[data-range],[data-ask],[data-voice-hold],[data-item-do],[data-item-edit],[data-item-skip],[data-item-save],[data-item-cancel],'
     +'[data-go="create"],[data-go="pair"],[data-go="finishSetup"],[data-go="fillElderSample"],[data-go="fillPersonSample"],[data-go="clearPending"],'
     +'[data-go="call"],[data-go="answer"],[data-go="decline"],[data-go="hangup"],[data-go="arrived"],'
-    +'[data-go="ackHome"],[data-go="walk"],[data-go="goHome"],[data-go="reset"],[data-go="speak"],[data-go="voiceAsk"],[data-go="callRecord"]';
+    +'[data-go="ackHome"],[data-go="walk"],[data-go="goHome"],[data-go="reset"],[data-go="speak"],[data-go="chatVoice"],[data-go="voiceAsk"],[data-go="callRecord"]';
 }
 function syncActionAvailability(){
   var busy=Connection.pendingAction || Connection.state==="connecting" || Connection.state==="loading";
@@ -1373,7 +1457,7 @@ function setConnectionStatus(state,message,useMessage){
 }
 /* 这台设备当前选择的角色优先。数据库里的成员角色只在没有本地记录时兜底，
    因为 join_family 对已存在的成员不会改角色，同一设备换身份时会拿到旧值。 */
-function storeRole(){ return sessionGet(SROLE) || (Store&&Store.role?Store.role():null); }
+function storeRole(){ return EMBED_ROLE || sessionGet(SROLE) || (Store&&Store.role?Store.role():null); }
 function reportStoreError(error){
   var copy=D||I18N[lang]||I18N.zh;
   if(error&&error.code==="REVISION_CONFLICT") setConnectionStatus("error",copy.syncConflict,true);
@@ -1387,7 +1471,10 @@ function persistUpdate(mutator){
   });
 }
 function queueUpdate(mutator, onError){
-  void persistUpdate(mutator).catch(function(error){
+  var onDone=arguments.length>2?arguments[2]:null;
+  void persistUpdate(mutator).then(function(state){
+    if(typeof onDone==="function") onDone(state);
+  }).catch(function(error){
     if(typeof onError==="function") onError(error);
   });
 }
@@ -1423,10 +1510,11 @@ try{
 function el(id){ return document.getElementById(id); }
 function fill(s,o){ return String(s).replace(/\{(\w+)\}/g,function(_,k){ return o[k]!==undefined?o[k]:"{"+k+"}"; }); }
 function avatarHTML(p, cls, extra){
-  var c="avatar "+(cls||"");
+  var c="avatar "+(cls||""), name=p&&p.nick?String(p.nick):"";
+  var accessible=' role="img" aria-label="'+esc(name||"Family member")+'"';
   if(p && p.photo) return '<span class="'+c+' photo" style="background-image:url('+p.photo+')"'
-    + (extra||"") + '></span>';
-  return '<span class="'+c+'"'+(extra||"")+'>'+esc(initial(p?p.nick:""))+'</span>';
+    + accessible + (extra||"") + '></span>';
+  return '<span class="'+c+'"'+accessible+(extra||"")+'>'+esc(initial(name))+'</span>';
 }
 function initial(n){
   n=(n||"").trim(); if(!n) return "?";
@@ -1434,21 +1522,39 @@ function initial(n){
 }
 function focusPerson(s){
   if(!s || !s.people.length) return {nick:"",relation:"",recent:"",hint:""};
+  var callPerson=s.call&&s.call.personId;
+  if(callPerson){
+    for(var c=0;c<s.people.length;c++) if(s.people[c].id===callPerson) return s.people[c];
+  }
   if(s.lastCaller){
     for(var i=0;i<s.people.length;i++) if(s.people[i].id===s.lastCaller) return s.people[i];
   }
   return s.people[0];
 }
+function elderGrammar(s){
+  s=s||St||{};
+  var elder=s.elder||{}, choice=String(elder.pronouns||"auto").toLowerCase();
+  if(choice==="auto"){
+    var name=String(elder.name||"").toLowerCase();
+    if(/(?:^|\b)(dad|father|papa|grandpa|grandfather|husband)(?:\b|$)|爸爸|父亲|老爸|爷爷|外公/.test(name)) choice="he";
+    else if(/(?:^|\b)(mom|mum|mother|mama|grandma|grandmother|wife)(?:\b|$)|妈妈|母亲|老妈|奶奶|外婆/.test(name)) choice="she";
+    else choice="they";
+  }
+  if(choice==="he") return {subject:"he",object:"him",possessive:"his",reflexive:"himself"};
+  if(choice==="she") return {subject:"she",object:"her",possessive:"her",reflexive:"herself"};
+  return {subject:"they",object:"them",possessive:"their",reflexive:"themself"};
+}
 function tp(str, s){
   str=String(str);
-  if(str.indexOf("{")<0) return str;
   s=s||St;
   if(!s) return str;
   var p=focusPerson(s);
-  return str.replace(/\{(nick|elder|rel|code)\}/g, function(_,k){
+  var grammar=elderGrammar(s);
+  return str.replace(/\{(nick|elder|rel|code|subject|object|possessive|reflexive)\}/g, function(_,k){
     if(k==="nick") return p.nick||"";
     if(k==="elder") return s.elder.name||"";
     if(k==="rel") return p.relation||"";
+    if(grammar[k]) return grammar[k];
     return s.code||"";
   });
 }
@@ -1456,9 +1562,10 @@ function esc(v,s){
   return tp(v,s).replace(/[&<>"]/g,function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]; });
 }
 function homePoint(s){
-  if(!s||!s.home) return null;
-  if(typeof s.home.lat!=="number" || typeof s.home.lng!=="number") return null;
-  var lat=s.home.lat,lng=s.home.lng;
+  if(!s) return null;
+  var source=s.home||(s.elder&&s.elder.home);
+  if(!source || !Number.isFinite(Number(source.lat)) || !Number.isFinite(Number(source.lng))) return null;
+  var lat=Number(source.lat),lng=Number(source.lng);
   return Number.isFinite(lat)&&Number.isFinite(lng)?{lat:lat,lng:lng}:null;
 }
 function currentPoint(s){
@@ -1468,13 +1575,45 @@ function currentPoint(s){
   return Number.isFinite(lat)&&Number.isFinite(lng)?{lat:lat,lng:lng}:null;
 }
 function distOf(s){
-  var live=homePoint(s)&&currentPoint(s)&&window.Navigation ? window.Navigation.distanceMeters(currentPoint(s),homePoint(s)) : null;
-  if(live!==null) return live;
-  var dx=s.loc.x-HOME.x, dy=s.loc.y-HOME.y; return Math.round(Math.sqrt(dx*dx+dy*dy)*MPP);
+  var home=homePoint(s), current=currentPoint(s), live=null;
+  if(home&&current) live=window.Navigation ? window.Navigation.distanceMeters(current,home) : haversine(current,home);
+  if(live!==null && Number.isFinite(live)) return Math.round(live);
+  var x=Number(s&&s.loc&&s.loc.x), y=Number(s&&s.loc&&s.loc.y);
+  if(Number.isFinite(x)&&Number.isFinite(y)){
+    var dx=x-HOME.x, dy=y-HOME.y; return Math.round(Math.sqrt(dx*dx+dy*dy)*MPP);
+  }
+  return 0;
 }
-function rangeM(s){ return s && s.home && Number.isFinite(Number(s.home.radiusM)) ? Number(s.home.radiusM) : parseInt(s.elder.radius,10); }
+function rangeM(s){
+  var radius=s&&s.home&&Number(s.home.radiusM);
+  if(!Number.isFinite(radius)) radius=Number(s&&s.elder&&s.elder.radius);
+  return Number.isFinite(radius)&&radius>0?radius:800;
+}
 function isOut(s){ return distOf(s)>rangeM(s); }
-function clockNow(){ var d=new Date(); return d.getHours()+":"+("0"+d.getMinutes()).slice(-2); }
+function elderNowParts(date){
+  var now=date||new Date(), zone=(Weather&&Weather.data&&Weather.data.timezone)||(St&&St.timezone)||"";
+  try{
+    var parts=new Intl.DateTimeFormat("en-CA",{
+      timeZone:zone||undefined, year:"numeric",month:"2-digit",day:"2-digit",
+      weekday:"short",hour:"2-digit",minute:"2-digit",hourCycle:"h23"
+    }).formatToParts(now), out={};
+    for(var i=0;i<parts.length;i++) if(parts[i].type!=="literal") out[parts[i].type]=parts[i].value;
+    var y=Number(out.year),m=Number(out.month),d=Number(out.day);
+    return {year:y,month:m,day:d,week:new Date(Date.UTC(y,m-1,d)).getUTCDay(),hour:Number(out.hour),minute:Number(out.minute)};
+  }catch(_error){
+    return {year:now.getFullYear(),month:now.getMonth()+1,day:now.getDate(),week:now.getDay(),hour:now.getHours(),minute:now.getMinutes()};
+  }
+}
+function clockNow(){ var p=elderNowParts(); return (p.hour<10?"0":"")+p.hour+":"+(p.minute<10?"0":"")+p.minute; }
+function patchLiveTime(){
+  var clock=el("clock"); if(clock) clock.textContent=clockNow();
+  var title=el("elderDateTitle"), homeClock=el("elderHomeClock");
+  if(title||homeClock){
+    var parts=dayParts();
+    if(title) title.textContent=parts.date+" "+parts.week;
+    if(homeClock) homeClock.textContent=parts.part+" · "+clockNow();
+  }
+}
 function waveEl(cls){ var h='<span class="wave '+(cls||"")+'">'; for(var i=0;i<7;i++) h+='<i style="animation-delay:'+(i*.09)+'s"></i>'; return h+'</span>'; }
 function voiceStatusHTML(){
   if(App.voiceError) return '<p class="voice-error">'+esc(App.voiceError)+'</p>';
@@ -1497,6 +1636,9 @@ function setHomePoint(point, options){
       St.home.lat=Number(point.lat); St.home.lng=Number(point.lng);
       St.home.label=St.elder&&St.elder.address?St.elder.address:St.home.label||"";
       St.home.radiusM=parseInt(St.elder&&St.elder.radius,10)||800;
+      St.elder=St.elder||{};
+      St.elder.home={lat:Number(point.lat),lng:Number(point.lng)};
+      St.homeSet=true;
     }
     return Promise.resolve(point);
   }
@@ -1505,6 +1647,9 @@ function setHomePoint(point, options){
     s.home.lat=Number(point.lat); s.home.lng=Number(point.lng);
     s.home.label=s.elder.address||s.home.label||"";
     s.home.radiusM=parseInt(s.elder.radius,10)||800;
+    s.elder.home={lat:Number(point.lat),lng:Number(point.lng)};
+    s.homeSet=true;
+    if(!s.locReported && !s.guide.active && !s.guide.done) s.loc={lat:Number(point.lat),lng:Number(point.lng),source:"home"};
   }).then(function(){ return point; });
 }
 // demo 模式下各地址对应的模拟坐标（无 Maps API Key 时兜底使用）
@@ -1522,31 +1667,20 @@ function demoBestGuessPoint(address){
       return {lat:DEMO_GEOCODE_TABLE[i].lat, lng:DEMO_GEOCODE_TABLE[i].lng};
     }
   }
-  // 无法匹配时给一个新加坡市中心作默认值
-  return {lat:1.3521, lng:103.8198};
+  return null;
 }
 function ensureHomePointFromAddress(){
   var address=St&&St.elder&&St.elder.address?String(St.elder.address).trim():"";
-  var seedAddress=(SEED[St&&St.lang]||SEED.zh).address;
-  var legacyAddresses=["广州市天河区兴华路 12 号 3 栋","12 Xinghua Rd, Building 3, Guangzhou"];
-  if((!address || legacyAddresses.indexOf(address)>=0) && St){
-    address=seedAddress;
-    queueUpdate(function(s){
-      s.elder=s.elder||{};
-      s.elder.address=address;
-    });
-  }
   var home=homePoint(St), homeLabel=St&&St.home&&St.home.label?String(St.home.label).trim():"";
-  var isDefaultAddress=address===seedAddress;
-  if(home && homeLabel===address && (!isDefaultAddress || App.homeGeocodeResolvedAddress===address)) return Promise.resolve(home);
-  if(home && (homeLabel!==address || isDefaultAddress)){
+  if(!address) return Promise.resolve(home);
+  if(home && homeLabel===address) return Promise.resolve(home);
+  if(home && homeLabel!==address){
     queueUpdate(function(s){
       s.home=s.home||{};
       s.home.lat=null; s.home.lng=null; s.home.label=address;
     });
     home=null;
   }
-  if(!address) return Promise.resolve(null);
   // Maps JS API 不可用（无 key、加载失败、或 API 未启用）：仅本地 demo 模式走模拟坐标
   if(!window.Navigation || typeof window.Navigation.geocodeAddress!=="function" ||
      !(window.MAPS_CONFIG&&window.MAPS_CONFIG.key)){
@@ -1618,7 +1752,7 @@ function initHomeMap(){
   });
   // 还没有真实坐标时，用 demo 坐标也可以先渲染地图
   var center=homePoint(St)||(LOCAL_DEMO?demoBestGuessPoint((St&&St.elder&&St.elder.address)||"")||null:null)||{lat:1.2931,lng:103.7758};
-  window.Navigation.createMap(node,{center:center,homeTitle:D.mapHome,currentTitle:D.gpsReady,onHomeSelect:setHomePoint})
+  window.Navigation.createMap(node,{center:center,homeTitle:D.mapHome,currentTitle:D.gpsReady,radius:rangeM(St),onHomeSelect:setHomePoint})
     .then(function(controller){
       if(App.homeMapElement!==node) return;
       App.homeMapController=controller;
@@ -1857,6 +1991,7 @@ function applyGpsPosition(position){
     s.loc.lat=point.lat; s.loc.lng=point.lng;
     s.loc.accuracy=Math.round(Number(position.coords.accuracy)||0);
     s.loc.updatedAt=new Date().toISOString(); s.loc.source="gps"; s.loc.status="ready";
+    s.locReported=true;
     if(!home) return;
     var distance=window.Navigation.distanceMeters(point,home);
     s.risk=s.risk||{}; s.risk.distanceM=distance; s.risk.reason="";
@@ -1867,11 +2002,12 @@ function applyGpsPosition(position){
       s.risk.reason="outside_safe_radius";
       if(oldRisk==="safe"||oldRisk==="returned"){
         s.risk.triggeredAt=new Date().toISOString(); speak=true;
+        s.alertCleared=false;
         App.guideRouteRequested=false;
         App.guideRouteStatus="idle"; App.guideRouteError="";
         s.guide.active=true; s.guide.done=false; s.guide.step=0;
-        var seen=false; for(var i=0;i<s.timeline.length;i++) if(s.timeline[i].kind==="guide") seen=true;
-        if(!seen) s.timeline.push({t:clockNow(),kind:"guide"});
+        var seen=false; for(var i=0;i<s.timeline.length;i++) if(s.timeline[i].kind==="guide"&&s.timeline[i].active) seen=true;
+        if(!seen) s.timeline.push({t:clockNow(),date:todayKey(),kind:"guide",active:true});
       }
     } else if(s.guide.active && distance<=50){
       s.risk.outsideCount=0;
@@ -2060,6 +2196,9 @@ function syncMap(kind){
 function commitHome(lat,lng){
   queueUpdate(function(s){
     s.elder.home={lat:lat, lng:lng};
+    s.home=s.home||{};
+    s.home.lat=lat; s.home.lng=lng; s.home.label=s.elder.address||s.home.label||"";
+    s.home.radiusM=parseInt(s.elder.radius,10)||800;
     s.homeSet=true;
     if(!s.locReported && !s.guide.active && !s.guide.done) s.loc={lat:lat, lng:lng};
   });
@@ -2077,7 +2216,7 @@ function seedHomeFromDevice(){
 }
 
 /* =====================================================================
-   3c. 天气：Open-Meteo 公开接口，不需要 key。取不到就不显示这一块。
+   3c. 天气：Open-Meteo 公开接口，不需要 key。优先使用老人当前位置，并展示明确的加载/失败状态。
    ===================================================================== */
 var Weather={ state:"idle", data:null, at:0, key:"" };
 
@@ -2102,24 +2241,28 @@ function weatherTip(temp, bucket){
   if(temp<=26) return D.eTipMild;
   return D.eTipWarm;
 }
-function ensureWeather(){
+function ensureWeather(force){
   if(!St) return;
-  var home=homeOf(St);
-  var key=home.lat.toFixed(3)+","+home.lng.toFixed(3);
+  if(!St.homeSet&&!St.locReported){ Weather.state="missing"; Weather.data=null; return; }
+  var point=St.locReported?locOf(St):homeOf(St);
+  var key=point.lat.toFixed(3)+","+point.lng.toFixed(3);
   var fresh = Weather.data && Weather.key===key && (Date.now()-Weather.at) < 30*60*1000;
-  if(fresh || Weather.state==="loading") return;
+  if(!force && (fresh || Weather.state==="loading")) return;
+  if(!force && Weather.state==="failed" && Weather.key===key) return;
+  if(Weather.key!==key) Weather.data=null;
   Weather.state="loading"; Weather.key=key;
-  var url="https://api.open-meteo.com/v1/forecast?latitude="+home.lat.toFixed(4)
-        + "&longitude="+home.lng.toFixed(4)
+  var url="https://api.open-meteo.com/v1/forecast?latitude="+point.lat.toFixed(4)
+        + "&longitude="+point.lng.toFixed(4)
         + "&current=temperature_2m,weather_code&timezone=auto";
-  fetch(url).then(function(r){ return r.ok ? r.json() : null; }).then(function(j){
+  return fetch(url).then(function(r){ return r.ok ? r.json() : null; }).then(function(j){
     var cur = j && j.current;
     if(cur && typeof cur.temperature_2m==="number"){
-      Weather.data={ temp:Math.round(cur.temperature_2m), bucket:weatherBucket(cur.weather_code) };
+      Weather.data={ temp:Math.round(cur.temperature_2m), bucket:weatherBucket(cur.weather_code), timezone:j.timezone||"" };
       Weather.at=Date.now(); Weather.state="ready";
+      if(j.timezone&&St.timezone!==j.timezone) queueUpdate(function(s){ s.timezone=j.timezone; });
       if(App.route==="elder") render(St);
-    } else { Weather.state="failed"; }
-  }).catch(function(){ Weather.state="failed"; });
+    } else { Weather.data=null; Weather.state="failed"; if(App.route==="elder") render(St); }
+  }).catch(function(){ Weather.data=null; Weather.state="failed"; if(App.route==="elder") render(St); });
 }
 
 /* 读给我听：浏览器自带语音，慢一点，读不了就静默 */
@@ -2226,7 +2369,7 @@ function startGeo(){
       s.loc=next; s.locReported=true; s.locAt=now;
       if(!s.guide.active && !s.guide.done && distOf(s) > rangeM(s)){
         s.guide.active=true; s.guide.step=0; s.alertCleared=false;
-        s.timeline.push({ t:clockNow(), kind:"guide" });
+        s.timeline.push({ t:clockNow(), date:todayKey(), kind:"guide" });
       }
     });
   }, function(){
@@ -2252,8 +2395,11 @@ var App = {
   callNeedsPlay:false,
   qa:false, pick:false, eset:false,
   cal:{ ym:"", sel:"", open:null },
+  todoErrors:{},
   alertOpen:false, alertSeen:"", sumAll:false, pendDraft:{},
-  chat:{ open:false, msgs:[], draft:"", busy:false, seedPend:null },
+  notice:"", noticeTimer:null,
+  dev:false, demoLocation:false,
+  chat:{ open:false, msgs:[], draft:"", busy:false, seedPend:null, voiceActive:false, voiceError:"" },
   editingPerson:null,  // 正在编辑的人物 id，null 表示列表
   addingPerson:false,
   voiceBusy:false,
@@ -2282,6 +2428,19 @@ var App = {
 var St=null, D=null, lang="en", langTouched=false;
 var DEMO_CODE="527487";
 var subTimer=null, speakTimer=null, typing=false;
+
+function showNotice(message){
+  App.notice=String(message||"");
+  if(App.noticeTimer) clearTimeout(App.noticeTimer);
+  var node=el("appNotice");
+  if(node){ node.textContent=App.notice; node.hidden=!App.notice; }
+  if(!App.notice) return;
+  App.noticeTimer=setTimeout(function(){
+    App.notice=""; App.noticeTimer=null;
+    var current=el("appNotice");
+    if(current){ current.textContent=""; current.hidden=true; }
+  },4200);
+}
 
 /* =====================================================================
    5. 视图：入口与注册
@@ -2334,14 +2493,32 @@ function fieldHTML(path,label,type,opts){
     + '<span class="tag" '+(isSeed?"":"hidden")+'>'+esc(D.sampleTag)+'</span></div>'
     + ctl + (opts.hint?'<p class="hint">'+esc(opts.hint)+'</p>':'') + '</div>';
 }
+function elderPronounFieldHTML(){
+  var value=String(St.elder.pronouns||"auto");
+  var options=[
+    ["auto",D.pronounAuto],
+    ["she",D.pronounShe],
+    ["he",D.pronounHe],
+    ["they",D.pronounThey]
+  ];
+  var h='<div class="field"><div class="field-top"><label>'+esc(D.fPronouns)+'</label></div>'
+    + '<select data-f="elder.pronouns">';
+  for(var i=0;i<options.length;i++) h+='<option value="'+options[i][0]+'"'+(value===options[i][0]?' selected':'')+'>'+esc(options[i][1])+'</option>';
+  return h+'</select></div>';
+}
 function getPath(p){
   if(p.indexOf("elder.")===0) return St.elder[p.slice(6)];
   var per=editTarget(); return per ? per[p.slice(4)] : "";   // "per."
 }
-function setPath(s,p,v){
+function setPath(s,p,v,personId){
   if(p.indexOf("elder.")===0){ s.elder[p.slice(6)]=v; return; }
-  var id=App.editingPerson;
+  var id=personId||App.editingPerson;
   for(var i=0;i<s.people.length;i++) if(s.people[i].id===id){ s.people[i][p.slice(4)]=v; return; }
+}
+function statePathValue(s,p,personId){
+  if(p.indexOf("elder.")===0) return s.elder[p.slice(6)];
+  for(var i=0;i<s.people.length;i++) if(s.people[i].id===personId) return s.people[i][p.slice(4)];
+  return undefined;
 }
 function editTarget(){
   for(var i=0;i<St.people.length;i++) if(St.people[i].id===App.editingPerson) return St.people[i];
@@ -2363,9 +2540,13 @@ function viewObElder(){
   return '<p class="eyebrow">1 / 2</p><p class="h1">'+esc(D.obElderTitle)+'</p>'
     + '<p class="sub">'+esc(D.obElderSub)+'</p>'
     + fieldHTML("elder.name", D.fName, "text", {seedKey:"elderName"})
+    + elderPronounFieldHTML()
     + fieldHTML("elder.phone", D.fElderPhone, "text", {seedKey:"elderPhone", hint:D.elderPhoneHint})
+    + fieldHTML("elder.address", D.fAddr, "text", {seedKey:"address"})
     + '<div class="field"><div class="field-top"><label>'+esc(D.fHome)+'</label></div>'
-    +   mapBox("picker")
+    +   '<p class="setup-map-status" id="homeMapStatus">'+esc(homeMapStatus())+'</p>'
+    +   '<div class="setup-map" id="homeMap" aria-label="home map"></div>'
+    +   '<div class="setup-map-actions"><button type="button" data-go="setHomeFromGps">'+esc(D.mapUseGps)+'</button></div>'
     +   '<p class="hint">'+esc(D.homeHint)+'</p></div>'
     + rangeFieldHTML()
     + '<button class="btn ghost" data-go="fillElderSample">'+esc(D.fillSample)+'</button>'
@@ -2460,8 +2641,8 @@ function viewPaired(){
    6. 视图：家人端
    ===================================================================== */
 function riskState(){
-  if(St.guide.active) return "on";
-  for(var i=0;i<St.timeline.length;i++) if(St.timeline[i].kind==="home") return "done";
+  if(St.guide.active || (St.risk&&(St.risk.state==="leaving"||St.risk.state==="guiding"))) return "on";
+  if(St.risk&&St.risk.state==="returned"&&!St.alertCleared) return "done";
   return "none";
 }
 function statusText(){
@@ -2487,12 +2668,22 @@ function mapSVG(){
     + (known ? '<b class="'+(out?"out":"")+'">'+esc(fill(D.mapDist,{n:d}))+'</b>' : '')
     + '</div>';
 }
+function phoneHref(value){
+  var raw=String(value||"").trim();
+  if(!raw) return "";
+  var number=raw.replace(/[^\d+*#,;]/g,"");
+  return number.replace(/\D/g,"").length>=3 ? "tel:"+number : "";
+}
+function familyCallActionsHTML(){
+  var href=phoneHref(St&&St.elder&&St.elder.phone);
+  if(!href) return '<button class="btn" data-go="call">'+esc(D.callBtn)+'</button>';
+  return '<div class="call-actions"><a class="btn phone-link" href="'+href+'">'+IC.phoneUp+esc(D.callPhone)+'</a>'
+    + '<button class="btn ghost" data-go="call">'+esc(D.callInApp)+'</button></div>';
+}
 
 /* 只有一种提醒：走出安全范围。关掉之后挂在首页，必须家人手动清。 */
 function alertState(){
-  if(St.guide.active) return "on";
-  for(var i=0;i<St.timeline.length;i++) if(St.timeline[i].kind==="home") return "done";
-  return "none";
+  return riskState();
 }
 function alertBar(){
   var a=alertState();
@@ -2513,10 +2704,10 @@ function alertSheet(){
     + (on
       ? '<dl class="detail"><dt>'+esc(D.dWhy)+'</dt><dd>'+esc(D.dWhyV)+'</dd>'
         + '<dt>'+esc(D.dWhere)+'</dt><dd>'+esc(fill(D.mapDist,{n:distOf(St)}))+'</dd>'
-        + '<dt>'+esc(D.dProg)+'</dt><dd>'+esc(fill(D.dProgV,{n:Math.min(St.guide.step+1,3)}))+'</dd></dl>'
+        + '<dt>'+esc(D.dProg)+'</dt><dd>'+esc(fill(D.dProgV,{n:Math.min(St.guide.step+1,guideTotal(St)),total:guideTotal(St)}))+'</dd></dl>'
       : '<dl class="detail ok"><dt>✓ '+esc(D.tileAlertDone)+'</dt><dd>'+esc(D.dDoneV)+'</dd></dl>')
     + '<div class="map-card">'+mapSVG()+'</div>'
-    + '<button class="btn" data-go="call">'+esc(D.callBtn)+'</button>'
+    + familyCallActionsHTML()
     + '<button class="link" data-go="closeAlert">'+esc(D.alertPopClose)+'</button>'
     + '</div></div>';
 }
@@ -2554,16 +2745,21 @@ function chatView(){
 
   h+='<div class="chat-bar"><input type="text" id="chatIn" value="'+esc(App.chat.draft)+'" '
    + 'placeholder="'+esc(D.chatPh)+'" '+(App.chat.busy?"disabled":"")+'>'
+   + '<button class="chat-mic'+(App.chat.voiceActive?' on':'')+'" data-go="chatVoice" '+(App.chat.busy?"disabled":"")
+   + ' aria-label="'+esc(D.chatVoice)+'">'+IC.mic+'</button>'
    + '<button data-go="chatSend" '+(App.chat.busy?"disabled":"")+' aria-label="'+esc(D.chatSend)+'">'
    + IC.send+'</button></div>'
+   + '<p class="chat-voice-status'+(App.chat.voiceError?' err':'')+'">'
+   + esc(App.chat.voiceError||(App.chat.voiceActive?D.chatListening:""))+'</p>'
    + '<button class="link" data-go="closeChat">'+esc(D.back)+'</button></div>';
   return h;
 }
 
 function tabHome(){
+  var elderLabel=String(St.elder.name||D.roleElderT).trim();
   var h='<div class="f-head home-intro"><p class="eyebrow">'+esc(D.greet)+'</p>'
-    + '<p class="h1">'+esc(St.elder.name)+'</p>'
-    + '<p class="sub">'+esc(fill(D.greetSub,{elder:St.elder.name}))+'</p></div>';
+    + '<p class="h1">'+esc(fill(D.greetSub,{elder:elderLabel}))+'</p>'
+    + '<p class="sub">'+esc(statusText())+'</p></div>';
 
   h+=alertBar();
 
@@ -2588,7 +2784,7 @@ function tabHome(){
     h+=pendingCard();
     h+=todaySummary();
     h+=todoCard();
-    h+='<button class="btn" data-go="call">'+esc(D.callBtn)+'</button>';
+    h+=familyCallActionsHTML();
   }
   return h;
 }
@@ -2672,7 +2868,7 @@ function confirmCard(){
   var list=callItems(St);
   if(!list.length) return "";
   var h='<div class="sheet-mask call-review-mask"><section class="sheet call-review" role="dialog" aria-modal="true" aria-labelledby="callReviewTitle" data-stop="1">'
-    + '<div class="confirm"><b id="callReviewTitle">'+esc(D.cfT)+'</b><small>'+esc(D.cfD)+'</small>';
+    + '<div class="confirm"><b id="callReviewTitle">'+esc(D.cfT)+'</b><small>'+esc(fill(D.cfD,{n:list.length}))+'</small>';
   for(var i=0;i<list.length;i++){
     var it=list[i], txt = it.type==="todo" ? todoLine(it) : (it.text!=null ? it.text : tp(D[it.key]));
     h+='<div class="item"><span class="chiptype'+(it.type==="todo"?" todo":"")+'">'
@@ -2700,13 +2896,18 @@ function confirmCard(){
 function todaySummary(){
   var map={morning:"tlMorning",call:"tlCall",qa:"tlQa",unknown:"tlUnknown",
            guide:"tlGuide",home:"tlHome",todo:"tlTodo",answered:"tlAnswered"};
-  var rows=St.timeline.slice();
+  var rows=St.timeline.filter(function(row){
+    if(row.date) return row.date===todayKey();
+    return false;
+  });
   var shown = App.sumAll ? rows : rows.slice(Math.max(0, rows.length-3));
   var h='<div class="sum-card"><div class="sum-head"><b>'+esc(D.todayT)+'</b>'
       + '<span>'+esc(D.todaySub)+'</span></div><div class="sum-list">';
+  if(!shown.length) h+='<p class="todo-empty">'+esc(D.todayEmpty)+'</p>';
   for(var i=0;i<shown.length;i++){
     var r=shown[i], t=D[map[r.kind]]||"";
     if(r.kind==="qa") t=fill(t,{n:r.n||1});
+    if(r.kind==="call") t=fill(t,{n:Number(r.n)||0});
     h+='<div class="row"><time>'+r.t+'</time><p>'+esc(t)+'</p></div>';
   }
   h+='</div>';
@@ -2725,14 +2926,14 @@ function tabAlerts(){
   if(a==="on"){
     h+='<dl class="detail"><dt>'+esc(D.dWhy)+'</dt><dd>'+esc(D.dWhyV)+'</dd>'
      + '<dt>'+esc(D.dWhere)+'</dt><dd>'+esc(fill(D.mapDist,{n:distOf(St)}))+'</dd>'
-     + '<dt>'+esc(D.dProg)+'</dt><dd>'+esc(fill(D.dProgV,{n:Math.min(St.guide.step+1,3)}))+'</dd></dl>';
+     + '<dt>'+esc(D.dProg)+'</dt><dd>'+esc(fill(D.dProgV,{n:Math.min(St.guide.step+1,guideTotal(St)),total:guideTotal(St)}))+'</dd></dl>';
   } else if(a==="done"){
     h+='<dl class="detail ok"><dt>✓ '+esc(D.tileAlertDone)+'</dt><dd>'+esc(D.dDoneV)+'</dd></dl>';
   } else {
-    h+='<div class="empty">'+esc(D.alertNoneD)+'</div>';
+    h+='<div class="empty"><b style="display:block;margin-bottom:4px">'+esc(D.locationNormal)+'</b>'+esc(D.alertNoneD)+'</div>';
   }
-  h+='<div class="map-card">'+mapSVG()+'</div>';
-  if(a!=="none") h+='<button class="btn" data-go="call">'+esc(D.callBtn)+'</button>';
+  h+='<p class="eyebrow" style="margin-top:14px">'+esc(D.locationT)+'</p><div class="map-card">'+mapSVG()+'</div>';
+  if(a!=="none") h+=familyCallActionsHTML();
   return h;
 }
 
@@ -2747,7 +2948,7 @@ function tabTodos(){
   h+='</div><div class="cal-grid">';
 
   for(var i=0;i<cells.length;i++){
-    var c=cells[i], items=todosOn(St, c.key);
+    var c=cells[i], items=todosOn(St, c.key, true);
     var cls="cal-day" + (c.inMonth?"":" out") + (c.key===todayKey()?" today":"")
           + (c.key===cal.sel?" sel":"");
     h+='<button class="'+cls+'" data-day="'+c.key+'"><span class="n">'+c.day+'</span>';
@@ -2760,7 +2961,7 @@ function tabTodos(){
   }
   h+='</div>';
 
-  var sel=cal.sel, dayItems=todosOn(St, sel), sp=keyParts(sel);
+  var sel=cal.sel, dayItems=todosOn(St, sel, true), sp=keyParts(sel);
   h+='<div class="day-panel"><b>'+esc(D.calMonths[sp.m-1])+' '+sp.d
    + (sel===todayKey()?' · '+esc(D.calToday):'')+'</b>'
    + '<small>'+esc(D.todosD)+'</small>';
@@ -2769,8 +2970,8 @@ function tabTodos(){
     h+=addBox;
   } else {
     for(var k=0;k<dayItems.length;k++){
-      var t=dayItems[k], done=todoDoneOn(t,sel), open=App.cal.open===t.id;
-      h+='<div class="trow'+(done?" done":"")+'">'
+      var t=dayItems[k], draft=t.status==="draft", done=!draft&&todoDoneOn(t,sel), open=App.cal.open===t.id;
+      h+='<div class="trow'+(done?" done":"")+(draft?" draft":"")+'">'
        + '<button class="trow-head" data-todo-open="'+t.id+'">'
        +   '<span class="box">✓</span>'
        +   '<span class="body"><b>'+esc(todoWhat(t))+'</b>'
@@ -2781,7 +2982,11 @@ function tabTodos(){
        +   '<div class="rep-row"><span>'+esc(D.repeatT)
        +     '<small>'+esc(D.repeatD)+'</small></span>'
        +     '<button class="switch" data-todo-rep="'+t.id+'" aria-pressed="'+(t.repeat==="daily")+'"></button></div>'
-       +   '<div class="trow-acts"><button data-todo-del="'+t.id+'">'+esc(D.todoDel)+'</button></div>'
+       +   (draft
+         ? '<div class="todo-draft-actions"><button data-todo-cancel="'+t.id+'">'+esc(D.todoCancel)+'</button>'
+           + '<button class="save" data-todo-save="'+t.id+'">'+esc(D.todoSave)+'</button></div>'
+           + (App.todoErrors[t.id]?'<p class="todo-error">'+esc(App.todoErrors[t.id])+'</p>':'')
+         : '<div class="trow-acts"><button data-todo-del="'+t.id+'">'+esc(D.todoDel)+'</button></div>')
        + '</div></div>';
     }
     if(!App.cal.open) h+=addBox;
@@ -2829,6 +3034,22 @@ function tabbar(){
    7. 视图：老人端
    ===================================================================== */
 function callDir(s){ return (s && s.call && s.call.dir==="out") ? "out" : "in"; }
+function callActive(s){
+  var phase=s&&s.call?s.call.phase:"idle";
+  return phase==="ringing"||phase==="talking";
+}
+function newCallId(){ return "call"+Date.now()+Math.floor(Math.random()*1000); }
+function beginSharedCall(s,personId,dir,id){
+  if(callActive(s)) return false;
+  s.call={ id:id, phase:"ringing", personId:personId||null, line:-1, dir:dir };
+  if(personId) s.lastCaller=personId;
+  return true;
+}
+function isSameCall(s,snapshot){
+  if(!s||!s.call||!snapshot) return false;
+  if(snapshot.id) return s.call.id===snapshot.id;
+  return s.call.personId===snapshot.personId&&s.call.dir===snapshot.dir;
+}
 
 function elderScreen(){
   if(App.paired) return "paired";
@@ -2842,7 +3063,7 @@ function elderScreen(){
   return "standby";
 }
 
-/* 已确认的待办里，最近一条还没做完的；全做完了就返回最后一条 */
+/* 已确认的待办里，最近一条还没做完的；全做完后不再继续挂在老人首页。 */
 function todayTodo(){ return todayTodoOf(St); }
 function todayNews(){
   for(var i=St.facts.length-1;i>=0;i--){
@@ -2859,11 +3080,11 @@ function factLine(f){
 function todoLine(t){
   var parts=[t.when, t.where, t.what].filter(function(v){ return v && String(v).trim(); });
   if(parts.length) return parts.join(" · ");
-  return t.text!=null ? t.text : tp(D[t.key]);
+  return t.text!=null ? t.text : (t.key&&D[t.key]?tp(D[t.key]):"");
 }
 function todoWhat(t){
   if(t.what && t.what.trim()) return t.what.trim();
-  return t.text!=null ? t.text : tp(D[t.key]);
+  return t.text!=null ? t.text : (t.key&&D[t.key]?tp(D[t.key]):"");
 }
 function elderTodoText(t){
   if(!t) return "";
@@ -2885,7 +3106,7 @@ function todoMeta(t){
 /* ---- 日期工具：全部用 YYYY-MM-DD 字符串比较，避免时区问题 ---- */
 function pad2(n){ return (n<10?"0":"")+n; }
 function keyOf(d){ return d.getFullYear()+"-"+pad2(d.getMonth()+1)+"-"+pad2(d.getDate()); }
-function todayKey(){ return keyOf(new Date()); }
+function todayKey(){ var p=elderNowParts(); return p.year+"-"+pad2(p.month)+"-"+pad2(p.day); }
 function keyParts(k){ var a=String(k||"").split("-"); return {y:+a[0], m:+a[1], d:+a[2]}; }
 function ymOf(k){ var p=keyParts(k); return p.y+"-"+pad2(p.m); }
 function shiftMonth(ym, delta){
@@ -2915,8 +3136,13 @@ function todoDoneOn(t, key){
   if(t.done && typeof t.done==="object") return !!t.done[key];
   return !!t.checked && todoDate(t)===key;   // 兼容早期只有一个布尔值的数据
 }
-function todosOn(s, key){
-  var out=[], list=allTodos(s||St);
+function todosOn(s, key, includeDraft){
+  var member=typeof selectedMemberId==="function"?(selectedMemberId()||""):"";
+  var out=[], list=includeDraft ? ((s||St).facts||[]).filter(function(item){
+    if(item.type!=="todo") return false;
+    if(item.status==="done") return true;
+    return item.status==="draft"&&(!item.ownerId||item.ownerId===member);
+  }) : allTodos(s||St);
   for(var i=0;i<list.length;i++) if(todoOccursOn(list[i], key)) out.push(list[i]);
   return out;
 }
@@ -2933,14 +3159,14 @@ function markTodoDone(s, id, key, value){
 
 function newTodo(){
   return { id:"t"+Date.now()+Math.floor(Math.random()*100), type:"todo", origin:"manual",
-    key:"factPill", text:null, when:"", where:"", what:"",
+    key:null, text:null, when:"", where:"", what:"",
     date:(App.cal && App.cal.sel) || todayKey(), repeat:"none", done:{},
-    status:"done" };
+    status:"draft", ownerId:selectedMemberId()||"" };
 }
-/* 通话抽取出来的条目要家人确认；家人自己加的待办直接生效。两者靠 origin 区分。 */
+/* 通话抽取出来的条目要家人确认；家人自己加的待办先存草稿，明确保存后才生效。 */
 function callItems(s){
   var src=(s||St).facts||[], out=[];
-  for(var i=0;i<src.length;i++) if(src[i].origin==="call") out.push(src[i]);
+  for(var i=0;i<src.length;i++) if(src[i].origin==="call"&&(src[i].status==="open"||src[i].status==="editing")) out.push(src[i]);
   return out;
 }
 function callTranscript(){
@@ -2967,18 +3193,18 @@ function allTodos(s){
   for(var i=0;i<src.length;i++) if(src[i].type==="todo" && src[i].status==="done") out.push(src[i]);
   return out;
 }
-/* 老人端「接下来」取第一条还没做完的；都做完了显示最后一条 */
+/* 老人端「接下来」只显示第一条还没完成的待办；全部完成后立即消失。 */
 function todayTodoOf(s){
-  var key=todayKey(), list=todosOn(s, key), done=null;
-  for(var i=0;i<list.length;i++){ if(!todoDoneOn(list[i], key)) return list[i]; done=list[i]; }
-  return done;
+  var key=todayKey(), list=todosOn(s, key);
+  for(var i=0;i<list.length;i++) if(!todoDoneOn(list[i], key)) return list[i];
+  return null;
 }
 
 function dayParts(){
-  var now=new Date(), h=now.getHours();
+  var now=elderNowParts(), h=now.hour;
   return {
-    week: D.eWeekdays[now.getDay()],
-    date: fill(D.eDateFmt,{m:now.getMonth()+1, d:now.getDate()}),
+    week: D.eWeekdays[now.week],
+    date: fill(D.eDateFmt,{m:now.month, d:now.day}),
     part: h<12 ? D.eMorning : (h<18 ? D.eAfternoon : D.eEvening)
   };
 }
@@ -3002,15 +3228,25 @@ function viewStandby(){
 
   var h='<div class="e-home">'
     + '<div class="e-date"><small>'+esc(D.eTodayT)+'</small>'
-    +   '<b>'+esc(d.date)+' '+esc(d.week)+'</b>'
-    +   '<span>'+esc(d.part)+' · '+clockNow()+'</span></div>';
+    +   '<b id="elderDateTitle">'+esc(d.date)+' '+esc(d.week)+'</b>'
+    +   '<span id="elderHomeClock">'+esc(d.part)+' · '+clockNow()+'</span></div>';
 
   if(Weather.data){
     var b=Weather.data.bucket;
     h+='<div class="e-panel"><span class="ico">'+weatherEmoji(b)+'</span>'
-     + '<span class="txt"><small>'+esc(D.eWeatherT)+'</small>'
+     + '<span class="txt"><small>'+esc(D.eWeatherLive)+'</small>'
      + '<b>'+esc(D.eWeather[b])+' '+Weather.data.temp+'°</b>'
      + '<p>'+esc(weatherTip(Weather.data.temp,b))+'</p></span></div>';
+  } else if(Weather.state==="loading"){
+    h+='<div class="e-panel"><span class="ico">⌛</span><span class="txt"><small>'+esc(D.eWeatherT)+'</small>'
+     + '<b>'+esc(D.eWeatherLoading)+'</b></span></div>';
+  } else if(Weather.state==="failed"){
+    h+='<div class="e-panel"><span class="ico">↻</span><span class="txt"><small>'+esc(D.eWeatherT)+'</small>'
+     + '<b>'+esc(D.eWeatherFailed)+'</b><button class="link" style="padding:6px 0;text-align:left" data-go="retryWeather">'
+     + esc(D.eWeatherRetry)+'</button></span></div>';
+  } else if(Weather.state==="missing"){
+    h+='<div class="e-panel"><span class="ico">⌖</span><span class="txt"><small>'+esc(D.eWeatherT)+'</small>'
+     + '<b>'+esc(D.eWeatherMissing)+'</b></span></div>';
   }
 
   var tDone = t && todoDoneOn(t, todayKey());
@@ -3039,25 +3275,21 @@ function viewStandby(){
    + '<button class="e-btn soft" data-go="openPick" style="margin-top:10px">'+esc(D.eCallFamily)+'</button>'
    + elderSettingsEntry()
    + '</div>';
-  return h;
+  return h+devBar();
 }
 
 function callerCard(){
   var p=focusPerson(St);
+  var cue=p.hint||p.recent||"", cueLabel=p.hint?D.fHint:D.fRecent;
   return '<div class="pcard"><div class="top">'+avatarHTML(p,"av-lg")
     + '<span class="identity"><b class="caller-name">'+esc(p.nick)+'</b>'
     + '<span class="caller-relation">'+esc(p.relation)+'</span></span></div>'
-    + '<dl class="caller-details">'
-    + '<div><dt>'+esc(D.fPhone)+'</dt><dd class="caller-phone" dir="ltr">'+esc(p.phone)+'</dd></div>'
-    + '<div><dt>'+esc(D.fRecent)+'</dt><dd>'+esc(p.recent)+'</dd></div>'
-    + '<div><dt>'+esc(D.fHint)+'</dt><dd>'+esc(p.hint)+'</dd></div>'
-    + '</dl></div>';
+    + (cue?'<dl class="caller-details"><div><dt>'+esc(cueLabel)+'</dt><dd>'+esc(cue)+'</dd></div></dl>':'')
+    + '</div>';
 }
 
 function viewCalling(){
-  var p=focusPerson(St);
   return '<div class="e-call"><p class="lbl">'+esc(D.eCalling)+'</p>'
-    + '<p class="nm">'+esc(p.nick)+'</p>'
     + callerCard()
     + '<div style="display:flex;justify-content:center;margin-top:16px">'+waveEl("warm")+'</div>'
     + '<div class="ctrl"><button class="no" data-go="hangup"><i>'+IC.phoneDown+'</i>'
@@ -3074,7 +3306,8 @@ function viewRinging(){
 function viewTalking(){
   var p=focusPerson(St);
   return '<p class="eyebrow warm" style="margin-top:8px">'+esc(D.eOnCall)+'</p>'
-    + '<p class="e-h1" style="font-size:28px;margin-bottom:10px">'+esc(p.nick)+'</p>'
+    + '<div class="talking-person">'+avatarHTML(p,"av-lg")
+    + '<div class="identity"><b>'+esc(p.nick)+'</b><span>'+esc(p.relation)+'</span></div></div>'
     + '<span class="audio-tag">'+esc(D.eAudioTag)+'</span>'
     + callTranscript() + callPlaybackButton()
     + '<div class="spacer"></div>'
@@ -3120,9 +3353,12 @@ function viewPick(){
     h+='<div class="callpick">';
     for(var j=0;j<named.length;j++){
       var p=named[j];
-      h+='<button data-callfamily="'+p.id+'">'+avatarHTML(p,"av-lg")
+      var href=phoneHref(p.phone);
+      h+='<div class="callpick-row"><button data-callfamily="'+p.id+'">'+avatarHTML(p,"av-lg")
        + '<span><b>'+esc(p.nick)+'</b><small>'+esc(p.relation)+'</small></span>'
-       + '<span class="dial">'+IC.phoneUp+'</span></button>';
+       + '<span class="dial">'+IC.phoneUp+'</span></button>'
+       + (href?'<a class="phone-dial" href="'+href+'" aria-label="'+esc(D.callPhone)+' · '+esc(p.nick)+'">'+IC.phoneUp+'</a>':'')
+       + '</div>';
     }
     h+='</div>';
   }
@@ -3222,7 +3458,9 @@ function render(s){
   if(s!==undefined) St=s;
   D = I18N[St ? St.lang : lang] || I18N.en;
 
-  if(typing){ patchLight(); return; }
+  var activeEditor=document.activeElement;
+  var editingLocally=activeEditor&&activeEditor.matches&&activeEditor.matches("[data-f],[data-todo],[data-item-in]");
+  if(typing||editingLocally){ patchLight(); return; }
 
   var screen=el("screen"), view=el("view"), body="", isElder=false, chrome="";
   el("clock").textContent = clockNow();
@@ -3257,7 +3495,8 @@ function render(s){
     if(hasPendingCallItem(St)) body += confirmCard();
   }
 
-  if(isElder) startGeo(); else stopGeo();
+  if(isElder && !App.demoLocation) startGps();
+  else if(!isElder) stopGps();
   screen.classList.toggle("elder", isElder);
   view.classList.toggle("pad0", App.route==="family");
   view.className = (isElder ? "e-view" : "view") + (App.route==="family" ? " pad0" : "");
@@ -3274,9 +3513,10 @@ function render(s){
   lab.className="device-label "+(App.route==="elder"?"elder":(App.route==="family"?"family":""));
   lab.querySelector("span").textContent = who + (St && St.code ? " · " + St.code : "");
 
-  chrome='<button class="chip" data-go="lang">'+esc(D.langBtn)+'</button>';
-  if(St&&St.code) chrome+='<button class="chip" data-go="reset">'+esc(D.resetBtn)+'</button>';
-  if(storeRole()) chrome+='<button class="chip" data-go="exit">'+esc(D.exitBtn)+'</button>';
+  chrome=EMBEDDED?'':'<button class="chip" data-go="lang">'+esc(D.langBtn)+'</button>';
+  if(!EMBEDDED&&St&&St.code) chrome+='<button class="chip" data-go="reset">'+esc(D.resetBtn)+'</button>';
+  if(!EMBEDDED&&St&&St.code) chrome+='<button class="chip" data-go="compare">'+esc(D.compareBtn)+'</button>';
+  if(!EMBEDDED&&storeRole()) chrome+='<button class="chip" data-go="exit">'+esc(D.exitBtn)+'</button>';
   el("chrome").innerHTML=chrome;
   el("hintLine").textContent = App.route==="elder" ? D.hintElder
     : (App.route==="family" ? D.hintFamily : D.hintEntry);
@@ -3299,12 +3539,11 @@ function applyRange(v, persist){
   if(sl && document.activeElement!==sl) sl.value=v;
   if(nu && document.activeElement!==nu) nu.value=v;
   if(sl) sl.style.setProperty("--pct", Math.round((v-200)/1800*100)+"%");
-  if(St) St.elder.radius=String(v);
-  if(Maps.state==="ready" && Maps.circle.picker) Maps.circle.picker.setRadius(v);
-  else { var box=document.querySelector('[data-gmap="picker"] svg'); if(box) syncSchematic("picker"); }
+  if(St){ St.elder.radius=String(v); St.home=St.home||{}; St.home.radiusM=v; }
+  if(App.homeMapController) App.homeMapController.setRadius(v);
   if(persist){
     clearTimeout(rangeTimer);
-    rangeTimer=setTimeout(function(){ queueUpdate(function(x){ x.elder.radius=String(v); }); }, 260);
+    rangeTimer=setTimeout(function(){ queueUpdate(function(x){ x.elder.radius=String(v); x.home=x.home||{}; x.home.radiusM=v; }); }, 260);
   }
   return v;
 }
@@ -3339,6 +3578,42 @@ function bindChat(){
   var log=el("chatLog"); if(log) log.scrollTop=log.scrollHeight;
 }
 
+function patchChatDraft(){
+  var box=el("chatIn");
+  if(box&&box.value!==App.chat.draft) box.value=App.chat.draft;
+}
+
+function toggleChatVoice(){
+  if(App.chat.voiceActive){
+    App.chat.voiceActive=false;
+    stopSpeech();
+    render();
+    return;
+  }
+  App.chat.voiceError="";
+  if(!speechSupported()){
+    App.chat.voiceError=D.speakNoMic;
+    render();
+    return;
+  }
+  App.chat.voiceActive=true;
+  render();
+  var ok=startSpeech(function(text,final){
+    if(text) App.chat.draft=text;
+    if(final){ App.chat.voiceActive=false; render(); }
+    else patchChatDraft();
+  },function(){
+    App.chat.voiceActive=false;
+    App.chat.voiceError=D.chatVoiceFailed;
+    render();
+  });
+  if(!ok){
+    App.chat.voiceActive=false;
+    App.chat.voiceError=D.speakNoMic;
+    render();
+  }
+}
+
 function bindPendingAnswers(){
   var ns=el("view").querySelectorAll("[data-ans]");
   Array.prototype.forEach.call(ns,function(n){
@@ -3351,16 +3626,23 @@ function bindPendingAnswers(){
 function bindTodos(){
   var ns=el("view").querySelectorAll("[data-todo]");
   Array.prototype.forEach.call(ns,function(n){
-    n.addEventListener("input",function(){
+    n.addEventListener("change",function(){
       var parts=n.getAttribute("data-todo").split("|");
+      var value=n.value, current=factById(St,parts[0]);
+      var expected=current?current[parts[1]]:undefined;
       typing=true;
       queueUpdate(function(s){
         for(var i=0;i<s.facts.length;i++) if(s.facts[i].id===parts[0]){
-          s.facts[i][parts[1]]=n.value;
+          if(String(s.facts[i][parts[1]]||"")!==String(expected||"")) return;
+          s.facts[i][parts[1]]=value;
           if(parts[1]==="what") s.facts[i].text=null;
         }
+      },null,function(saved){
+        var result=factById(saved,parts[0]);
+        if(!result||String(result[parts[1]]||"")!==String(value||"")) showNotice(D.collabFieldKept);
       });
       typing=false;
+      setTimeout(render,0);
     });
   });
 }
@@ -3371,18 +3653,24 @@ function bindInputs(){
   bindChat();
   var ns=el("view").querySelectorAll("[data-f]");
   Array.prototype.forEach.call(ns,function(n){
-    n.addEventListener("input",function(){
+    n.addEventListener("change",function(){
       var path=n.getAttribute("data-f");
+      var value=n.value, personId=App.editingPerson, expected=getPath(path);
       typing=true;
       if(path==="elder.address"){
         App.homeGeocodeResolvedAddress="";
         App.homeGeocodeRequested="";
         App.homeGeocodeError="";
       }
-      queueUpdate(function(s){ setPath(s,path,n.value); });
+      queueUpdate(function(s){
+        if(String(statePathValue(s,path,personId)||"")!==String(expected||"")) return;
+        setPath(s,path,value,personId);
+      },null,function(saved){
+        if(String(statePathValue(saved,path,personId)||"")!==String(value||"")) showNotice(D.collabFieldKept);
+      });
       if(path==="elder.address"){
         if(App.homeGeocodeTimer) clearTimeout(App.homeGeocodeTimer);
-        var typedAddress=n.value;
+        var typedAddress=value;
         var status=el("homeMapStatus");
         if(status) status.textContent=D.mapGeocoding;
         App.homeGeocodeTimer=setTimeout(function(){
@@ -3392,10 +3680,11 @@ function bindInputs(){
         },500);
       }
       typing=false;
+      setTimeout(render,0);
       var tag=n.parentNode.querySelector(".tag");
       if(tag){
         var k=path.split(".").pop(); if(k==="name") k="elderName";
-        tag.hidden = (n.value !== SEED[St.lang][k]);
+        tag.hidden = (value !== SEED[St.lang][k]);
       }
     });
   });
@@ -3406,16 +3695,19 @@ function bindInputs(){
    ===================================================================== */
 function newPerson(){
   return { id:"p"+Date.now()+Math.floor(Math.random()*100),
-    nick:"", relation:"", phone:"", recent:"", hint:"" };
+    nick:"", relation:"", phone:"", recent:"", hint:"", photo:"" };
 }
 
 async function fillElderSample(){
   var seed=SEED[St.lang]||SEED.en;
   await persistUpdate(function(s){
     s.elder.name=seed.elderName;
+    s.elder.pronouns="she";
     s.elder.phone=seed.elderPhone;
     s.elder.address=seed.address;
     s.elder.home={lat:HOME_LL.lat,lng:HOME_LL.lng};
+    s.home={lat:HOME_LL.lat,lng:HOME_LL.lng,label:seed.address,radiusM:800};
+    s.homeSet=true;
     s.elder.radius="800";
   });
   render();
@@ -3449,6 +3741,8 @@ function backFromPerson(){
 
 function openNewReminder(){
   var fresh=newTodo();
+  App.todoErrors=App.todoErrors||{};
+  delete App.todoErrors[fresh.id];
   App.tab=2;
   App.cal.open=fresh.id;
   queueUpdate(function(s){ s.facts.push(fresh); });
@@ -3546,7 +3840,7 @@ async function extractCallItems(){
         "\n\nExtract JSON: {\"items\":[" +
         "{\"type\":\"fact\",\"text\":\"one short sentence\"}," +
         "{\"type\":\"todo\",\"date\":\"YYYY-MM-DD\",\"when\":\"time, empty if not said\",\"where\":\"place, empty if not said\",\"what\":\"what to do, short\"}" +
-        "]}. A fact is about a person or an event; a todo is something to remind her to do. At most 3. " +
+        "]}. A fact is about a person or an event; a todo is something to remind the elder to do. At most 3. " +
         "Do not invent a time or place that was not said. Today is " + todayKey() +
         "; convert wording like \"Saturday\" or \"tomorrow\" into a real date, and use today when no date is mentioned. " +
         "Answer in English.")
@@ -3581,18 +3875,48 @@ async function extractCallItems(){
 }
 
 var endingCall=false;
+function itemSignature(item){
+  if(!item) return "";
+  if(item.type==="todo") return ["todo",item.date||todayKey(),item.when||"",item.where||"",item.what||item.text||item.key||""].join("|").toLowerCase();
+  if(item.ask!=null) return "fact|ask:"+Number(item.ask);
+  if(item.question) return "fact|question:"+String(item.question).trim().toLowerCase();
+  return ["fact",item.text||item.key||""].join("|").toLowerCase();
+}
+function appendUniqueItems(state,items){
+  var existing={};
+  for(var i=0;i<state.facts.length;i++) if(state.facts[i].status!=="skip") existing[itemSignature(state.facts[i])]=true;
+  var added=0;
+  for(var j=0;j<items.length;j++){
+    var signature=itemSignature(items[j]);
+    if(!signature||existing[signature]) continue;
+    state.facts.push(items[j]); existing[signature]=true; added++;
+  }
+  return added;
+}
 async function endCall(){
-  if(endingCall) return;
+  if(endingCall||!St||!callActive(St)) return;
+  var snapshot={
+    id:St.call.id||"", personId:St.call.personId||null,
+    dir:St.call.dir||"in", phase:St.call.phase
+  };
+  if(snapshot.phase!=="talking"){
+    queueUpdate(function(s){
+      if(!callActive(s)||!isSameCall(s,snapshot)) return;
+      s.call.phase="idle"; s.call.line=-1;
+    });
+    return;
+  }
   endingCall=true;
-  var items = (St && hasPendingCallItem(St)) ? null : fallbackItems();
-  queueUpdate(function(s){
-    s.call.phase="ended";
-    if(items && items.length && !hasPendingCallItem(s)) s.facts=s.facts.concat(items);
-    var seen=false;
-    for(var i=0;i<s.timeline.length;i++) if(s.timeline[i].kind==="call") seen=true;
-    if(!seen) s.timeline.push({t:clockNow(),kind:"call"});
-  });
-  endingCall=false;
+  try{
+    var items = await extractCallItems();
+    var endedAt=clockNow(), endedDate=todayKey();
+    queueUpdate(function(s){
+      if(!callActive(s)||!isSameCall(s,snapshot)||s.call.phase!=="talking") return;
+      s.call.phase="ended";
+      var added=items.length?appendUniqueItems(s,items):0;
+      s.timeline.push({t:endedAt,date:endedDate,kind:"call",n:added});
+    });
+  }finally{ endingCall=false; }
 }
 
 function setLoc(x,y){
@@ -3602,11 +3926,38 @@ function setLoc(x,y){
     if(!s.guide.active && !s.guide.done && distOf(s)>rangeM(s)){
       s.guide.active=true; s.guide.step=0;
       s.alertCleared=false;
-      s.timeline.push({t:clockNow(),kind:"guide"});
+      s.timeline.push({t:clockNow(),date:todayKey(),kind:"guide"});
       started=true;
     }
   });
   if(started && App.route==="elder" && window.Voice) window.Voice.speak(D.guide[0].copy,{lang:St.lang});
+}
+function setDemoLocation(outside){
+  App.demoLocation=true;
+  stopGps();
+  queueUpdate(function(s){
+    var home=homePoint(s)||homeOf(s), radius=Math.max(200,rangeM(s)||800);
+    var point=outside?offsetLL(home,radius+320,80):home;
+    s.loc={lat:point.lat,lng:point.lng,source:"demo",status:"ready",updatedAt:new Date().toISOString()};
+    s.locReported=true;
+    s.risk=s.risk||{};
+    s.risk.distanceM=outside?radius+320:0;
+    s.risk.outsideCount=outside?3:0;
+    s.risk.state=outside?"guiding":"safe";
+    s.risk.reason=outside?"outside_safe_radius":"inside_safe_radius";
+    if(outside){
+      s.risk.triggeredAt=new Date().toISOString();
+      s.guide.active=true; s.guide.done=false; s.guide.step=0;
+      s.alertCleared=false;
+      var seen=false;
+      for(var i=0;i<s.timeline.length;i++) if(s.timeline[i].kind==="guide"&&s.timeline[i].active) seen=true;
+      if(!seen) s.timeline.push({t:clockNow(),date:todayKey(),kind:"guide",active:true});
+    }else{
+      s.guide.active=false; s.guide.done=false; s.guide.step=0;
+      s.alertCleared=true;
+      for(var j=0;j<s.timeline.length;j++) if(s.timeline[j].kind==="guide") delete s.timeline[j].active;
+    }
+  });
 }
 function advanceGuide(){
   if(!St||!St.guide||!St.guide.active) return;
@@ -3617,12 +3968,16 @@ function advanceGuide(){
     advanced=true;
     if(s.guide.step>=total || (homePoint(s)&&currentPoint(s)&&window.Navigation.distanceMeters(homePoint(s),currentPoint(s))<=50)){
       s.guide.active=false; s.guide.done=true;
-      s.loc.x=HOME.x; s.loc.y=HOME.y;
+      var home=homePoint(s)||homeOf(s);
+      s.loc={lat:home.lat,lng:home.lng,source:"guide",status:"ready",updatedAt:new Date().toISOString()};
+      s.locReported=true;
       s.risk=s.risk||{}; s.risk.state="returned"; s.risk.outsideCount=0; s.risk.reason="inside_home_radius";
+      s.alertCleared=false;
       completed=true;
+      for(var a=0;a<s.timeline.length;a++) if(s.timeline[a].kind==="guide") delete s.timeline[a].active;
       var seen=false;
-      for(var i=0;i<s.timeline.length;i++) if(s.timeline[i].kind==="home") seen=true;
-      if(!seen) s.timeline.push({t:clockNow(),kind:"home"});
+      for(var i=0;i<s.timeline.length;i++) if(s.timeline[i].kind==="home"&&s.timeline[i].date===todayKey()) seen=true;
+      if(!seen) s.timeline.push({t:clockNow(),date:todayKey(),kind:"home"});
     } else {
       nextText=guideText(list[s.guide.step]);
     }
@@ -3737,7 +4092,7 @@ async function askFree(question){
       if(!duplicate) s.pending.push({id:"q"+Date.now(),question:question});
       var seen=false;
       for(var j=0;j<s.timeline.length;j++) if(s.timeline[j].kind==="unknown") seen=true;
-      if(!seen) s.timeline.push({t:clockNow(),kind:"unknown"});
+    if(!seen) s.timeline.push({t:clockNow(),date:todayKey(),kind:"unknown"});
     }
     pending={index:s.thread.length,text:text,src:src};
     s.thread.push({role:"ai",key:key,src:src,text:text});
@@ -3775,7 +4130,7 @@ async function ask(i){
       s.askCounts.visit=(s.askCounts.visit||0)+1;
       var row=null;
       for(var k=0;k<s.timeline.length;k++) if(s.timeline[k].kind==="qa") row=s.timeline[k];
-      if(row) row.n=s.askCounts.visit; else s.timeline.push({t:clockNow(),kind:"qa",n:1});
+      if(row) row.n=s.askCounts.visit; else s.timeline.push({t:clockNow(),date:todayKey(),kind:"qa",n:1});
     }
     if(boundNow){
       key = boundNow.origin==="family" ? "ansPlain" : "ansFromFact";
@@ -3795,7 +4150,7 @@ async function ask(i){
       if(!dup) s.pending.push({id:"q"+Date.now(),ask:i,text:questionText?displayQuestion:null});
       var seen=false;
       for(var q=0;q<s.timeline.length;q++) if(s.timeline[q].kind==="unknown") seen=true;
-      if(!seen) s.timeline.push({t:clockNow(),kind:"unknown"});
+    if(!seen) s.timeline.push({t:clockNow(),date:todayKey(),kind:"unknown"});
     }
     pending={key:key, src:src, text:text, index:s.thread.length};
     s.thread.push({role:"ai",key:key,src:src,text:text});
@@ -3883,6 +4238,7 @@ function openChat(pendId){
 }
 
 async function chatSend(){
+  if(App.chat.voiceActive){ App.chat.voiceActive=false; stopSpeech(); }
   var box=el("chatIn");
   var text=(box ? box.value : App.chat.draft || "").trim();
   if(!text || App.chat.busy) return;
@@ -3895,7 +4251,7 @@ async function chatSend(){
     json:true, timeout:15000,
     system: zh
       ? "你在帮家人把关于一位阿尔茨海默老人的信息整理进记忆库。只用家人说过的内容，不要推断、不要补充。只输出 JSON。"
-      : "You help a family member file information about a person with Alzheimer's into her memory. Use only what the family said. Do not infer or invent. Output JSON only.",
+      : "You help a family member file information about a person with Alzheimer's into the shared memory. Use only what the family said. Do not infer or invent. Output JSON only.",
     user: (zh
       ? "老人叫" + St.elder.name + "。已知家人：" + (known||"暂无") + "。今天是 " + todayKey() + "。\n"
         + "家人刚说：" + text + "\n\n"
@@ -3951,8 +4307,14 @@ function chatSaveProp(idx){
   if(!m || m.role!=="prop" || m.saved) return;
   m.saved=true;
   var item=m.item, bound=(item.ask!=null || item.question) ? App.chat.seedPend : null;
+  item.ownerId=item.ownerId||selectedMemberId()||"";
   queueUpdate(function(s){
-    s.facts.push(item);
+    if(bound){
+      var target=null;
+      for(var k=0;k<s.pending.length;k++) if(s.pending[k].id===bound.id) target=s.pending[k];
+      if(!target) return;
+    }
+    appendUniqueItems(s,[item]);
     if(bound){
       /* 和手写答案走同一套：清掉这条待补充，并把老人端那句拒答补写成真答案 */
       var normalized=String(bound.question).trim().toLowerCase();
@@ -3968,8 +4330,10 @@ function chatSaveProp(idx){
       s.pending=s.pending.filter(function(p){ return pendingQuestion(p)!==bound.question; });
       var seen=false;
       for(var i=0;i<s.timeline.length;i++) if(s.timeline[i].kind==="answered") seen=true;
-      if(!seen) s.timeline.push({ t:clockNow(), kind:"answered" });
+      if(!seen) s.timeline.push({ t:clockNow(), date:todayKey(), kind:"answered" });
     }
+  },null,function(saved){
+    if(bound&&!factById(saved,item.id)) showNotice(D.collabAnswerKept);
   });
 }
 
@@ -3978,14 +4342,15 @@ function saveAnswer(id){
   var text=(box ? box.value : App.pendDraft[id] || "").trim();
   if(!text) return;
   delete App.pendDraft[id];
+  var factId="fa"+Date.now()+Math.floor(Math.random()*1000), answerOwner=selectedMemberId()||"";
   queueUpdate(function(s){
     var target=null;
     for(var k=0;k<s.pending.length;k++) if(s.pending[k].id===id) target=s.pending[k];
     if(!target) return;
-    var question=pendingQuestion(target), fact={ id:"fa"+Date.now(), type:"fact", origin:"family",
-      key:"factVisit", text:text.slice(0,120), status:"done" };
+    var question=pendingQuestion(target), fact={ id:factId, type:"fact", origin:"family",
+      ownerId:answerOwner, key:"factVisit", text:text.slice(0,120), status:"done" };
     if(target.ask!=null) fact.ask=Number(target.ask); else fact.question=question;
-    s.facts.push(fact);
+    appendUniqueItems(s,[fact]);
     var normalized=String(question).trim().toLowerCase();
     for(var q=0;q<s.thread.length-1;q++){
       var asked=s.thread[q], reply=s.thread[q+1];
@@ -3999,7 +4364,9 @@ function saveAnswer(id){
     s.pending=s.pending.filter(function(p){ return pendingQuestion(p)!==question; });
     var seen=false;
     for(var i=0;i<s.timeline.length;i++) if(s.timeline[i].kind==="answered") seen=true;
-    if(!seen) s.timeline.push({ t:clockNow(), kind:"answered" });
+    if(!seen) s.timeline.push({ t:clockNow(), date:todayKey(), kind:"answered" });
+  },null,function(saved){
+    if(!factById(saved,factId)) showNotice(D.collabAnswerKept);
   });
 }
 
@@ -4014,8 +4381,14 @@ function skipAnswer(id){
   });
 }
 
-function setItem(id,status){
-  queueUpdate(function(s){ var f=factById(s,id); if(f) f.status=status; });
+function setItem(id,status,expected){
+  queueUpdate(function(s){
+    var f=factById(s,id);
+    if(f&&f.status===expected) f.status=status;
+  },null,function(saved){
+    var result=factById(saved,id);
+    if(result&&result.status!==status) showNotice(D.collabItemHandled);
+  });
 }
 
 /* 录音中把识别结果直接写进输入框，不整页重绘 */
@@ -4098,7 +4471,7 @@ async function doSpeakUse(){
   App.speak=4; render();
 }
 
-/* 选一张照片，压成 96 见方的小图再存，避免撑爆家庭状态的体积上限 */
+/* 选一张照片，压成 192 见方再存：通话中可看清脸，同时控制家庭状态体积。 */
 function readPhoto(file, cb){
   if(!file || !/^image\//.test(file.type)) return cb(null);
   var reader=new FileReader();
@@ -4106,12 +4479,12 @@ function readPhoto(file, cb){
     var img=new Image();
     img.onload=function(){
       try{
-        var S=96, c=document.createElement("canvas");
+        var S=192, c=document.createElement("canvas");
         c.width=S; c.height=S;
         var ctx=c.getContext("2d");
         var side=Math.min(img.width, img.height);
         ctx.drawImage(img,(img.width-side)/2,(img.height-side)/2,side,side,0,0,S,S);
-        cb(c.toDataURL("image/jpeg",0.72));
+        cb(c.toDataURL("image/jpeg",0.8));
       }catch(_e){ cb(null); }
     };
     img.onerror=function(){ cb(null); };
@@ -4163,7 +4536,7 @@ async function hardExit(){
   App.route="entry"; App.tab=0; App.qa=false; App.pick=false; App.eset=false;
   App.qaVoiceActive=false; App.qaVoiceText=""; App.qaVoiceErr="";
   App.editingPerson=null; App.paired=false;
-  clearDevice(); stopGeo(); St=null;
+  clearDevice(); stopGps(); App.demoLocation=false; St=null;
   try{ if(Store) await Store.signOut(); }catch(error){ reportStoreError(error); }
   D=I18N[lang]; render();
 }
@@ -4176,9 +4549,13 @@ document.addEventListener("change", function(e){
   if(!input || !input.files || !input.files[0]) return;
   var pid=App.editingPerson;
   readPhoto(input.files[0], function(dataUrl){
-    if(!dataUrl || !pid) return;
+    if(!dataUrl || !pid){ showNotice(D.photoFailed); return; }
     queueUpdate(function(x){
       for(var i=0;i<x.people.length;i++) if(x.people[i].id===pid) x.people[i].photo=dataUrl;
+    },null,function(saved){
+      var kept=false;
+      for(var i=0;i<saved.people.length;i++) if(saved.people[i].id===pid&&saved.people[i].photo===dataUrl) kept=true;
+      showNotice(kept?D.photoSaved:D.collabItemHandled);
     });
   });
 });
@@ -4204,7 +4581,7 @@ document.addEventListener("keyup",function(e){
 });
 
 document.addEventListener("click", async function(e){
-  var b=e.target.closest("[data-go],[data-tab],[data-ask],[data-callfamily],[data-person],[data-todo-del],[data-day],[data-cal],[data-todo-open],[data-todo-rep],[data-ans-save],[data-ans-skip],[data-ans-chat],[data-chat-save],[data-chat-drop],[data-chat-tip],[data-item-do],[data-item-edit],[data-item-skip],[data-item-save],[data-item-cancel]");
+  var b=e.target.closest("[data-go],[data-tab],[data-ask],[data-callfamily],[data-person],[data-todo-del],[data-todo-save],[data-todo-cancel],[data-day],[data-cal],[data-todo-open],[data-todo-rep],[data-ans-save],[data-ans-skip],[data-ans-chat],[data-chat-save],[data-chat-drop],[data-chat-tip],[data-item-do],[data-item-edit],[data-item-skip],[data-item-save],[data-item-cancel]");
   if(e.target.closest('[data-stop="1"]') && !b) return;
   if(!b || b.disabled) return;
   var g=function(n){ return b.getAttribute(n); }, id;
@@ -4223,6 +4600,7 @@ document.addEventListener("click", async function(e){
     if(e.target.closest(".box")){
       var key=App.cal.sel, cur=null;
       for(var z=0;z<St.facts.length;z++) if(St.facts[z].id===id) cur=St.facts[z];
+      if(cur&&cur.status==="draft"){ App.cal.open=id; render(); return; }
       var next=!(cur && todoDoneOn(cur,key));
       queueUpdate(function(s){ markTodoDone(s, id, key, next); });
       return;
@@ -4235,6 +4613,36 @@ document.addEventListener("click", async function(e){
       for(var z=0;z<s.facts.length;z++) if(s.facts[z].id===id)
         s.facts[z].repeat = s.facts[z].repeat==="daily" ? "none" : "daily";
     });
+    return;
+  }
+  if((id=g("data-todo-save"))){
+    var draft=null;
+    for(var ds=0;ds<St.facts.length;ds++) if(St.facts[ds].id===id) draft=St.facts[ds];
+    if(!draft||!String(todoWhat(draft)||"").trim()){
+      App.todoErrors[id]=D.todoNeedWhat; App.cal.open=id; render(); return;
+    }
+    delete App.todoErrors[id];
+    var todoOwner=selectedMemberId()||"";
+    queueUpdate(function(s){
+      for(var si=0;si<s.facts.length;si++) if(s.facts[si].id===id){
+        var item=s.facts[si];
+        if(item.status==="draft"&&(!item.ownerId||item.ownerId===todoOwner)) item.status="done";
+      }
+    },null,function(saved){
+      var result=factById(saved,id);
+      if(!result||result.status!=="done") showNotice(D.collabItemHandled);
+    });
+    App.cal.open=null;
+    return;
+  }
+  if((id=g("data-todo-cancel"))){
+    delete App.todoErrors[id];
+    App.cal.open=null;
+    var cancelOwner=selectedMemberId()||"";
+    queueUpdate(function(s){ s.facts=s.facts.filter(function(item){
+      if(item.id!==id) return true;
+      return item.status!=="draft"||(item.ownerId&&item.ownerId!==cancelOwner);
+    }); });
     return;
   }
   if((id=g("data-ans-save"))!==null && id!==undefined && g("data-ans-save")){ saveAnswer(g("data-ans-save")); return; }
@@ -4250,22 +4658,29 @@ document.addEventListener("click", async function(e){
     return;
   }
   if((id=g("data-callfamily"))){
-    var target=id;
+    var target=id, outboundCallId=newCallId();
     App.pick=false;
     queueUpdate(function(x){
-      x.call={ phase:"ringing", personId:target, line:-1, dir:"out" };
-      x.lastCaller=target;
+      beginSharedCall(x,target,"out",outboundCallId);
+    },null,function(saved){
+      if(!saved.call||saved.call.id!==outboundCallId) showNotice(D.collabCallBusy);
     });
     return;
   }
   
-  if((id=g("data-item-do"))){ setItem(id,"done"); return; }
-  if((id=g("data-item-skip"))){ setItem(id,"skip"); return; }
-  if((id=g("data-item-edit"))){ setItem(id,"editing"); return; }
-  if((id=g("data-item-cancel"))){ setItem(id,"open"); return; }
+  if((id=g("data-item-do"))){ setItem(id,"done","open"); return; }
+  if((id=g("data-item-skip"))){ setItem(id,"skip","open"); return; }
+  if((id=g("data-item-edit"))){ setItem(id,"editing","open"); return; }
+  if((id=g("data-item-cancel"))){ setItem(id,"open","editing"); return; }
   if((id=g("data-item-save"))){
     var inp=document.querySelector('[data-item-in="'+id+'"]'), v=inp?inp.value:null;
-    queueUpdate(function(s){ var f=factById(s,id); if(f){ f.text=v; f.status="done"; } });
+    queueUpdate(function(s){
+      var f=factById(s,id);
+      if(f&&f.status==="editing"){ f.text=v; f.status="done"; }
+    },null,function(saved){
+      var result=factById(saved,id);
+      if(result&&result.status!=="done") showNotice(D.collabItemHandled);
+    });
     return;
   }
 
@@ -4292,6 +4707,7 @@ document.addEventListener("click", async function(e){
 
     case "obMe": App.route="obMe"; render(); break;
     case "backPerson": backFromPerson(); render(); break;
+    case "setHomeFromGps": setHomeFromGps(); break;
     case "fillElderSample": await fillElderSample(); break;
     case "fillPersonSample": await fillPersonSample(); break;
     case "speak": doSpeak(); break;
@@ -4311,27 +4727,42 @@ document.addEventListener("click", async function(e){
     case "enterElder": App.paired=false; render(); break;
     case "addTodo": openNewReminder(); break;
     case "openChat": openChat(); break;
-    case "closeChat": App.chat.open=false; App.chat.seedPend=null; render(); break;
+    case "closeChat": stopSpeech(); App.chat.open=false; App.chat.voiceActive=false; App.chat.seedPend=null; render(); break;
     case "chatSend": await chatSend(); break;
+    case "chatVoice": toggleChatVoice(); break;
     case "openAlert": App.alertOpen=true; render(); break;
     case "toggleSum": App.sumAll=!App.sumAll; render(); break;
     case "closeAlert": App.alertOpen=false; render(); break;
     case "clearAlert":
       App.alertOpen=false;
-      queueUpdate(function(s){ s.alertCleared=true; });
+      queueUpdate(function(s){ s.alertCleared=true; if(s.risk&&s.risk.state==="returned") s.risk.state="safe"; });
       break;
     case "clearPending": queueUpdate(function(s){ s.pending=[]; }); break;
 
     case "call":
       App.tab=0;
-      queueUpdate(function(s){ s.call.phase="ringing"; s.call.line=-1;
-        s.call.personId=selectedMemberId(); s.lastCaller=selectedMemberId(); });
+      var inboundPersonId=selectedMemberId(), inboundCallId=newCallId();
+      queueUpdate(function(s){ beginSharedCall(s,inboundPersonId,"in",inboundCallId); },null,function(saved){
+        if(!saved.call||saved.call.id!==inboundCallId) showNotice(D.collabCallBusy);
+      });
       break;
     case "answer":
       App.callNeedsPlay=false;
-      queueUpdate(function(s){ s.call.phase="talking"; s.call.line=0; s.call.startedAt=Date.now(); });
+      var answerCall={ id:St.call.id||"", personId:St.call.personId||null, dir:St.call.dir||"in" };
+      var callStartedAt=Date.now();
+      queueUpdate(function(s){
+        if(s.call.phase!=="ringing"||!isSameCall(s,answerCall)) return;
+        s.call.phase="talking"; s.call.line=0; s.call.startedAt=callStartedAt;
+      });
       break;
-    case "decline": App.pick=false; queueUpdate(function(s){ s.call.phase="idle"; s.call.line=-1; }); break;
+    case "decline":
+      App.pick=false;
+      var declineCall={ id:St.call.id||"", personId:St.call.personId||null, dir:St.call.dir||"in" };
+      queueUpdate(function(s){
+        if(s.call.phase!=="ringing"||!isSameCall(s,declineCall)) return;
+        s.call.phase="idle"; s.call.line=-1;
+      });
+      break;
     case "hangup": stopSubs(); App.pick=false; void endCall(); break;
     case "playCall": App.callNeedsPlay=false; syncCallAudio(true); render(); break;
 
@@ -4341,10 +4772,11 @@ document.addEventListener("click", async function(e){
         if(target) markTodoDone(x, target.id, todayKey(), true);
         var seen=false;
         for(var k=0;k<x.timeline.length;k++) if(x.timeline[k].kind==="todo") seen=true;
-        if(!seen) x.timeline.push({t:clockNow(), kind:"todo"});
+        if(!seen) x.timeline.push({t:clockNow(), date:todayKey(), kind:"todo"});
       });
       break;
     case "readHome": speakSummary(homeSummaryText()); break;
+    case "retryWeather": Weather.state="idle"; Weather.data=null; ensureWeather(true); render(); break;
     case "openQa": App.qa=true; App.pick=false; App.eset=false; App.qaVoiceText=""; App.qaVoiceErr=""; render(); break;
     case "closeQa": stopSpeech(); App.qa=false; App.qaVoiceActive=false; App.qaVoiceText=""; App.qaVoiceErr=""; render(); break;
     case "openPick": App.pick=true; App.qa=false; App.eset=false; render(); break;
@@ -4354,6 +4786,12 @@ document.addEventListener("click", async function(e){
     case "prevGuide": retreatGuide(); break;
     case "arrived": arrived(); break;
     case "ackHome": queueUpdate(function(s){ s.guide.done=false; }); break;
+    case "toggleDev": App.dev=!App.dev; render(); break;
+    case "walk": setDemoLocation(true); break;
+    case "goHome": setDemoLocation(false); break;
+    case "compare":
+      if(St&&St.code) window.top.location.href="/?compare=1&code="+encodeURIComponent(St.code)+(LOCAL_DEMO?"&localDemo=1":"");
+      break;
 
     case "logout":
       if(confirm(D.logoutAsk)) await hardExit();
@@ -4381,7 +4819,8 @@ document.addEventListener("click", async function(e){
       if(confirm(D.resetAsk)){
         stopSpeech();
         App.tab=0; App.qa=false; App.qaVoiceActive=false; App.qaVoiceText=""; App.qaVoiceErr="";
-        App.editingPerson=null; App.speak=0; App.dev=false;
+        App.editingPerson=null; App.speak=0; App.dev=false; App.demoLocation=false;
+        Weather={state:"idle",data:null,at:0,key:""};
         try{
           await Store.resetFamily();
           if(storeRole()==="family"){
@@ -4419,13 +4858,19 @@ async function connectAndRestore(){
     if(!Store) throw new Error("Supabase client unavailable");
     await Store.initialize();
     Connection.authenticated=true;
-    var restored=await Store.restoreSelection();
+    var restored;
+    if(EMBED_ROLE&&EMBED_CODE){
+      await Store.attach(EMBED_CODE,EMBED_ROLE);
+      restored=Store.get();
+    }else{
+      restored=await Store.restoreSelection();
+    }
     St=restored;
     if(St){
       lang=St.lang||lang;
-      var role=storeRole()||"family";
+      var role=EMBED_ROLE||storeRole()||"family";
       var member=sessionGet(SCODE)===St.code?selectedMemberId():null;
-      rememberDevice(role,St.code,role==="family"?member:null);
+      if(!EMBED_ROLE) rememberDevice(role,St.code,role==="family"?member:null);
       App.route=role==="elder"?"elder":"family";
       if(role==="family"&&!St.setup) App.route="obElder";
     }else{
@@ -4447,7 +4892,7 @@ async function connectAndRestore(){
   render(St);
   connectAndRestore();
   window.addEventListener("offline",function(){ setConnectionStatus("offline"); });
-  setInterval(function(){ var c=el("clock"); if(c) c.textContent=clockNow(); }, 20000);
+  setInterval(patchLiveTime, 20000);
   setInterval(pollFamilyState, 2000);
 })();
 

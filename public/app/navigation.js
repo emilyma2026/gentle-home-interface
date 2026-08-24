@@ -101,12 +101,24 @@
         fullscreenControl: false,
       });
       var homeMarker = new maps.Marker({ map: map, position: center, title: options.homeTitle || "Home", draggable: true });
+      var rangeCircle = options.radius ? new maps.Circle({
+        map: map,
+        center: center,
+        radius: Number(options.radius) || 800,
+        strokeColor: "#8A9A4E",
+        strokeOpacity: 0.55,
+        strokeWeight: 2,
+        fillColor: "#8A9A4E",
+        fillOpacity: 0.12,
+        clickable: false,
+      }) : null;
       var currentMarker = null;
       var landmarkMarkers = [];
       var routeRenderer = new maps.DirectionsRenderer({ map: map, suppressMarkers: false, preserveViewport: false });
       var directions = new maps.DirectionsService();
       function selectHome(point) {
         homeMarker.setPosition(point);
+        if (rangeCircle) rangeCircle.setCenter(point);
         if (options.onHomeSelect) options.onHomeSelect({ lat: point.lat(), lng: point.lng() });
       }
       map.addListener("click", function (event) { selectHome(event.latLng); });
@@ -138,7 +150,15 @@
           if (!point || !Number.isFinite(point.lat) || !Number.isFinite(point.lng)) return;
           var position = new maps.LatLng(point.lat, point.lng);
           homeMarker.setPosition(position);
+          if (rangeCircle) rangeCircle.setCenter(position);
           map.panTo(position);
+        },
+        setRadius: function (meters) {
+          var r = Number(meters);
+          if (!rangeCircle || !Number.isFinite(r) || r <= 0) return;
+          rangeCircle.setRadius(r);
+          var bounds = rangeCircle.getBounds();
+          if (bounds) map.fitBounds(bounds);
         },
         setCurrent: function (point) {
           if (!point) return;

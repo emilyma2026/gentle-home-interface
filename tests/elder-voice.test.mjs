@@ -110,7 +110,14 @@ test("a family answer immediately replaces the elder's unconfirmed reply in shar
     Date: { now: () => 789 },
     document: { querySelector: () => ({ value: "They are in the blue bowl." }) },
     pendingQuestion: (item) => item.question,
+    selectedMemberId: () => "family-1",
+    appendUniqueItems: (target, items) => {
+      target.facts.push(...items);
+      return items.length;
+    },
+    factById: (target, id) => target.facts.find((item) => item.id === id) || null,
     clockNow: () => "10:05",
+    todayKey: () => "2026-08-24",
     queueUpdate: (mutator) => mutator(state),
   };
   vm.runInNewContext(`${saveAnswerSection.source}\nsaveAnswer("q1");`, context);
@@ -120,6 +127,51 @@ test("a family answer immediately replaces the elder's unconfirmed reply in shar
   assert.equal(state.thread[1].key, "ansPlain");
   assert.equal(state.thread[1].text, "They are in the blue bowl.");
   assert.equal(state.thread[1].src, "srcFact");
+});
+
+test("a stale second family answer cannot overwrite the first confirmed answer", () => {
+  const state = {
+    pending: [],
+    facts: [
+      {
+        id: "first-answer",
+        type: "fact",
+        question: "Where are my keys?",
+        text: "They are in the blue bowl.",
+        status: "done",
+      },
+    ],
+    timeline: [],
+    thread: [],
+  };
+  let notice = "";
+  const context = {
+    App: { pendDraft: { q1: "They are by the door." } },
+    Date,
+    Math,
+    D: { collabAnswerKept: "first answer kept" },
+    document: { querySelector: () => ({ value: "They are by the door." }) },
+    pendingQuestion: (item) => item.question,
+    selectedMemberId: () => "family-2",
+    appendUniqueItems: (target, items) => {
+      target.facts.push(...items);
+      return items.length;
+    },
+    factById: (target, id) => target.facts.find((item) => item.id === id) || null,
+    showNotice: (message) => {
+      notice = message;
+    },
+    queueUpdate: (mutator, _onError, onDone) => {
+      mutator(state);
+      onDone(state);
+    },
+  };
+
+  vm.runInNewContext(`${saveAnswerSection.source}\nsaveAnswer("q1");`, context);
+
+  assert.equal(state.facts.length, 1);
+  assert.equal(state.facts[0].text, "They are in the blue bowl.");
+  assert.equal(notice, "first answer kept");
 });
 
 test("a matched free question answers only from confirmed shared family information", async () => {
@@ -136,6 +188,7 @@ test("a matched free question answers only from confirmed shared family informat
     phraseAnswer: async () => null,
     factLine: (fact) => fact.text,
     clockNow: () => "10:00",
+    todayKey: () => "2026-08-24",
     queueUpdate: (mutator) => mutator(state),
   };
   vm.runInNewContext(freeQuestionSection.source, context);
@@ -158,6 +211,7 @@ test("an unmatched free question syncs to the family instead of inventing an ans
     phraseAnswer: async () => null,
     factLine: (fact) => fact.text,
     clockNow: () => "10:00",
+    todayKey: () => "2026-08-24",
     queueUpdate: (mutator) => mutator(state),
   };
   vm.runInNewContext(freeQuestionSection.source, context);

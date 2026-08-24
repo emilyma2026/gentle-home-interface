@@ -65,6 +65,7 @@ function familyContext(overrides = {}) {
     pendingCard: () => "PENDING_CARD",
     todaySummary: () => "TODAY_SUMMARY",
     todoCard: () => "TODO_CARD",
+    familyCallActionsHTML: () => "CALL_ACTIONS",
     confirmCard: () => "CONFIRM_CARD",
     statusText: () => "WAITING_FOR_LOCATION",
     me: () => ({ nick: "Peter", relation: "Son" }),
@@ -79,13 +80,13 @@ function familyContext(overrides = {}) {
   return context;
 }
 
-test("family home describes the elder without location waiting or caregiver identity", () => {
+test("family home describes the elder with live status and without caregiver identity", () => {
   assert.equal(homeSection.found, true);
   const output = vm.runInNewContext(`${homeSection.source}\ntabHome();`, familyContext());
 
   assert.match(output, /Margaret/);
   assert.match(output, /A calm overview for Margaret/);
-  assert.doesNotMatch(output, /WAITING_FOR_LOCATION/);
+  assert.match(output, /WAITING_FOR_LOCATION/);
   assert.doesNotMatch(output, /Peter|Son|PETER_AVATAR/);
   assert.doesNotMatch(output, /CONFIRM_CARD/);
 });
@@ -134,11 +135,14 @@ test("family call view and elder call view both show the synchronized transcript
     D: { eOnCall: "On a call", hangup: "Hang up" },
     App: { callNeedsPlay: false },
     focusPerson: () => ({ nick: "Peter", relation: "Son" }),
+    avatarHTML: () => '<span class="avatar av-lg photo"></span>',
     esc: (value) => String(value),
     callTranscript: () => '<div class="call-transcript">TRANSCRIPT</div>',
     callPlaybackButton: () => "",
   });
   assert.match(elderOutput, /class="call-transcript"/);
+  assert.match(elderOutput, /class="avatar av-lg photo"/);
+  assert.match(elderOutput, />Peter<\/b><span>Son<\/span>/);
 });
 
 test("call demo audio starts both devices at the shared elapsed position and stops after the call", async () => {
@@ -208,7 +212,7 @@ test("call subtitle timing follows the shared recording timeline", () => {
 test("add reminder opens a new reminder directly in the Reminders tab", () => {
   assert.equal(reminderSection.found, true);
   const context = {
-    App: { tab: 0, cal: { open: null } },
+    App: { tab: 0, cal: { open: null }, todoErrors: {} },
     newTodo: () => ({ id: "todo-new", type: "todo" }),
     queueUpdate: (mutator) => mutator(context.state),
     state: { facts: [] },

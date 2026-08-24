@@ -1,0 +1,247 @@
+import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { test } from "node:test";
+import vm from "node:vm";
+
+const appSource = readFileSync(new URL("../public/app/index.html", import.meta.url), "utf8");
+const routeSource = readFileSync(new URL("../src/routes/index.tsx", import.meta.url), "utf8");
+
+function between(startMarker, endMarker) {
+  const start = appSource.indexOf(startMarker);
+  const end = start < 0 ? -1 : appSource.indexOf(endMarker, start);
+  assert.ok(start >= 0, `missing ${startMarker}`);
+  assert.ok(end > start, `missing ${endMarker}`);
+  return appSource.slice(start, end);
+}
+
+test("automatic elder pronouns follow the configured relationship instead of a fixed gender", () => {
+  const source = between("function elderGrammar(", "function esc(");
+  const context = { St: null };
+  vm.runInNewContext(source, context);
+
+  assert.equal(context.elderGrammar({ elder: { name: "Dad", pronouns: "auto" } }).subject, "he");
+  assert.equal(context.elderGrammar({ elder: { name: "妈妈", pronouns: "auto" } }).subject, "she");
+  assert.equal(context.elderGrammar({ elder: { name: "Alex", pronouns: "auto" } }).subject, "they");
+  assert.equal(context.elderGrammar({ elder: { name: "Dad", pronouns: "she" } }).subject, "she");
+});
+
+test("call recognition follows the active call person instead of a stale previous caller", () => {
+  const source = between("function focusPerson(", "function elderGrammar(");
+  const state = {
+    people: [
+      { id: "p1", nick: "Emily", photo: "emily" },
+      { id: "p2", nick: "Peter", photo: "peter" },
+    ],
+    lastCaller: "p1",
+    call: { phase: "ringing", personId: "p2" },
+  };
+  const context = {};
+  vm.runInNewContext(source, context);
+
+  assert.equal(context.focusPerson(state).nick, "Peter");
+  assert.equal(context.focusPerson(state).photo, "peter");
+});
+
+test("a reminder stays family-only as a draft and disappears from the elder home once completed", () => {
+  const source = between("function todoDate(", "function dayParts(");
+  const date = "2026-08-24";
+  const state = {
+    facts: [
+      { id: "draft", type: "todo", status: "draft", date, repeat: "none", done: {}, what: "Draft" },
+      {
+        id: "saved",
+        type: "todo",
+        status: "done",
+        date,
+        repeat: "none",
+        done: {},
+        what: "Medicine",
+      },
+    ],
+  };
+  const context = { St: state, todayKey: () => date, App: { cal: { sel: date } }, Date, Math };
+  vm.runInNewContext(source, context);
+
+  assert.deepEqual(
+    Array.from(context.todosOn(state, date), (item) => item.id),
+    ["saved"],
+  );
+  assert.deepEqual(
+    Array.from(context.todosOn(state, date, true), (item) => item.id),
+    ["draft", "saved"],
+  );
+  assert.equal(context.todayTodoOf(state).id, "saved");
+  context.markTodoDone(state, "saved", date, true);
+  assert.equal(context.todayTodoOf(state), null);
+  assert.equal(
+    state.facts.length,
+    2,
+    "completion checks the original row instead of appending one",
+  );
+});
+
+test("unfinished reminder drafts stay with the family member who created them", () => {
+  const source = between("function todoDate(", "function dayParts(");
+  const date = "2026-08-24";
+  const state = {
+    facts: [
+      { id: "mine", ownerId: "family-1", type: "todo", status: "draft", date, repeat: "none" },
+      { id: "theirs", ownerId: "family-2", type: "todo", status: "draft", date, repeat: "none" },
+      { id: "legacy", type: "todo", status: "draft", date, repeat: "none" },
+      { id: "saved", type: "todo", status: "done", date, repeat: "none" },
+    ],
+  };
+  const context = {
+    St: state,
+    App: { cal: { sel: date } },
+    selectedMemberId: () => "family-1",
+    todayKey: () => date,
+    Date,
+    Math,
+  };
+  vm.runInNewContext(source, context);
+
+  assert.deepEqual(
+    Array.from(context.todosOn(state, date, true), (item) => item.id),
+    ["mine", "legacy", "saved"],
+  );
+});
+
+test("a second device cannot replace an active family call", () => {
+  const source = between("function callDir(", "function elderScreen(");
+  const state = { call: { phase: "idle" }, people: [], lastCaller: null };
+  const context = { Date, Math };
+  vm.runInNewContext(source, context);
+
+  assert.equal(context.beginSharedCall(state, "p1", "in", "call-1"), true);
+  assert.equal(context.beginSharedCall(state, "p2", "in", "call-2"), false);
+  assert.equal(state.call.id, "call-1");
+  assert.equal(state.call.personId, "p1");
+});
+
+test("alerts are derived from current risk and a fresh departure reopens a cleared alert", () => {
+  const riskSource = between("function riskState(){", "function statusText(){");
+  const gpsSource = between("function applyGpsPosition(", "function startGps(){");
+  const state = {
+    home: { lat: 1, lng: 1, radiusM: 800 },
+    loc: { lat: 1, lng: 1 },
+    locReported: true,
+    alertCleared: true,
+    risk: { state: "safe", outsideCount: 2 },
+    guide: { active: false, done: false, step: 0 },
+    timeline: [{ kind: "home", date: "2026-08-23" }],
+  };
+  const context = {
+    St: state,
+    App: { route: "family" },
+    D: {},
+    window: { Navigation: { distanceMeters: () => 1200 } },
+    homePoint: (s) => s.home,
+    rangeM: () => 800,
+    queueUpdate: (mutator) => mutator(state),
+    clockNow: () => "17:11",
+    todayKey: () => "2026-08-24",
+    render: () => {},
+  };
+  vm.runInNewContext(`${riskSource}\n${gpsSource}`, context);
+
+  assert.equal(context.riskState(), "none", "historical timeline rows do not keep an alert alive");
+  context.applyGpsPosition({ coords: { latitude: 2, longitude: 2, accuracy: 5 } });
+  assert.equal(state.alertCleared, false);
+  assert.equal(state.guide.active, true);
+  assert.equal(context.riskState(), "on");
+});
+
+test("live weather uses the elder's reported position and synchronizes its timezone", async () => {
+  const source = between("var Weather={", "/* 读给我听");
+  const state = {
+    homeSet: true,
+    locReported: true,
+    home: { lat: 23.1291, lng: 113.3644 },
+    loc: { lat: 1.3521, lng: 103.8198 },
+    timezone: "",
+  };
+  let requestedUrl = "";
+  const context = {
+    St: state,
+    App: { route: "elder" },
+    Date,
+    D: {},
+    homeOf: (s) => s.home,
+    locOf: (s) => s.loc,
+    queueUpdate: (mutator) => mutator(state),
+    render: () => {},
+    fetch: async (url) => {
+      requestedUrl = url;
+      return {
+        ok: true,
+        json: async () => ({
+          current: { temperature_2m: 29.6, weather_code: 3 },
+          timezone: "Asia/Singapore",
+        }),
+      };
+    },
+  };
+  vm.runInNewContext(source, context);
+  await context.ensureWeather(true);
+
+  assert.match(requestedUrl, /latitude=1\.3521/);
+  assert.match(requestedUrl, /longitude=103\.8198/);
+  assert.equal(context.Weather.data.temp, 30);
+  assert.equal(state.timezone, "Asia/Singapore");
+
+  let failedRequests = 0;
+  context.fetch = async () => {
+    failedRequests += 1;
+    return { ok: false, json: async () => null };
+  };
+  await context.ensureWeather(true);
+  assert.equal(context.Weather.state, "failed");
+  assert.equal(context.Weather.data, null);
+  await context.ensureWeather(false);
+  assert.equal(failedRequests, 1, "a failure remains visible until the user retries");
+});
+
+test("ending the in-app call extracts its transcript instead of always inserting fallback rows", async () => {
+  const source = between("var endingCall=false;", "function setLoc(");
+  const state = { facts: [], timeline: [], call: { phase: "talking", personId: null, dir: "in" } };
+  let extractions = 0;
+  const context = {
+    St: state,
+    callActive: (target) => ["ringing", "talking"].includes(target?.call?.phase),
+    isSameCall: (target, snapshot) =>
+      target.call.personId === snapshot.personId && target.call.dir === snapshot.dir,
+    hasPendingCallItem: () => false,
+    extractCallItems: async () => {
+      extractions += 1;
+      return [
+        {
+          id: "from-input",
+          type: "fact",
+          origin: "call",
+          status: "open",
+          text: "Input-derived fact",
+        },
+      ];
+    },
+    queueUpdate: (mutator) => mutator(state),
+    clockNow: () => "17:12",
+    todayKey: () => "2026-08-24",
+  };
+  vm.runInNewContext(source, context);
+  await context.endCall();
+
+  assert.equal(extractions, 1);
+  assert.equal(state.facts[0].text, "Input-derived fact");
+  assert.equal(state.call.phase, "ended");
+});
+
+test("the comparison route embeds both roles for the same family", () => {
+  assert.doesNotMatch(routeSource, /typeof window/);
+  assert.match(routeSource, /Route\.useSearch\(\)/);
+  assert.match(routeSource, /frame\.set\("dualRole", role\)/);
+  assert.match(routeSource, /frameSrc\("family"\)/);
+  assert.match(routeSource, /frameSrc\("elder"\)/);
+  assert.match(routeSource, /Family side/);
+  assert.match(routeSource, /Elder side/);
+});

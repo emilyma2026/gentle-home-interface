@@ -139,13 +139,13 @@ test("entry safely centers its content and biases it below the top edge", () => 
   assert.ok(parseFloat(entryStyles["padding-top"]) > parseFloat(entryStyles["padding-bottom"]));
 });
 
-test("family pages keep safe gutters and vertically balance short content", () => {
+test("family pages keep safe gutters and align their overview at the top", () => {
   const familyStyles = declarations(".view.pad0");
 
   assert.equal(familyStyles["padding-left"], "22px");
   assert.equal(familyStyles["padding-right"], "22px");
-  assert.equal(familyStyles["justify-content"], "safe center");
-  assert.match(familyStyles["padding-top"], /clamp\(/);
+  assert.equal(familyStyles["justify-content"], "flex-start");
+  assert.equal(familyStyles["padding-top"], "8px");
   assert.match(familyStyles["padding-bottom"], /clamp\(/);
 });
 
@@ -201,7 +201,7 @@ test("profile form centers a neutral add-photo placeholder without the old expla
   assert.equal(placeholderStyles.background, "#E8E3DE");
 });
 
-test("incoming call card shows every family onboarding detail without a broken relationship sentence", () => {
+test("incoming call card prioritizes the face and one familiar recognition cue", () => {
   const person = {
     id: "family-1",
     nick: "Emily",
@@ -223,13 +223,14 @@ test("incoming call card shows every family onboarding detail without a broken r
 
   assert.match(output, /class="caller-name"[^>]*>Emily</);
   assert.match(output, /class="caller-relation"[^>]*>Daughter</);
-  assert.match(output, />Phone<\/dt><dd[^>]*>\+65 8371 0994<\/dd>/);
-  assert.match(output, />Recent life<\/dt><dd[^>]*>Moved to Singapore for a new role\.<\/dd>/);
   assert.match(
     output,
     />A memory to share<\/dt><dd[^>]*>We baked peach pies together every summer\.<\/dd>/,
   );
+  assert.doesNotMatch(output, />Phone<\/dt>/);
+  assert.doesNotMatch(output, />Recent life<\/dt>/);
   assert.doesNotMatch(output, /, your/);
+  assert.equal(declarations(".pcard .avatar").width, "128px");
 });
 
 test("decline control uses a standard horizontal hang-up handset", () => {
@@ -414,8 +415,12 @@ test("fire-and-forget updates explicitly consume already-reported rejections", (
   let rejectionHandler = null;
   const context = {
     persistUpdate: () => ({
-      catch(handler) {
-        rejectionHandler = handler;
+      then() {
+        return {
+          catch(handler) {
+            rejectionHandler = handler;
+          },
+        };
       },
     }),
   };

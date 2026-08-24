@@ -50,6 +50,7 @@ test("both onboarding pages offer an explicit sample action and person setup can
   };
   const elder = vm.runInNewContext(`${elderViewSource}\nviewObElder();`, {
     ...common,
+    elderPronounFieldHTML: () => '<select data-field="elder.pronouns"></select>',
     D: {
       back: "Back",
       fillSample: "Fill sample",
@@ -60,8 +61,9 @@ test("both onboarding pages offer an explicit sample action and person setup can
       next: "Next",
       obElderSub: "Sub",
       obElderTitle: "Title",
+      mapUseGps: "Use GPS",
     },
-    mapBox: () => "MAP",
+    homeMapStatus: () => "STATUS",
     rangeFieldHTML: () => "RANGE",
   });
   const person = vm.runInNewContext(`${personViewSource}\nviewObMe();`, {
@@ -124,8 +126,8 @@ test("sample actions fill only their own onboarding fields", async () => {
     [state.people[0].nick, state.people[0].relation, state.people[0].phone],
     ["Yuki", "Daughter", "138 0000 7612"],
   );
-  assert.equal(state.people[0].recent, "Works in Guangzhou, lives on her own.");
-  assert.equal(state.people[0].hint, "You walked her to No.3 Primary School every morning, rain or shine.");
+  assert.equal(state.people[0].recent, "Works in Guangzhou, lives independently.");
+  assert.equal(state.people[0].hint, "You walked me to No.3 Primary School every morning, rain or shine.");
   assert.equal(state.people[0].photo, "photo");
 });
 

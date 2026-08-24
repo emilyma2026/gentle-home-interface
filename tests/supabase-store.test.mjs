@@ -258,6 +258,21 @@ test("public configuration exposes only the project URL and publishable key", ()
   assert.doesNotMatch(source, /secret(?:Key|_key)?\s*:/i);
 });
 
+test("public configuration targets the verified family backend", () => {
+  const source = readFileSync(configPath, "utf8");
+  const context = { window: {} };
+  vm.runInNewContext(source, context, { filename: "supabase-config.js" });
+
+  assert.equal(
+    context.window.SUPABASE_CONFIG.url,
+    "https://kmkgbczjukbvktuxejhr.supabase.co",
+  );
+  assert.equal(
+    context.window.SUPABASE_CONFIG.publishableKey,
+    "sb_publishable_wKw9LTQlRJwSA0GoKQH62g_g_g9Bmey",
+  );
+});
+
 test("initialize reuses an existing anonymous session", async () => {
   const fake = fakeSupabase({ userId: "user-a", existingSession: true });
   const { store } = createStore(fake);

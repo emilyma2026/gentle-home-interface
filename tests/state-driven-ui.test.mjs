@@ -1,10 +1,33 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { test } from "node:test";
+import ts from "typescript";
 import vm from "node:vm";
 
 const appSource = readFileSync(new URL("../public/app/index.html", import.meta.url), "utf8");
 const routeSource = readFileSync(new URL("../src/routes/index.tsx", import.meta.url), "utf8");
+
+function loadRouteOptions() {
+  const compiled = ts.transpileModule(routeSource, {
+    compilerOptions: {
+      jsx: ts.JsxEmit.ReactJSX,
+      module: ts.ModuleKind.CommonJS,
+      target: ts.ScriptTarget.ES2022,
+    },
+  }).outputText;
+  const module = { exports: {} };
+  const fakeRequire = (specifier) => {
+    if (specifier === "@tanstack/react-router") {
+      return { createFileRoute: () => (options) => ({ options, useSearch: () => ({}) }) };
+    }
+    if (specifier === "react/jsx-runtime") {
+      return { jsx: () => null, jsxs: () => null };
+    }
+    throw new Error(`Unexpected route dependency: ${specifier}`);
+  };
+  vm.runInNewContext(compiled, { exports: module.exports, module, require: fakeRequire, URLSearchParams });
+  return module.exports.Route.options;
+}
 
 function between(startMarker, endMarker) {
   const start = appSource.indexOf(startMarker);
@@ -244,4 +267,14 @@ test("the comparison route embeds both roles for the same family", () => {
   assert.match(routeSource, /frameSrc\("elder"\)/);
   assert.match(routeSource, /Family side/);
   assert.match(routeSource, /Elder side/);
+});
+
+test("the root route keeps empty comparison defaults out of the address and preserves a valid family code", () => {
+  const validateSearch = loadRouteOptions().validateSearch;
+
+  assert.deepEqual({ ...validateSearch({}) }, {});
+  assert.deepEqual(
+    { ...validateSearch({ compare: "1", code: "527487", localDemo: false }) },
+    { compare: true, code: "527487" },
+  );
 });

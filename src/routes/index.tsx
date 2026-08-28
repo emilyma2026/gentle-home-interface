@@ -1,12 +1,20 @@
 import { createFileRoute } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/")({
-  validateSearch: (search: Record<string, unknown>) => ({
-    compare: search.compare === "1" || search.compare === 1 || search.compare === true,
-    code:
-      typeof search.code === "string" || typeof search.code === "number" ? String(search.code) : "",
-    localDemo: search.localDemo === "1" || search.localDemo === 1 || search.localDemo === true,
-  }),
+  validateSearch: (search: Record<string, unknown>) => {
+    const compare = search.compare === "1" || search.compare === 1 || search.compare === true;
+    const code =
+      typeof search.code === "string" || typeof search.code === "number"
+        ? String(search.code)
+        : "";
+    const localDemo =
+      search.localDemo === "1" || search.localDemo === 1 || search.localDemo === true;
+
+    return {
+      ...(compare && /^\d{6}$/.test(code) ? { compare: true, code } : {}),
+      ...(localDemo ? { localDemo: true } : {}),
+    };
+  },
   head: () => ({
     meta: [
       { title: "Remember Us · Family Memory Companion" },
@@ -30,7 +38,7 @@ export const Route = createFileRoute("/")({
 function Index() {
   const { compare, code, localDemo } = Route.useSearch();
 
-  if (compare && /^\d{6}$/.test(code)) {
+  if (compare && code && /^\d{6}$/.test(code)) {
     const shared = new URLSearchParams({ embedded: "1", code });
     if (localDemo) shared.set("localDemo", "1");
     const frameSrc = (role: "family" | "elder") => {

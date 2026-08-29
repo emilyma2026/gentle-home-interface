@@ -4559,13 +4559,36 @@ async function startElderDevice(){
   }catch(_error){ /* A fresh anonymous session will be created when pairing starts. */ }
 }
 
+/* “换个角色”代表结束这台老人端当前的临时会话。家庭资料、记忆和待办保留，
+   但导航/到家页和正在进行的通话不能在重新进入老人端后继续占住首页。 */
+function resetElderModeSession(s){
+  if(!s) return;
+  s.guide=s.guide||{};
+  s.guide.active=false; s.guide.done=false; s.guide.step=0;
+  s.guide.instructions=[]; s.guide.routeId="";
+  if(s.call && (s.call.phase==="ringing" || s.call.phase==="talking")){
+    s.call.phase="idle"; s.call.line=-1;
+    delete s.call.startedAt;
+  }
+}
+
 async function hardExit(){
+  var leavingRole=storeRole();
   stopSpeech();
+  stopSubs();
+  if(leavingRole==="elder" && St){
+    try{ await persistUpdate(resetElderModeSession); }
+    catch(_error){ /* persistUpdate 已显示连接错误；仍允许用户切换角色。 */ }
+  }
   App.route="entry"; App.tab=0; App.qa=false; App.pick=false; App.eset=false;
   App.qaVoiceActive=false; App.qaVoiceText=""; App.qaVoiceErr="";
-  App.editingPerson=null; App.paired=false;
+  App.callNeedsPlay=false; App.editingPerson=null; App.paired=false;
   clearDevice(); stopGps(); App.demoLocation=false; St=null;
   try{ if(Store) await Store.signOut(); }catch(error){ reportStoreError(error); }
+  if(!EMBEDDED && window.location && typeof window.location.reload==="function"){
+    window.location.reload();
+    return;
+  }
   D=I18N[lang]; render();
 }
 

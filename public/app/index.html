@@ -1433,7 +1433,7 @@ function protectedActionSelector(){
     +'[data-go="ackHome"],[data-go="walk"],[data-go="goHome"],[data-go="reset"],[data-go="speak"],[data-go="chatVoice"],[data-go="voiceAsk"],[data-go="callRecord"]';
 }
 function syncActionAvailability(){
-  var busy=Connection.pendingAction || Connection.state==="connecting" || Connection.state==="loading";
+  var busy=Connection.pendingAction;
   var unavailable=!Connection.authenticated || Connection.initFailed;
   var lifecycleSelector='[data-go="create"],[data-go="pair"]';
   var controls=document.querySelectorAll(protectedActionSelector());

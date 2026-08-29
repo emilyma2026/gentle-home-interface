@@ -1069,6 +1069,7 @@ zh:{
   srcFact:"来自{nick}今天确认的信息", srcTodo:"来自{nick}今天确认的待办",
   srcUnk:"记忆里还没有，已经去问{nick}了",
   eStep:"第 {n} 步 · 共 {total} 步", eArrived:"我到了",
+  eGuideStart:"开始回家引导", eGuideOpen:"查看回家引导",
   eGuideNote:"到了就按下面的按钮，我再告诉你下一步。",
   eHomeT:"你到家了", eHomeD:"已经告诉{nick}你平安到家。", eGot:"知道了",
 
@@ -1278,6 +1279,7 @@ en:{
   srcFact:"From what {nick} confirmed today", srcTodo:"From the reminder {nick} confirmed today",
   srcUnk:"Not in memory yet. {nick} has been asked.",
   eStep:"Step {n} of {total}", eArrived:"I'm there",
+  eGuideStart:"Start home guidance", eGuideOpen:"Open home guidance",
   eGuideNote:"Tap the button when you get there and I'll give you the next step.",
   eHomeT:"You're home", eHomeD:"{nick} has been told you got home safely.", eGot:"Got it",
 
@@ -2935,6 +2937,7 @@ function tabAlerts(){
     h+='<div class="empty"><b style="display:block;margin-bottom:4px">'+esc(D.locationNormal)+'</b>'+esc(D.alertNoneD)+'</div>';
   }
   h+='<p class="eyebrow" style="margin-top:14px">'+esc(D.locationT)+'</p><div class="map-card">'+mapSVG()+'</div>';
+  if(a!=="none") h+='<button class="btn" data-go="openGuide" style="margin-bottom:12px">'+esc(D.eGuideOpen)+'</button>';
   if(a!=="none") h+=familyCallActionsHTML();
   return h;
 }
@@ -3226,7 +3229,7 @@ function homeSummaryText(){
 
 function viewStandby(){
   ensureWeather();
-  var d=dayParts(), t=todayTodo(), n=todayNews();
+  var d=dayParts(), t=todayTodo(), n=todayNews(), canGuide=!!(homePoint(St)&&currentPoint(St));
 
   var h='<div class="e-home">'
     + '<div class="e-date"><small>'+esc(D.eTodayT)+'</small>'
@@ -3275,6 +3278,7 @@ function viewStandby(){
   h+='<div class="e-actions">'
    + '<button class="e-btn" data-go="openQa">'+esc(D.eTalk)+'</button>'
    + '<button class="e-btn soft" data-go="openPick" style="margin-top:10px">'+esc(D.eCallFamily)+'</button>'
+   + (canGuide?'<button class="e-btn soft" data-go="openGuide" style="margin-top:10px">'+esc(D.eGuideStart)+'</button>':'')
    + elderSettingsEntry()
    + '</div>';
   return h+devBar();
@@ -4789,6 +4793,14 @@ document.addEventListener("click", async function(e){
     case "closePick": App.pick=false; render(); break;
     case "openESet": App.eset=true; App.qa=false; App.pick=false; render(); break;
     case "closeESet": App.eset=false; render(); break;
+    case "openGuide":
+      if(homePoint(St)&&currentPoint(St)){
+        queueUpdate(function(s){ s.guide.active=true; s.guide.done=false; s.guide.step=0; });
+        App.qa=false; App.pick=false; App.eset=false;
+        App.guideRouteRequested=false; App.guideRouteStatus="idle"; App.guideRouteError="";
+        initGuideMap();
+      }
+      break;
     case "prevGuide": retreatGuide(); break;
     case "arrived": arrived(); break;
     case "ackHome": queueUpdate(function(s){ s.guide.done=false; }); break;

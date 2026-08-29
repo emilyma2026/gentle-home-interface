@@ -1,3 +1,6 @@
+import fs from "node:fs/promises";
+import path from "node:path";
+
 import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 import type { Plugin } from "vite";
 
@@ -15,6 +18,29 @@ function mapsConfigPlugin(): Plugin {
       if (typeof module.default === "function") {
         await module.default();
       }
+    },
+  };
+}
+
+function prototypeAssetsPlugin(): Plugin {
+  return {
+    name: "remember-us-prototype-assets",
+    apply: "build",
+    async closeBundle() {
+      const root = process.cwd();
+      const source = path.join(root, "public", "app");
+      const targets = [
+        path.join(root, ".output", "public", "app"),
+        path.join(root, "dist", "app"),
+      ];
+
+      await Promise.all(
+        targets.map(async (target) => {
+          await fs.mkdir(path.dirname(target), { recursive: true });
+          await fs.rm(target, { recursive: true, force: true });
+          await fs.cp(source, target, { recursive: true });
+        }),
+      );
     },
   };
 }
@@ -54,6 +80,6 @@ export default defineConfig({
     server: { entry: "server" },
   },
   vite: {
-    plugins: [mapsConfigPlugin(), aiProxyPlugin(), daytonaProxyPlugin()],
+    plugins: [mapsConfigPlugin(), prototypeAssetsPlugin(), aiProxyPlugin(), daytonaProxyPlugin()],
   },
 });

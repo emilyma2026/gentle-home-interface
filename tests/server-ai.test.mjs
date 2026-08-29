@@ -31,7 +31,8 @@ function aiRequest(headers = {}) {
 
 test("the Cloudflare server intercepts the production AI route", () => {
   assert.match(serverSource, /pathname === "\/api\/ai"/);
-  assert.match(serverSource, /handleAIRequest\(request, runtimeEnv\)/);
+  assert.match(serverSource, /handleAIRequest\(request, runtimeEnvironment\(env\)\)/);
+  assert.match(serverSource, /globalThis[\s\S]*__env__/);
 });
 
 test("the production AI route requires a Supabase session", async () => {

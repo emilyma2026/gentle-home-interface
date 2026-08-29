@@ -341,6 +341,43 @@ test("navigation distance copy measures the current position from home", () => {
   assert.equal(measuredDestination, home);
 });
 
+test("family maps mount after rendering and prefer the active warning dialog", async () => {
+  const mapSource = between("function mapSlot(", "function syncMap(");
+  const modalSlot = {
+    inserted: "",
+    insertAdjacentHTML(_position, html) {
+      this.inserted = html;
+    },
+  };
+  const pageSlot = {
+    inserted: "",
+    insertAdjacentHTML(_position, html) {
+      this.inserted = html;
+    },
+  };
+  const context = {
+    document: {
+      querySelector: (selector) => {
+        if (selector === '.sheet-mask [data-gmap="view"]') return modalSlot;
+        if (selector === '[data-gmap="view"]') return pageSlot;
+        return null;
+      },
+    },
+    loadMaps: async () => false,
+    schematicSVG: () => "<svg>warning map</svg>",
+  };
+  vm.runInNewContext(mapSource, context);
+
+  context.mountMaps();
+  await new Promise((resolve) => setImmediate(resolve));
+
+  assert.match(modalSlot.inserted, /warning map/);
+  assert.equal(pageSlot.inserted, "");
+
+  const renderSource = between("function render(s){", "/* 滑块与数字框联动");
+  assert.match(renderSource, /view\.innerHTML = body;[\s\S]*App\.route==="family"\) mountMaps\(\)/);
+});
+
 test("the comparison route embeds both roles for the same family", () => {
   assert.doesNotMatch(routeSource, /typeof window/);
   assert.match(routeSource, /Route\.useSearch\(\)/);

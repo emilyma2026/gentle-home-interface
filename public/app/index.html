@@ -2065,6 +2065,7 @@ var Maps={ state:"idle", waiters:[], host:{}, inst:{}, circle:{}, homeMk:{}, eld
 function mapsKey(){ return (window.MAPS_CONFIG && window.MAPS_CONFIG.key) || ""; }
 function loadMaps(){
   if(Maps.state==="ready") return Promise.resolve(true);
+  if(window.google && window.google.maps){ Maps.state="ready"; return Promise.resolve(true); }
   if(Maps.state==="failed") return Promise.resolve(false);
   if(Maps.state==="loading") return new Promise(function(r){ Maps.waiters.push(r); });
   if(!mapsKey()){ Maps.state="failed"; return Promise.resolve(false); }
@@ -2130,12 +2131,17 @@ function mapBox(kind){
     + '<span class="tip">'+esc(tip)+'</span></div>';
 }
 
+function mapSlot(kind){
+  var selector='[data-gmap="'+kind+'"]';
+  return document.querySelector('.sheet-mask '+selector)||document.querySelector(selector);
+}
+
 function mountMaps(){
   ["picker","view"].forEach(function(kind){
-    var slot=document.querySelector('[data-gmap="'+kind+'"]');
+    var slot=mapSlot(kind);
     if(!slot) return;
     loadMaps().then(function(ok){
-      var still=document.querySelector('[data-gmap="'+kind+'"]');
+      var still=mapSlot(kind);
       if(still!==slot) return;
       if(!ok){ slot.insertAdjacentHTML("afterbegin", schematicSVG(kind)); return; }
       if(kind==="picker") seedHomeFromDevice();
@@ -3518,6 +3524,7 @@ function render(s){
   view.classList.toggle("pad0", App.route==="family");
   view.className = (isElder ? "e-view" : "view") + (App.route==="family" ? " pad0" : "");
   view.innerHTML = body;
+  if(App.route==="family") mountMaps();
 
   /* 家人端底部 tab bar 在 view 之外 */
   var old=screen.querySelector(".tabbar"); if(old) old.remove();

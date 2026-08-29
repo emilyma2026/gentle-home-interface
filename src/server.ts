@@ -8,6 +8,17 @@ type ServerEntry = {
   fetch: (request: Request, env: unknown, ctx: unknown) => Promise<Response> | Response;
 };
 
+function asEnvironment(value: unknown): Record<string, unknown> {
+  return value && typeof value === "object" ? (value as Record<string, unknown>) : {};
+}
+
+function runtimeEnvironment(env: unknown): Record<string, unknown> {
+  const cloudflareEnv = asEnvironment(
+    (globalThis as typeof globalThis & { __env__?: unknown }).__env__,
+  );
+  return { ...cloudflareEnv, ...asEnvironment(env) };
+}
+
 let serverEntryPromise: Promise<ServerEntry> | undefined;
 
 async function getServerEntry(): Promise<ServerEntry> {
@@ -49,9 +60,7 @@ export default {
   async fetch(request: Request, env: unknown, ctx: unknown) {
     try {
       if (new URL(request.url).pathname === "/api/ai") {
-        const runtimeEnv =
-          env && typeof env === "object" ? (env as Record<string, unknown>) : {};
-        return await handleAIRequest(request, runtimeEnv);
+        return await handleAIRequest(request, runtimeEnvironment(env));
       }
       const handler = await getServerEntry();
       const response = await handler.fetch(request, env, ctx);

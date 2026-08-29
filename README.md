@@ -60,13 +60,20 @@ AI_MODEL=gemini-2.5-flash
 在 .env 里配置：
 
 ```
-DAYTONA_API_KEY=你的key   # app.daytona.io/dashboard/keys
-DAYTONA_TARGET=us         # 可选，us / eu
+DAYTONA_API_KEY=你的key      # app.daytona.io/dashboard/keys
+DAYTONA_TARGET=us            # 可选，us / eu
+DAYTONA_SANDBOX=Remember_Us  # 可选，复用固定沙盒
 ```
 
-`POST /api/daytona`，body `{ "code": "print(1+1)" }`（不传则跑默认自检片段）。
-handler 会建沙盒 → 跑 Python → 删沙盒，返回 `{ ok, sandboxId, exitCode, result }`。
-本地 `npm run dev` 由 `server/daytona.mjs` 处理；没配 key 时返回 `{ ok: false, skipped: true }`，不影响其余功能。
+`POST /api/daytona`，body `{ "code": "print(1+1)" }`（不传则跑默认自检片段），
+返回 `{ ok, mode, sandboxId, exitCode, result }`。
+
+- 设了 `DAYTONA_SANDBOX`：复用该沙盒（`mode: "reuse"`），停了自动拉起，跑完不删，
+  文件系统在多次调用间保留；每次调用是独立 Python 进程，内存变量不跨调用。
+- 没设：每次新建一个沙盒，跑完即删（`mode: "ephemeral"`）。
+
+本地 `npm run dev` 由 `server/daytona.mjs` 处理；改 `.env` 后需重启 dev。
+没配 key 时返回 `{ ok: false, skipped: true }`，不影响其余功能。
 
 ## 构建
 

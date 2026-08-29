@@ -259,8 +259,8 @@ test("ending the in-app call extracts its transcript instead of always inserting
   assert.equal(state.call.phase, "ended");
 });
 
-test("the memory chat keeps a saveable proposal when the AI endpoint is unavailable", async () => {
-  const source = between("function fallbackChatResult(", "function chatSaveProp(");
+test("the memory chat reports an API failure without synthesizing a proposal", async () => {
+  const source = between("async function chatSend(", "function chatSaveProp(");
   const input = { value: "Something to do today" };
   const context = {
     App: {
@@ -272,10 +272,7 @@ test("the memory chat keeps a saveable proposal when the AI endpoint is unavaila
         seedPend: null,
       },
     },
-    D: {
-      chatFallback:
-        "Smart sorting is temporarily unavailable, so I kept your wording. Check it before saving.",
-    },
+    D: { chatFailed: "That didn't go through. Try saying it again." },
     St: { lang: "en", elder: { name: "Mom" }, people: [] },
     aiAsk: async () => null,
     aiJSON: () => null,
@@ -289,23 +286,59 @@ test("the memory chat keeps a saveable proposal when the AI endpoint is unavaila
 
   assert.equal(context.App.chat.busy, false);
   assert.equal(context.App.chat.msgs[1].role, "ai");
-  assert.equal(context.App.chat.msgs[2].role, "prop");
-  assert.equal(context.App.chat.msgs[2].item.type, "todo");
-  assert.equal(context.App.chat.msgs[2].item.what, "Something to do today");
-  assert.equal(context.App.chat.msgs[2].item.date, "2026-08-29");
+  assert.equal(context.App.chat.msgs[1].text, "That didn't go through. Try saying it again.");
+  assert.equal(context.App.chat.msgs.length, 2);
 });
 
-test("memory chat fallback keeps pending-question answers as facts", () => {
-  const source = between("function fallbackChatResult(", "async function chatSend(");
+test("browser AI requests carry the active Supabase access token", async () => {
+  const source = between("var AI={", "/* 模型偶尔会在 JSON 外面包一层反引号");
+  let requestOptions = null;
   const context = {
-    D: { chatFallback: "Kept your wording" },
-    todayKey: () => "2026-08-29",
+    SupabaseClient: {
+      auth: {
+        getSession: async () => ({ data: { session: { access_token: "session-token" } } }),
+      },
+    },
+    window: { AbortController: null },
+    fetch: async (_url, options) => {
+      requestOptions = options;
+      return {
+        ok: true,
+        json: async () => ({ provider: "openai", text: "model response" }),
+      };
+    },
+    setTimeout,
+    clearTimeout,
   };
   vm.runInNewContext(source, context);
 
-  const result = context.fallbackChatResult("She visits today", false, true);
-  assert.equal(result.items[0].type, "fact");
-  assert.equal(result.items[0].text, "She visits today");
+  const output = await context.aiAsk({ system: "system", user: "user", json: false });
+
+  assert.equal(output, "model response");
+  assert.equal(requestOptions.headers.authorization, "Bearer session-token");
+});
+
+test("navigation distance copy measures the current position from home", () => {
+  const source = between("function guideHomeDistance(", "function viewGuide(");
+  const home = { lat: 1, lng: 1 };
+  const current = { lat: 2, lng: 2 };
+  let measuredDestination = null;
+  const context = {
+    St: { home },
+    homePoint: (state) => state.home,
+    window: {
+      Navigation: {
+        distanceMeters: (_from, destination) => {
+          measuredDestination = destination;
+          return 896;
+        },
+      },
+    },
+  };
+  vm.runInNewContext(source, context);
+
+  assert.equal(context.guideHomeDistance(current), 896);
+  assert.equal(measuredDestination, home);
 });
 
 test("the comparison route embeds both roles for the same family", () => {

@@ -1000,7 +1000,6 @@ zh:{
   chatSeed:"{elder}问了「{q}」，记忆里没有。你知道答案吗？",
   chatThinking:"正在整理……",
   chatFailed:"刚才没连上，再说一次试试。",
-  chatFallback:"智能整理暂时不可用，我先按原话整理好了，请确认后保存。",
   chatSaved:"已经存进记忆", chatSave:"存进记忆", chatDrop:"不用了",
   chatTips:["老人最近在忙什么","提醒老人今天要做的事","老人认识的一个人"],
   pendingToChat:"用助手补充",
@@ -1211,7 +1210,6 @@ en:{
   chatSeed:"{elder} asked \"{q}\" and it is not in memory. Do you know the answer?",
   chatThinking:"Sorting it out…",
   chatFailed:"That didn't go through. Try saying it again.",
-  chatFallback:"Smart sorting is temporarily unavailable, so I kept your wording. Check it before saving.",
   chatSaved:"Saved to memory", chatSave:"Save to memory", chatDrop:"Not this one",
   chatTips:["What the elder has been doing","Something to do today","Someone the elder knows"],
   pendingToChat:"Use the assistant",
@@ -2285,18 +2283,28 @@ function speakSummary(text){
 
 /* =====================================================================
    3d. AI：统一走服务端 /api/ai，key 不进浏览器。
-       任何一步失败都返回 null，调用方回落到不依赖模型的行为。
+       请求携带 Supabase 会话，服务端校验后才调用模型。
    ===================================================================== */
 var AI={ endpoint:"/api/ai", provider:null, lastError:null };
+
+function aiAccessToken(){
+  if(!SupabaseClient || !SupabaseClient.auth || typeof SupabaseClient.auth.getSession!=="function") return Promise.resolve("");
+  return Promise.resolve(SupabaseClient.auth.getSession()).then(function(result){
+    return result&&result.data&&result.data.session&&result.data.session.access_token||"";
+  });
+}
 
 function aiAsk(opts){
   var ctrl = window.AbortController ? new AbortController() : null;
   var timer = setTimeout(function(){ if(ctrl) ctrl.abort(); }, opts.timeout || 15000);
-  return fetch(AI.endpoint,{
-    method:"POST",
-    headers:{"content-type":"application/json"},
-    body:JSON.stringify({ system:opts.system, user:opts.user, json:!!opts.json }),
-    signal: ctrl ? ctrl.signal : undefined
+  return aiAccessToken().then(function(token){
+    if(!token) throw new Error("AI_AUTH_REQUIRED");
+    return fetch(AI.endpoint,{
+      method:"POST",
+      headers:{"content-type":"application/json","authorization":"Bearer "+token},
+      body:JSON.stringify({ system:opts.system, user:opts.user, json:!!opts.json }),
+      signal: ctrl ? ctrl.signal : undefined
+    });
   }).then(function(r){
     if(!r.ok) throw new Error("AI_HTTP_"+r.status);
     return r.json();
@@ -3397,8 +3405,9 @@ function streetViewVisual(routeStep){
 function guideText(item){ return item&&typeof item==="object"?item.text:String(item||""); }
 function guideLandmark(item){ return item&&typeof item==="object"&&item.landmark?item.landmark:D.mapHome; }
 function guideTotal(s){ return s&&s.guide&&s.guide.instructions&&s.guide.instructions.length?s.guide.instructions.length:3; }
-function guideDistance(item, point){
-  return item&&item.end&&point&&window.Navigation ? window.Navigation.distanceMeters(point,item.end) : null;
+function guideHomeDistance(point){
+  var home=homePoint(St);
+  return home&&point&&window.Navigation ? window.Navigation.distanceMeters(point,home) : null;
 }
 
 function viewGuide(){
@@ -3406,7 +3415,7 @@ function viewGuide(){
   var routeStep=St.guide.instructions&&St.guide.instructions[St.guide.step];
   var instruction=routeStep ? guideText(routeStep) : g.copy;
   var landmark=routeStep ? guideLandmark(routeStep) : g.lm;
-  var remaining=routeStep&&routeStep.end?guideDistance(routeStep,currentPoint(St)):null;
+  var remaining=guideHomeDistance(currentPoint(St));
   var routeNote=App.guideRouteError||(App.guideRouteStatus==="loading"?D.routeLoading:(remaining!==null?fill(D.riskDistance,{n:remaining}):D.eGuideNote));
   var visualsHtml=streetViewVisual(routeStep);
   var arrowHtml = '<div class="turn-arrow">' + maneuverIcon(routeStep ? routeStep.maneuver : "straight") + '</div>';
@@ -4249,18 +4258,6 @@ function openChat(pendId){
   render();
 }
 
-/* AI 断线时仍保留用户原话，让家人确认后再写入记忆库。 */
-function fallbackChatResult(text, zh, preferFact){
-  var raw=String(text||"").trim();
-  var todoCue = zh
-    ? /(今天|明天|后天|提醒|记得|待办|要去|需要|应该|预约|买|取|拿|打电话|吃药|复诊)/.test(raw)
-    : /\b(today|tomorrow|tonight|remind|remember to|to-?do|need(?:s)? to|have to|has to|must|should|appointment|buy|pick up|call|take (?:medicine|medication|pills?)|visit)\b/i.test(raw);
-  var item = !preferFact && todoCue
-    ? {type:"todo", date:todayKey(), when:"", where:"", what:raw.slice(0,40)}
-    : {type:"fact", text:raw.slice(0,120)};
-  return {reply:D.chatFallback, items:[item]};
-}
-
 async function chatSend(){
   if(App.chat.voiceActive){ App.chat.voiceActive=false; stopSpeech(); }
   var box=el("chatIn");
@@ -4293,7 +4290,7 @@ async function chatSend(){
 
   App.chat.busy=false;
   var got=aiJSON(out);
-  if(!got) got=fallbackChatResult(text,zh,!!App.chat.seedPend);
+  if(!got){ App.chat.msgs.push({role:"ai", text:D.chatFailed}); render(); return; }
   if(got.reply) App.chat.msgs.push({role:"ai", text:String(got.reply).slice(0,120)});
 
   var items = Array.isArray(got.items) ? got.items : [];

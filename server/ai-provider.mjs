@@ -12,6 +12,10 @@ import fsSync from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { runAI } from "./ai-runtime.mjs";
+
+export { pickProvider, runAI } from "./ai-runtime.mjs";
+
 /** 读取项目根目录的 .env，Vite 不会把非 VITE_ 前缀的变量放进 process.env。 */
 export function loadDotEnv(base) {
   const root = base || path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -29,76 +33,6 @@ export function loadDotEnv(base) {
 /** 服务端可用的环境：.env 打底，真实环境变量优先。 */
 export function serverEnv(base) {
   return { ...loadDotEnv(base), ...process.env };
-}
-
-const DEFAULTS = {
-  gemini: "gemini-3.6-flash",
-  openai: "gpt-4o-mini",
-};
-
-export function pickProvider(env = process.env) {
-  const gemini = env.GEMINI_API_KEY || env.VITE_GEMINI_API_KEY || env.GOOGLE_API_KEY;
-  if (gemini) return { name: "gemini", key: gemini, model: env.AI_MODEL || DEFAULTS.gemini };
-  const openai = env.OPENAI_API_KEY;
-  if (openai) return { name: "openai", key: openai, model: env.AI_MODEL || DEFAULTS.openai };
-  return null;
-}
-
-async function callGemini(provider, { system, user, json }) {
-  const url =
-    "https://generativelanguage.googleapis.com/v1beta/models/" +
-    encodeURIComponent(provider.model) +
-    ":generateContent";
-  const body = {
-    contents: [{ role: "user", parts: [{ text: user }] }],
-    generationConfig: json ? { responseMimeType: "application/json", temperature: 0.2 } : { temperature: 0.4 },
-  };
-  if (system) body.systemInstruction = { parts: [{ text: system }] };
-
-  const res = await fetch(url, {
-    method: "POST",
-    headers: { "content-type": "application/json", "x-goog-api-key": provider.key },
-    body: JSON.stringify(body),
-  });
-  if (!res.ok) throw new Error("gemini " + res.status + " " + (await res.text()).slice(0, 300));
-  const data = await res.json();
-  const parts = data?.candidates?.[0]?.content?.parts || [];
-  return parts.map((p) => p.text || "").join("").trim();
-}
-
-async function callOpenAI(provider, { system, user, json }) {
-  const messages = [];
-  if (system) messages.push({ role: "system", content: system });
-  messages.push({ role: "user", content: user });
-
-  const res = await fetch("https://api.openai.com/v1/chat/completions", {
-    method: "POST",
-    headers: { "content-type": "application/json", authorization: "Bearer " + provider.key },
-    body: JSON.stringify({
-      model: provider.model,
-      messages,
-      temperature: json ? 0.2 : 0.4,
-      ...(json ? { response_format: { type: "json_object" } } : {}),
-    }),
-  });
-  if (!res.ok) throw new Error("openai " + res.status + " " + (await res.text()).slice(0, 300));
-  const data = await res.json();
-  return (data?.choices?.[0]?.message?.content || "").trim();
-}
-
-/** 统一入口。返回纯文本；json 为 true 时模型被要求输出 JSON 字符串。 */
-export async function runAI({ system, user, json }, env = process.env) {
-  const provider = pickProvider(env);
-  if (!provider) {
-    const err = new Error("NO_AI_KEY");
-    err.code = "NO_AI_KEY";
-    throw err;
-  }
-  const text =
-    provider.name === "gemini"
-      ? await callGemini(provider, { system, user, json })
-      : await callOpenAI(provider, { system, user, json });
-  return { provider: provider.name, model: provider.model, text };
 }
 
 /** 挂到任意 Node HTTP 服务上的 /api/ai 处理器。 */

@@ -36,6 +36,11 @@ const availabilitySource = appSource.slice(availabilityStart, availabilityEnd);
 const pairStart = appSource.indexOf("async function pair(code){");
 const pairEnd = appSource.indexOf("async function hardExit(){", pairStart);
 const pairSource = appSource.slice(pairStart, pairEnd);
+const resetElderModeStart = appSource.indexOf("function resetElderModeSession(");
+const hardExitStart = appSource.indexOf("async function hardExit(){", resetElderModeStart);
+const hardExitEnd = appSource.indexOf("/* =====================================================================", hardExitStart);
+const resetElderModeSource = appSource.slice(resetElderModeStart, hardExitStart);
+const hardExitSource = appSource.slice(hardExitStart, hardExitEnd);
 const pollStart = appSource.indexOf("function pollFamilyState(){");
 const pollEnd = appSource.indexOf("async function connectAndRestore(){", pollStart);
 const pollSource = pollStart >= 0 && pollEnd > pollStart ? appSource.slice(pollStart, pollEnd) : "";
@@ -347,6 +352,75 @@ test("entry awaits asynchronous family lifecycle actions", () => {
   assert.match(appSource, /await Store\.attach\(code,/);
   assert.match(appSource, /await Store\.resetFamily\(\)/);
   assert.match(appSource, /await Store\.signOut\(\)/);
+});
+
+test("switching away from the elder mode ends transient screens but keeps family data", () => {
+  const state = {
+    guide: {
+      active: true,
+      done: true,
+      step: 2,
+      instructions: [{ text: "turn left" }],
+      routeId: "route-1",
+    },
+    call: { phase: "talking", line: 3, startedAt: 123 },
+    facts: [{ id: "memory-1", text: "Saturday visit" }],
+    todos: [{ id: "todo-1", what: "Medicine" }],
+  };
+
+  vm.runInNewContext(`${resetElderModeSource}\nresetElderModeSession(state);`, { state });
+
+  assert.equal(state.guide.active, false);
+  assert.equal(state.guide.done, false);
+  assert.equal(state.guide.step, 0);
+  assert.equal(state.guide.instructions.length, 0);
+  assert.equal(state.guide.routeId, "");
+  assert.equal(state.call.phase, "idle");
+  assert.equal(state.call.line, -1);
+  assert.equal("startedAt" in state.call, false);
+  assert.equal(state.facts[0].text, "Saturday visit");
+  assert.equal(state.todos[0].what, "Medicine");
+});
+
+test("Switch role persists the elder session reset and refreshes the page", async () => {
+  const state = {
+    guide: { active: true, done: false, step: 1, instructions: ["step"], routeId: "route" },
+    call: { phase: "ringing", line: -1 },
+  };
+  let signedOut = 0;
+  let reloads = 0;
+  const context = {
+    App: {
+      route: "elder", tab: 2, qa: true, pick: true, eset: true,
+      qaVoiceActive: true, qaVoiceText: "question", qaVoiceErr: "error",
+      callNeedsPlay: true, editingPerson: "person-1", paired: true, demoLocation: true,
+    },
+    St: state,
+    Store: { signOut: async () => { signedOut += 1; } },
+    EMBEDDED: false,
+    window: { location: { reload: () => { reloads += 1; } } },
+    storeRole: () => "elder",
+    stopSpeech: () => {},
+    stopSubs: () => {},
+    stopGps: () => {},
+    clearDevice: () => {},
+    persistUpdate: async (mutator) => mutator(state),
+    resetElderModeSession: vm.runInNewContext(`${resetElderModeSource}\nresetElderModeSession;`),
+    reportStoreError: (error) => { throw error; },
+    I18N: { en: {} },
+    lang: "en",
+    D: {},
+    render: () => assert.fail("a browser refresh should replace the fallback render"),
+  };
+
+  await vm.runInNewContext(`${hardExitSource}\nhardExit();`, context);
+
+  assert.equal(state.guide.active, false);
+  assert.equal(state.call.phase, "idle");
+  assert.equal(signedOut, 1);
+  assert.equal(reloads, 1);
+  assert.equal(context.App.route, "entry");
+  assert.equal(context.App.callNeedsPlay, false);
 });
 
 test("the app polls shared family state when Realtime cannot connect", async () => {

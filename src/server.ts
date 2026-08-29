@@ -2,10 +2,22 @@ import "./lib/error-capture";
 
 import { consumeLastCapturedError } from "./lib/error-capture";
 import { renderErrorPage } from "./lib/error-page";
+import { handleAIRequest } from "../server/ai-runtime.mjs";
 
 type ServerEntry = {
   fetch: (request: Request, env: unknown, ctx: unknown) => Promise<Response> | Response;
 };
+
+function asEnvironment(value: unknown): Record<string, unknown> {
+  return value && typeof value === "object" ? (value as Record<string, unknown>) : {};
+}
+
+function runtimeEnvironment(env: unknown): Record<string, unknown> {
+  const cloudflareEnv = asEnvironment(
+    (globalThis as typeof globalThis & { __env__?: unknown }).__env__,
+  );
+  return { ...cloudflareEnv, ...asEnvironment(env) };
+}
 
 let serverEntryPromise: Promise<ServerEntry> | undefined;
 
@@ -47,6 +59,9 @@ function isH3SwallowedErrorBody(body: string): boolean {
 export default {
   async fetch(request: Request, env: unknown, ctx: unknown) {
     try {
+      if (new URL(request.url).pathname === "/api/ai") {
+        return await handleAIRequest(request, runtimeEnvironment(env));
+      }
       const handler = await getServerEntry();
       const response = await handler.fetch(request, env, ctx);
       return await normalizeCatastrophicSsrResponse(response);

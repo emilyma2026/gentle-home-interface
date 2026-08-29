@@ -862,7 +862,7 @@ input,textarea,select{font:inherit}
 -->
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4"></script>
-<script src="/app/maps-config.js" onerror="window.MAPS_CONFIG={key:''}"></script>
+<script src="/app/maps-config.js" onerror="window.MAPS_CONFIG={key:''};window.__MAPS_CONFIG_MISSING__=true"></script>
 <script src="/app/supabase-config.js"></script>
 <script src="/app/supabase-store.js"></script>
 <script src="/app/voice.js"></script>
@@ -1076,6 +1076,7 @@ zh:{
   srcFact:"来自{nick}今天确认的信息", srcTodo:"来自{nick}今天确认的待办",
   srcUnk:"记忆里还没有，已经去问{nick}了",
   eStep:"第 {n} 步 · 共 {total} 步", eArrived:"我到了",
+  eGuideStart:"开始回家引导", eGuideOpen:"查看回家引导",
   eGuideNote:"到了就按下面的按钮，我再告诉你下一步。",
   eHomeT:"你到家了", eHomeD:"已经告诉{nick}你平安到家。", eGot:"知道了",
 
@@ -1285,6 +1286,7 @@ en:{
   srcFact:"From what {nick} confirmed today", srcTodo:"From the reminder {nick} confirmed today",
   srcUnk:"Not in memory yet. {nick} has been asked.",
   eStep:"Step {n} of {total}", eArrived:"I'm there",
+  eGuideStart:"Start home guidance", eGuideOpen:"Open home guidance",
   eGuideNote:"Tap the button when you get there and I'll give you the next step.",
   eHomeT:"You're home", eHomeD:"{nick} has been told you got home safely.", eGot:"Got it",
 
@@ -1438,7 +1440,7 @@ function protectedActionSelector(){
     +'[data-go="ackHome"],[data-go="walk"],[data-go="goHome"],[data-go="reset"],[data-go="speak"],[data-go="chatVoice"],[data-go="voiceAsk"],[data-go="callRecord"]';
 }
 function syncActionAvailability(){
-  var busy=Connection.pendingAction || Connection.state==="connecting" || Connection.state==="loading";
+  var busy=Connection.pendingAction;
   var unavailable=!Connection.authenticated || Connection.initFailed;
   var lifecycleSelector='[data-go="create"],[data-go="pair"]';
   var controls=document.querySelectorAll(protectedActionSelector());
@@ -1688,10 +1690,10 @@ function ensureHomePointFromAddress(){
     });
     home=null;
   }
-  // Maps JS API 不可用（无 key、加载失败、或 API 未启用）：仅本地 demo 模式走模拟坐标
+  // Maps JS API 不可用（无 key、加载失败、或 API 未启用）：本地 demo 或线上缺失配置文件时走模拟坐标
   if(!window.Navigation || typeof window.Navigation.geocodeAddress!=="function" ||
      !(window.MAPS_CONFIG&&window.MAPS_CONFIG.key)){
-    if(!LOCAL_DEMO) return Promise.resolve(null);
+    if(!LOCAL_DEMO && !window.__MAPS_CONFIG_MISSING__) return Promise.resolve(null);
     var demoPoint=demoBestGuessPoint(address);
     if(demoPoint){
       setHomePoint(demoPoint);
@@ -1769,12 +1771,14 @@ function initHomeMap(){
     })
     .catch(function(err){
       var status=el("homeMapStatus");
-      if(LOCAL_DEMO){
-        var addr=(St&&St.elder&&St.elder.address)||"";
-        var fb=!homePoint(St)&&addr?demoBestGuessPoint(addr):null;
-        if(fb){ setHomePoint(fb); App.homeGeocodeResolvedAddress=addr; }
+      var addr=(St&&St.elder&&St.elder.address)||"";
+      var fb=!homePoint(St)&&addr?demoBestGuessPoint(addr):null;
+      if(LOCAL_DEMO&&fb){
+        setHomePoint(fb);
+        App.homeGeocodeResolvedAddress=addr;
       }
-      if(status) status.textContent=err&&err.message||D.mapMissing;
+      syncSchematic("picker");
+      if(status) status.textContent=((LOCAL_DEMO||window.__MAPS_CONFIG_MISSING__)&&fb)?D.mapReady:(shouldUseDemoFallback(err)||window.__MAPS_CONFIG_MISSING__?D.mapFallback:(err&&err.message)||D.mapMissing);
     });
 }
 function mapStepPoint(location){
@@ -2068,6 +2072,7 @@ var Maps={ state:"idle", waiters:[], host:{}, inst:{}, circle:{}, homeMk:{}, eld
 function mapsKey(){ return (window.MAPS_CONFIG && window.MAPS_CONFIG.key) || ""; }
 function loadMaps(){
   if(Maps.state==="ready") return Promise.resolve(true);
+  if(window.google && window.google.maps){ Maps.state="ready"; return Promise.resolve(true); }
   if(Maps.state==="failed") return Promise.resolve(false);
   if(Maps.state==="loading") return new Promise(function(r){ Maps.waiters.push(r); });
   if(!mapsKey()){ Maps.state="failed"; return Promise.resolve(false); }
@@ -2133,12 +2138,17 @@ function mapBox(kind){
     + '<span class="tip">'+esc(tip)+'</span></div>';
 }
 
+function mapSlot(kind){
+  var selector='[data-gmap="'+kind+'"]';
+  return document.querySelector('.sheet-mask '+selector)||document.querySelector(selector);
+}
+
 function mountMaps(){
   ["picker","view"].forEach(function(kind){
-    var slot=document.querySelector('[data-gmap="'+kind+'"]');
+    var slot=mapSlot(kind);
     if(!slot) return;
     loadMaps().then(function(ok){
-      var still=document.querySelector('[data-gmap="'+kind+'"]');
+      var still=mapSlot(kind);
       if(still!==slot) return;
       if(!ok){ slot.insertAdjacentHTML("afterbegin", schematicSVG(kind)); return; }
       if(kind==="picker") seedHomeFromDevice();
@@ -2286,18 +2296,28 @@ function speakSummary(text){
 
 /* =====================================================================
    3d. AI：统一走服务端 /api/ai，key 不进浏览器。
-       任何一步失败都返回 null，调用方回落到不依赖模型的行为。
+       请求携带 Supabase 会话，服务端校验后才调用模型。
    ===================================================================== */
 var AI={ endpoint:"/api/ai", provider:null, lastError:null };
+
+function aiAccessToken(){
+  if(!SupabaseClient || !SupabaseClient.auth || typeof SupabaseClient.auth.getSession!=="function") return Promise.resolve("");
+  return Promise.resolve(SupabaseClient.auth.getSession()).then(function(result){
+    return result&&result.data&&result.data.session&&result.data.session.access_token||"";
+  });
+}
 
 function aiAsk(opts){
   var ctrl = window.AbortController ? new AbortController() : null;
   var timer = setTimeout(function(){ if(ctrl) ctrl.abort(); }, opts.timeout || 15000);
-  return fetch(AI.endpoint,{
-    method:"POST",
-    headers:{"content-type":"application/json"},
-    body:JSON.stringify({ system:opts.system, user:opts.user, json:!!opts.json }),
-    signal: ctrl ? ctrl.signal : undefined
+  return aiAccessToken().then(function(token){
+    if(!token) throw new Error("AI_AUTH_REQUIRED");
+    return fetch(AI.endpoint,{
+      method:"POST",
+      headers:{"content-type":"application/json","authorization":"Bearer "+token},
+      body:JSON.stringify({ system:opts.system, user:opts.user, json:!!opts.json }),
+      signal: ctrl ? ctrl.signal : undefined
+    });
   }).then(function(r){
     if(!r.ok) throw new Error("AI_HTTP_"+r.status);
     return r.json();
@@ -2942,6 +2962,7 @@ function tabAlerts(){
     h+='<div class="empty"><b style="display:block;margin-bottom:4px">'+esc(D.locationNormal)+'</b>'+esc(D.alertNoneD)+'</div>';
   }
   h+='<p class="eyebrow" style="margin-top:14px">'+esc(D.locationT)+'</p><div class="map-card">'+mapSVG()+'</div>';
+  if(a!=="none") h+='<button class="btn" data-go="openGuide" style="margin-bottom:12px">'+esc(D.eGuideOpen)+'</button>';
   if(a!=="none") h+=familyCallActionsHTML();
   return h;
 }
@@ -3233,7 +3254,7 @@ function homeSummaryText(){
 
 function viewStandby(){
   ensureWeather();
-  var d=dayParts(), t=todayTodo(), n=todayNews();
+  var d=dayParts(), t=todayTodo(), n=todayNews(), canGuide=!!(homePoint(St)&&currentPoint(St));
 
   var h='<div class="e-home">'
     + '<img class="e-banner" src="otter-standby.jpg" alt="" width="760" height="760">'
@@ -3283,6 +3304,7 @@ function viewStandby(){
   h+='<div class="e-actions">'
    + '<button class="e-btn" data-go="openQa">'+esc(D.eTalk)+'</button>'
    + '<button class="e-btn soft" data-go="openPick" style="margin-top:10px">'+esc(D.eCallFamily)+'</button>'
+   + (canGuide?'<button class="e-btn soft" data-go="openGuide" style="margin-top:10px">'+esc(D.eGuideStart)+'</button>':'')
    + elderSettingsEntry()
    + '</div>';
   return h+devBar();
@@ -3403,8 +3425,9 @@ function streetViewVisual(routeStep){
 function guideText(item){ return item&&typeof item==="object"?item.text:String(item||""); }
 function guideLandmark(item){ return item&&typeof item==="object"&&item.landmark?item.landmark:D.mapHome; }
 function guideTotal(s){ return s&&s.guide&&s.guide.instructions&&s.guide.instructions.length?s.guide.instructions.length:3; }
-function guideDistance(item, point){
-  return item&&item.end&&point&&window.Navigation ? window.Navigation.distanceMeters(point,item.end) : null;
+function guideHomeDistance(point){
+  var home=homePoint(St);
+  return home&&point&&window.Navigation ? window.Navigation.distanceMeters(point,home) : null;
 }
 
 function viewGuide(){
@@ -3412,7 +3435,7 @@ function viewGuide(){
   var routeStep=St.guide.instructions&&St.guide.instructions[St.guide.step];
   var instruction=routeStep ? guideText(routeStep) : g.copy;
   var landmark=routeStep ? guideLandmark(routeStep) : g.lm;
-  var remaining=routeStep&&routeStep.end?guideDistance(routeStep,currentPoint(St)):null;
+  var remaining=guideHomeDistance(currentPoint(St));
   var routeNote=App.guideRouteError||(App.guideRouteStatus==="loading"?D.routeLoading:(remaining!==null?fill(D.riskDistance,{n:remaining}):D.eGuideNote));
   var visualsHtml=streetViewVisual(routeStep);
   var arrowHtml = '<div class="turn-arrow">' + maneuverIcon(routeStep ? routeStep.maneuver : "straight") + '</div>';
@@ -3516,6 +3539,7 @@ function render(s){
   view.classList.toggle("pad0", App.route==="family");
   view.className = (isElder ? "e-view" : "view") + (App.route==="family" ? " pad0" : "");
   view.innerHTML = body;
+  if(App.route==="family") mountMaps();
 
   /* 家人端底部 tab bar 在 view 之外 */
   var old=screen.querySelector(".tabbar"); if(old) old.remove();
@@ -3958,21 +3982,25 @@ function setDemoLocation(outside){
     s.risk=s.risk||{};
     s.risk.distanceM=outside?radius+320:0;
     s.risk.outsideCount=outside?3:0;
-    s.risk.state=outside?"guiding":"safe";
+    s.risk.state=outside?"leaving":"safe";
     s.risk.reason=outside?"outside_safe_radius":"inside_safe_radius";
+    App.guideRouteRequested=false;
+    App.guideRouteStatus="idle";
+    App.guideRouteError="";
     if(outside){
       s.risk.triggeredAt=new Date().toISOString();
-      s.guide.active=true; s.guide.done=false; s.guide.step=0;
+      s.guide.active=false; s.guide.done=false; s.guide.step=0; s.guide.instructions=[]; s.guide.routeId="";
       s.alertCleared=false;
       var seen=false;
       for(var i=0;i<s.timeline.length;i++) if(s.timeline[i].kind==="guide"&&s.timeline[i].active) seen=true;
       if(!seen) s.timeline.push({t:clockNow(),date:todayKey(),kind:"guide",active:true});
     }else{
-      s.guide.active=false; s.guide.done=false; s.guide.step=0;
+      s.guide.active=false; s.guide.done=false; s.guide.step=0; s.guide.instructions=[]; s.guide.routeId="";
       s.alertCleared=true;
       for(var j=0;j<s.timeline.length;j++) if(s.timeline[j].kind==="guide") delete s.timeline[j].active;
     }
   });
+  if(outside&&App.route==="elder") setTimeout(function(){ initGuideMap(); render(); },0);
 }
 function advanceGuide(){
   if(!St||!St.guide||!St.guide.active) return;
@@ -4546,13 +4574,36 @@ async function startElderDevice(){
   }catch(_error){ /* A fresh anonymous session will be created when pairing starts. */ }
 }
 
+/* “换个角色”代表结束这台老人端当前的临时会话。家庭资料、记忆和待办保留，
+   但导航/到家页和正在进行的通话不能在重新进入老人端后继续占住首页。 */
+function resetElderModeSession(s){
+  if(!s) return;
+  s.guide=s.guide||{};
+  s.guide.active=false; s.guide.done=false; s.guide.step=0;
+  s.guide.instructions=[]; s.guide.routeId="";
+  if(s.call && (s.call.phase==="ringing" || s.call.phase==="talking")){
+    s.call.phase="idle"; s.call.line=-1;
+    delete s.call.startedAt;
+  }
+}
+
 async function hardExit(){
+  var leavingRole=storeRole();
   stopSpeech();
+  stopSubs();
+  if(leavingRole==="elder" && St){
+    try{ await persistUpdate(resetElderModeSession); }
+    catch(_error){ /* persistUpdate 已显示连接错误；仍允许用户切换角色。 */ }
+  }
   App.route="entry"; App.tab=0; App.qa=false; App.pick=false; App.eset=false;
   App.qaVoiceActive=false; App.qaVoiceText=""; App.qaVoiceErr="";
-  App.editingPerson=null; App.paired=false;
+  App.callNeedsPlay=false; App.editingPerson=null; App.paired=false;
   clearDevice(); stopGps(); App.demoLocation=false; St=null;
   try{ if(Store) await Store.signOut(); }catch(error){ reportStoreError(error); }
+  if(!EMBEDDED && window.location && typeof window.location.reload==="function"){
+    window.location.reload();
+    return;
+  }
   D=I18N[lang]; render();
 }
 
@@ -4800,6 +4851,14 @@ document.addEventListener("click", async function(e){
     case "closePick": App.pick=false; render(); break;
     case "openESet": App.eset=true; App.qa=false; App.pick=false; render(); break;
     case "closeESet": App.eset=false; render(); break;
+    case "openGuide":
+      if(homePoint(St)&&currentPoint(St)){
+        queueUpdate(function(s){ s.guide.active=true; s.guide.done=false; s.guide.step=0; });
+        App.qa=false; App.pick=false; App.eset=false;
+        App.guideRouteRequested=false; App.guideRouteStatus="idle"; App.guideRouteError="";
+        initGuideMap();
+      }
+      break;
     case "prevGuide": retreatGuide(); break;
     case "arrived": arrived(); break;
     case "ackHome": queueUpdate(function(s){ s.guide.done=false; }); break;

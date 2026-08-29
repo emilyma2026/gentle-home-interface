@@ -2,8 +2,9 @@ import { createHash } from "node:crypto";
 import { createServerFn } from "@tanstack/react-start";
 import { createClient } from "@supabase/supabase-js";
 import { embed, generateText, Output } from "ai";
-import { openai } from "@ai-sdk/openai";
+import { createOpenAI } from "@ai-sdk/openai";
 import { z } from "zod";
+import { serverEnv } from "../../../server/ai-provider.mjs";
 import {
   DUE_HINTS,
   FACT_CATEGORIES,
@@ -67,11 +68,29 @@ const extractionSchema = z.object({
     .max(10),
 });
 
+function resolvedEnv() {
+  return serverEnv();
+}
+
+function requireEnv(name: string): string {
+  const value = resolvedEnv()[name];
+  if (!value) throw new Error(`Missing ${name}`);
+  return String(value);
+}
+
+function createOpenAIProvider() {
+  return createOpenAI({ apiKey: requireEnv("OPENAI_API_KEY") });
+}
+
 function supabaseAsUser(accessToken: string) {
-  const url = process.env["VITE_SUPABASE_URL"];
-  const anonKey = process.env["VITE_SUPABASE_ANON_KEY"];
+  const env = resolvedEnv();
+  const url = env["VITE_SUPABASE_URL"] || env["SUPABASE_URL"];
+  const anonKey =
+    env["SUPABASE_PUBLISHABLE_KEY"] ||
+    env["VITE_SUPABASE_ANON_KEY"] ||
+    env["SUPABASE_ANON_KEY"];
   if (!url || !anonKey) throw new Error("Missing Supabase server env vars");
-  return createClient(url, anonKey, {
+  return createClient(String(url), String(anonKey), {
     global: { headers: { Authorization: `Bearer ${accessToken}` } },
     auth: { persistSession: false },
   });
@@ -90,8 +109,9 @@ export const extractMemory = createServerFn({ method: "POST" })
     const noteText = data.noteText.trim().slice(0, 2000);
     if (!noteText) return { facts: [], todos: [] };
 
+    const provider = createOpenAIProvider();
     const { output } = await generateText({
-      model: openai(EXTRACT_MODEL),
+      model: provider(EXTRACT_MODEL),
       output: Output.object({ schema: extractionSchema }),
       system: EXTRACTION_SYSTEM_PROMPT,
       prompt: noteText,
@@ -165,8 +185,9 @@ export const confirmFact = createServerFn({ method: "POST" })
       .eq("id", data.factId);
     if (updateError) throw updateError;
 
+    const provider = createOpenAIProvider();
     const { embedding } = await embed({
-      model: openai.embeddingModel(EMBED_MODEL),
+      model: provider.embeddingModel(EMBED_MODEL),
       value: finalText,
     });
     const { error: rpcError } = await db.rpc("upsert_family_fact_embedding", {
@@ -205,8 +226,9 @@ export const searchFacts = createServerFn({ method: "POST" })
     if (!queryText) return { matches: [], answer: "" };
 
     const db = supabaseAsUser(data.accessToken);
+    const provider = createOpenAIProvider();
     const { embedding } = await embed({
-      model: openai.embeddingModel(EMBED_MODEL),
+      model: provider.embeddingModel(EMBED_MODEL),
       value: queryText,
     });
 
@@ -222,7 +244,7 @@ export const searchFacts = createServerFn({ method: "POST" })
     let answer = "记忆里还没有这方面的信息，我会提醒家人补充。";
     if (matchedFacts.length > 0) {
       const { text } = await generateText({
-        model: openai(EXTRACT_MODEL),
+        model: provider(EXTRACT_MODEL),
         system: QA_SYSTEM_PROMPT,
         prompt: `已确认的事实：\n${matchedFacts.map((m) => `- ${m.text}`).join("\n")}\n\n老人的问题：${queryText}`,
       });

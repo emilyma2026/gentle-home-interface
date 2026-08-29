@@ -1762,12 +1762,14 @@ function initHomeMap(){
     })
     .catch(function(err){
       var status=el("homeMapStatus");
-      if(LOCAL_DEMO){
-        var addr=(St&&St.elder&&St.elder.address)||"";
-        var fb=!homePoint(St)&&addr?demoBestGuessPoint(addr):null;
-        if(fb){ setHomePoint(fb); App.homeGeocodeResolvedAddress=addr; }
+      var addr=(St&&St.elder&&St.elder.address)||"";
+      var fb=!homePoint(St)&&addr?demoBestGuessPoint(addr):null;
+      if(LOCAL_DEMO&&fb){
+        setHomePoint(fb);
+        App.homeGeocodeResolvedAddress=addr;
       }
-      if(status) status.textContent=err&&err.message||D.mapMissing;
+      syncSchematic("picker");
+      if(status) status.textContent=(LOCAL_DEMO&&fb)?D.mapReady:(shouldUseDemoFallback(err)?D.mapFallback:(err&&err.message)||D.mapMissing);
     });
 }
 function mapStepPoint(location){
@@ -3943,21 +3945,25 @@ function setDemoLocation(outside){
     s.risk=s.risk||{};
     s.risk.distanceM=outside?radius+320:0;
     s.risk.outsideCount=outside?3:0;
-    s.risk.state=outside?"guiding":"safe";
+    s.risk.state=outside?"leaving":"safe";
     s.risk.reason=outside?"outside_safe_radius":"inside_safe_radius";
+    App.guideRouteRequested=false;
+    App.guideRouteStatus="idle";
+    App.guideRouteError="";
     if(outside){
       s.risk.triggeredAt=new Date().toISOString();
-      s.guide.active=true; s.guide.done=false; s.guide.step=0;
+      s.guide.active=false; s.guide.done=false; s.guide.step=0; s.guide.instructions=[]; s.guide.routeId="";
       s.alertCleared=false;
       var seen=false;
       for(var i=0;i<s.timeline.length;i++) if(s.timeline[i].kind==="guide"&&s.timeline[i].active) seen=true;
       if(!seen) s.timeline.push({t:clockNow(),date:todayKey(),kind:"guide",active:true});
     }else{
-      s.guide.active=false; s.guide.done=false; s.guide.step=0;
+      s.guide.active=false; s.guide.done=false; s.guide.step=0; s.guide.instructions=[]; s.guide.routeId="";
       s.alertCleared=true;
       for(var j=0;j<s.timeline.length;j++) if(s.timeline[j].kind==="guide") delete s.timeline[j].active;
     }
   });
+  if(outside&&App.route==="elder") setTimeout(function(){ initGuideMap(); render(); },0);
 }
 function advanceGuide(){
   if(!St||!St.guide||!St.guide.active) return;

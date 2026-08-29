@@ -84,12 +84,19 @@ function renderEntry() {
   return vm.runInNewContext(`${viewEntrySource}\nviewEntry();`, context);
 }
 
-test("entry renders the centered family artwork without image badges", () => {
+test("entry offers the family and elder sides as illustrated buttons over the cover art", () => {
   const output = renderEntry();
 
-  assert.match(output, /<img src="hero-care-centered\.png"/);
-  assert.doesNotMatch(output, /class="badge /);
-  assert.equal(existsSync(new URL("../public/app/hero-care-centered.png", import.meta.url)), true);
+  assert.match(output, /<button class="pick family" data-go="familyStart">/);
+  assert.match(output, /<button class="pick elder" data-go="elderPair">/);
+  assert.match(output, /<img src="otter-family\.jpg"/);
+  assert.match(output, /<img src="otter-nana\.jpg"/);
+  assert.doesNotMatch(output, /hero-care-centered\.png/);
+  assert.equal(existsSync(new URL("../public/app/otter-family.jpg", import.meta.url)), true);
+  assert.equal(existsSync(new URL("../public/app/otter-nana.jpg", import.meta.url)), true);
+
+  const pickStyles = declarations(".picks");
+  assert.equal(pickStyles["grid-template-columns"], "1fr 1fr");
 });
 
 test("entry omits the setup walkthrough and demo note", () => {
@@ -113,30 +120,34 @@ test("the first visit presents the English Remember Us brand", () => {
   assert.equal(i18n.en.appName, "Remember Us");
   assert.match(routeSource, /title="Remember Us prototype"/);
   assert.doesNotMatch(routeSource, /守护助手/);
-  assert.ok(parseFloat(labelStyles["font-size"]) >= 18);
+  // eyebrow now reads as an uppercase kicker above the title, not the largest text
+  assert.equal(labelStyles["text-transform"], "uppercase");
+  assert.ok(parseFloat(labelStyles["letter-spacing"]) > 0);
   assert.ok(
-    parseFloat(labelStyles["font-size"]) > parseFloat(declarations(".entry-title")["font-size"]),
+    parseFloat(labelStyles["font-size"]) < parseFloat(declarations(".entry-title")["font-size"]),
   );
 });
 
-test("entry role buttons use short one-line labels and descriptions", () => {
+test("entry role buttons carry a short label and a one-line description", () => {
   const context = { D: i18n.zh, esc: (value) => String(value) };
   const output = vm.runInNewContext(`${viewEntrySource}\nviewEntry();`, context);
-  const copyStyles = declarations(".pick-copy span");
+  const cardStyles = declarations(".pick");
+  const descStyles = declarations(".pick span");
 
-  assert.match(output, />家人端</);
-  assert.match(output, />管理信息与提醒</);
-  assert.match(output, />老人端</);
-  assert.match(output, />配对后安心使用</);
-  assert.equal(copyStyles["white-space"], "nowrap");
-  assert.equal(copyStyles["text-overflow"], "ellipsis");
+  assert.match(output, /<b>家人端<\/b><span>管理信息与提醒<\/span>/);
+  assert.match(output, /<b>老人端<\/b><span>配对后安心使用<\/span>/);
+  assert.equal(cardStyles["text-align"], "center");
+  assert.equal(descStyles.display, "block");
 });
 
-test("entry safely centers its content and biases it below the top edge", () => {
+test("entry uses the otter cover art as the full-bleed screen background", () => {
+  const screenStyles = declarations(".screen:has(.entry)");
   const entryStyles = declarations(".entry");
 
-  assert.equal(entryStyles["justify-content"], "safe center");
-  assert.ok(parseFloat(entryStyles["padding-top"]) > parseFloat(entryStyles["padding-bottom"]));
+  assert.match(screenStyles.background, /otter-bg\.jpg/);
+  assert.equal(existsSync(new URL("../public/app/otter-bg.jpg", import.meta.url)), true);
+  // content sits below the illustration's scene, not floating at the top edge
+  assert.ok(parseFloat(entryStyles["padding-top"]) > 200);
 });
 
 test("family pages keep safe gutters and align their overview at the top", () => {
@@ -149,20 +160,21 @@ test("family pages keep safe gutters and align their overview at the top", () =>
   assert.match(familyStyles["padding-bottom"], /clamp\(/);
 });
 
-test("family choice page gives more height to its choices than to blank space", () => {
+test("family choice page shows create and join side by side without a duplicate title", () => {
   const context = { D: i18n.zh, esc: (value) => String(value) };
   const output = vm.runInNewContext(`${viewFamilyStartSource}\nviewFamilyStart();`, context);
   const pageStyles = declarations(".family-start");
-  const headStyles = declarations(".family-start-head");
   const rolesStyles = declarations(".family-start .roles");
-  const roleStyles = declarations(".family-start .role");
 
   assert.match(output, /class="family-start"/);
+  // the small eyebrow above the h1 is gone — only the h1 title remains
+  assert.doesNotMatch(output, /class="eyebrow"/);
+  assert.equal((output.match(/class="h1"/g) || []).length, 1);
+  assert.match(output, /data-go="create"/);
+  assert.match(output, /data-go="joinFamily"/);
+  assert.match(output, /<img src="otter-join\.jpg"/);
   assert.equal(pageStyles["min-height"], "100%");
-  assert.ok(parseFloat(headStyles["margin-bottom"]) >= 28);
-  assert.equal(rolesStyles.flex, "1 1 auto");
-  assert.ok(parseFloat(rolesStyles["max-height"]) >= 380);
-  assert.ok(parseFloat(roleStyles["min-height"]) >= 132);
+  assert.equal(rolesStyles["grid-template-columns"], "1fr 1fr");
 });
 
 test("join page prefills a working fictional demo family code", () => {

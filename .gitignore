@@ -41,3 +41,12 @@ public/app/maps-config.js
 
 # AI 与地图的本地前端配置，由脚本生成，含 key，不提交
 public/app/ai-config.js
+
+# 插画资产工作目录（原始大图 ~45MB 只留本地，App 用的压缩版在 public/app/otter-*.jpg）
+Assets/*
+!Assets/prompts_log.md
+
+# 路演材料 / 临时文件
+Remember Us_*.pptx
+Remember Us_*.pptx.inspect.ndjson
+Landing page background.png

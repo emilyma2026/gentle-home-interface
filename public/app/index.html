@@ -15,11 +15,12 @@
   --muted:#9A8574;
   --faint:#C3B2A2;
   --line:#EFE3D6;
-  --blue:#8A9A4E; --blue-d:#5F6E32; --blue-soft:#EEF1DE;
+  /* 主强调色 = Remember Us 金棕（原为橄榄绿，全局改暖） */
+  --blue:#B4794A; --blue-d:#8A5A33; --blue-soft:#F4E9DB;
   --rose:#D98F80; --rose-soft:#FBE9E1;
   --green:#6B9A7C; --green-soft:#EAF3EC;
   --amber:#C08A2E; --amber-soft:#FBF0DA;
-  --warm:#C2703A; --warm-soft:#FAEFE7;
+  --warm:#B4794A; --warm-soft:#F6EBDE;
   --red:#C4585C; --red-soft:#FAE7E6;
   --sans:"Plus Jakarta Sans","Noto Sans SC","PingFang SC","Microsoft YaHei","Source Han Sans SC",-apple-system,system-ui,sans-serif;
   --r-lg:22px; --r-md:16px; --r-sm:11px;
@@ -141,15 +142,35 @@ input,textarea,select{font:inherit}
 .role > span{min-width:0}
 .role > span > span{display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
 
-.family-start{min-height:100%; display:flex; flex-direction:column; padding:18px 0 4px}
-.family-start-head{margin-bottom:30px}
+.screen[data-route="familyStart"],.screen[data-route="code"]{
+  background:#FBEDD8 url("family-bg.jpg") top center / 100% 100% no-repeat}
+.screen[data-route="obElder"],.screen[data-route="obMe"],.screen[data-route="join"]{
+  background:#FBEEDA url("onboard-bg.jpg") top center / 100% 100% no-repeat}
+.family-start{min-height:100%; display:flex; flex-direction:column; padding:22px 0 22px}
+.family-start-head{margin-bottom:26px}
+.family-start-head .h1{color:#B4794A}
 .family-start-head .sub{margin-bottom:0}
-.family-start .roles{flex:1 1 auto; grid-template-rows:repeat(2,minmax(132px,1fr));
-  min-height:300px; max-height:400px; gap:16px}
-.family-start .role{min-height:132px; padding:26px 20px; border-radius:26px}
-.family-start .role .face{width:64px; height:64px; font-size:31px}
-.family-start .role b{font-size:18px}
-.family-start .link{margin-top:18px}
+.family-start .codebox{flex:0 0 auto; margin:6px 0 0}
+.family-start .fs-foot{margin-top:auto; padding-top:22px; display:flex; flex-direction:column}
+.family-start .fs-foot .btn{margin-bottom:8px}
+/* Back 停在页面底部，满宽磨砂胶囊，与上方内容左右对齐 */
+.family-start .link{margin-top:auto; width:100%;
+  padding:13px 18px; border-radius:99px; background:rgba(255,252,248,.8); backdrop-filter:blur(6px);
+  box-shadow:0 6px 18px rgba(94,63,38,.14); color:var(--ink-2); font-weight:700}
+.family-start .fs-foot .link{margin-top:0}
+.family-start .roles{flex:0 0 auto; grid-template-columns:1fr 1fr; grid-template-rows:none;
+  min-height:0; max-height:none; gap:12px; align-content:start; align-items:stretch}
+.family-start .role{display:flex; flex-direction:column; align-items:stretch; gap:0;
+  min-height:0; padding:0 0 14px; border-radius:22px; overflow:hidden; text-align:center;
+  background:var(--card); box-shadow:var(--sh-card)}
+.family-start .role img{display:block; width:100%; height:auto; aspect-ratio:1/1;
+  object-fit:cover; margin-bottom:0; background:#FBF1DA}
+.family-start .role-txt{flex:1 1 auto; display:flex; flex-direction:column; justify-content:center;
+  min-height:62px; padding:9px 8px 0}
+.family-start .role b{display:block; font-size:16px; margin-bottom:2px; color:var(--ink)}
+.family-start .role-txt > span{display:block; color:var(--muted); font-size:11.5px; line-height:1.45;
+  white-space:normal; overflow:visible; text-overflow:clip}
+.family-start .link{margin-top:auto; padding-top:20px; text-align:center}
 
 /* 表单 */
 .field{margin-bottom:14px}
@@ -338,6 +359,8 @@ input,textarea,select{font:inherit}
 .e-ring{width:132px; height:132px; border-radius:50%; display:grid; place-items:center;
   background:linear-gradient(150deg,var(--warm-soft),var(--rose-soft));
   color:var(--warm); font-size:52px; font-weight:800}
+.e-scene{width:186px; height:186px; flex:0 0 auto; object-fit:cover; border-radius:30px;
+  background:#F4EBDD; box-shadow:0 14px 32px rgba(150,90,48,.16)}
 .e-h1{margin:0; font-size:34px; font-weight:800; letter-spacing:-.01em}
 .e-copy{margin:0; color:var(--ink-2); font-size:17px; line-height:1.6}
 .e-btn{flex:0 0 auto; width:100%; margin-top:16px; padding:22px; border-radius:30px;
@@ -407,10 +430,9 @@ input,textarea,select{font:inherit}
 .qa-heard.err{color:var(--red)}
 
 .visuals-panel{position:relative; width:100%; height:220px; margin:12px 0 16px; border-radius:26px; overflow:hidden; background:linear-gradient(135deg,var(--blue-soft),var(--rose-soft)); box-shadow:0 8px 24px rgba(0,0,0,0.06)}
-.visuals-panel .sv-bg,.visuals-panel .sv-fallback{width:100%; height:100%; object-fit:cover; display:block}
-.visuals-panel .sv-bg{opacity:.95}
-.visuals-panel .sv-fallback{display:flex; align-items:flex-end; justify-content:flex-start; padding:18px; background:linear-gradient(160deg,rgba(255,255,255,.18),rgba(0,0,0,.12)),linear-gradient(135deg,var(--blue-soft),var(--rose-soft)); color:#fff}
-.visuals-panel .sv-fallback span{padding:8px 12px; border-radius:999px; background:rgba(58,44,34,.36); backdrop-filter:blur(6px); font-size:13px; font-weight:800; letter-spacing:.01em}
+.visuals-panel .sv-illus,.visuals-panel .sv-bg{position:absolute; inset:0; width:100%; height:100%; object-fit:cover; display:block}
+.visuals-panel .sv-illus{object-position:center 42%}
+.visuals-panel .sv-pill{position:absolute; left:14px; bottom:14px; padding:8px 12px; border-radius:999px; background:rgba(58,44,34,.44); backdrop-filter:blur(6px); color:#fff; font-size:13px; font-weight:800; letter-spacing:.01em}
 .place-photo-badge{position:absolute; right:12px; bottom:12px; width:80px; height:80px; border-radius:18px; overflow:hidden; border:3px solid rgba(255,255,255,0.9); box-shadow:0 6px 16px rgba(0,0,0,0.15); background:#fff}
 .place-photo-badge img{width:100%; height:100%; object-fit:cover;}
 .guide-copy{margin-bottom:12px}
@@ -486,6 +508,8 @@ input,textarea,select{font:inherit}
 /* ---- 老人端默认页 ---- */
 .e-home{display:flex; flex-direction:column; gap:8px}
 /* 老人端的今天是一条页头，贴住上沿并做满宽 */
+.e-banner{display:block; width:calc(100% + 48px); margin:0 -24px 4px; height:128px;
+  object-fit:cover; object-position:center 32%; background:#F4EBDD}
 .e-date{margin:0 -24px 2px; padding:14px 24px 16px; border-radius:0;
   background:linear-gradient(150deg,var(--warm-soft),var(--rose-soft))}
 .e-date small{display:block; color:var(--ink-2); font-size:14px; font-weight:700; opacity:.75}
@@ -776,48 +800,31 @@ input,textarea,select{font:inherit}
 .inapp-tag{display:inline-flex; align-items:center; gap:6px; margin:0 0 10px; padding:4px 11px;
   border-radius:99px; background:var(--green-soft); color:var(--green); font-size:11.5px; font-weight:800}
 
-/* ================= 入口：温暖家庭关怀主题 ================= */
-.view:has(> .entry){padding:0; background:
-  radial-gradient(70% 40% at 12% 6%, rgba(250,214,178,.85) 0%, rgba(250,214,178,0) 62%),
-  radial-gradient(60% 34% at 96% 22%, rgba(233,196,183,.75) 0%, rgba(233,196,183,0) 62%),
-  radial-gradient(80% 46% at 50% 104%, rgba(205,220,190,.60) 0%, rgba(205,220,190,0) 60%),
-  linear-gradient(180deg,#FFF8EF 0%, #FDF2E5 58%, #FBEEE2 100%)}
+/* ================= 入口：手绘水獭封面 + 两个入口按钮 ================= */
+.screen:has(.entry){background:#F6E7CB url("otter-bg.jpg") top center / 100% 100% no-repeat}
+.view:has(> .entry){padding:0; background:transparent}
 .entry{flex:1 1 auto; display:flex; flex-direction:column; min-height:100%;
-  padding-top:36px; padding-right:22px; padding-bottom:20px; padding-left:22px;
-  justify-content:safe center; gap:0}
-.entry-art{position:relative; margin:2px auto 14px; width:186px; height:186px; flex:0 0 auto}
-.entry-art::before{content:""; position:absolute; inset:-16px; border-radius:50%;
-  background:radial-gradient(circle at 50% 45%, rgba(233,168,116,.32), rgba(233,168,116,0) 70%)}
-.entry-art img{position:relative; width:100%; height:100%; object-fit:cover; border-radius:44px;
-  box-shadow:0 18px 38px rgba(150,90,48,.20), 0 0 0 6px rgba(255,255,255,.7)}
-.entry-eyebrow{margin:0 0 10px; text-align:center; color:#B4794A; font-size:21px;
-  font-weight:800; letter-spacing:.04em}
-.entry-title{margin:0 0 10px; text-align:center; font-size:17px; line-height:1.35;
-  font-weight:700; letter-spacing:.01em; color:#6F5441}
-.entry-title em{display:block; font-style:normal;
-  background:linear-gradient(96deg,#D2793F,#C2544C 60%,#A9663F);
-  -webkit-background-clip:text; background-clip:text; color:transparent}
-.entry-sub{margin:0 auto 18px; max-width:20em; text-align:center; color:#7C5C43;
-  font-size:13px; line-height:1.7}
+  padding-top:360px; padding-right:20px; padding-bottom:24px; padding-left:20px;
+  justify-content:flex-start; gap:0}
+.entry-eyebrow{margin:0 0 6px; text-align:center; color:#B4794A; font-size:12.5px;
+  font-weight:800; letter-spacing:.16em; text-transform:uppercase}
+.entry-title{margin:0 0 20px; text-align:center; font-size:21px; line-height:1.3;
+  font-weight:800; color:#5C4636}
+.entry-title em{font-style:normal; color:#C2544C}
+.entry-sub{display:none}
 
-.picks{display:grid; gap:11px}
-.pick{position:relative; display:flex; align-items:center; gap:13px; width:100%;
-  padding:15px 16px; text-align:left; border-radius:26px; overflow:hidden;
-  background:linear-gradient(135deg,#FFFFFF 0%, #FFF6EC 100%);
-  box-shadow:0 12px 26px rgba(150,90,48,.10), 0 0 0 1px rgba(210,150,105,.16) inset;
+.picks{display:grid; grid-template-columns:1fr 1fr; gap:12px; flex:0 0 auto}
+.pick{display:flex; flex-direction:column; align-items:stretch;
+  padding:0 0 13px; border-radius:22px; overflow:hidden; text-align:center;
+  background:rgba(255,254,250,.94); backdrop-filter:blur(8px);
+  box-shadow:0 14px 30px rgba(150,90,48,.22), 0 0 0 1px rgba(210,150,105,.24) inset;
   transition:transform .16s, box-shadow .16s}
-.pick:active{transform:scale(.985)}
-.pick:hover{box-shadow:0 16px 32px rgba(150,90,48,.16), 0 0 0 1px rgba(210,150,105,.3) inset}
-.pick .face{flex:0 0 auto; width:52px; height:52px; border-radius:18px; display:grid;
-  place-items:center; font-size:25px; box-shadow:0 6px 14px rgba(150,90,48,.12)}
-.pick.family .face{background:linear-gradient(150deg,#FAD9BC,#F3BE9C)}
-.pick.elder .face{background:linear-gradient(150deg,#E3EBD3,#CFDDB9)}
-.pick b{display:block; font-size:16px; margin-bottom:3px; color:#3E2A1C}
-.pick-copy{min-width:0; flex:1 1 auto}
-.pick-copy span{display:block; color:#8B6B52; font-size:12px; line-height:1.5;
-  white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
-.pick .go{flex:0 0 auto; margin-left:auto; width:28px; height:28px; border-radius:50%;
-  display:grid; place-items:center; background:#F6E3D2; color:#B4794A; font-size:15px; font-weight:800}
+.pick img{display:block; width:100%; height:auto; aspect-ratio:1/1; object-fit:cover;
+  margin-bottom:9px; background:#F4EBDD}
+.pick b{display:block; font-size:15.5px; font-weight:800; color:#3E2A1C}
+.pick:active{transform:scale(.97)}
+.pick:hover{box-shadow:0 18px 36px rgba(150,90,48,.3), 0 0 0 1px rgba(210,150,105,.42) inset}
+.pick span{display:block; margin-top:3px; padding:0 8px; font-size:11px; font-weight:600; color:#8B6B52; line-height:1.4}
 
 </style>
 </head>
@@ -2452,32 +2459,30 @@ function brand(){
 
 function viewEntry(){
   return '<div class="entry">'
-    + '<div class="entry-art">'
-    +   '<img src="hero-care-centered.png" alt="" width="372" height="372">'
-    + '</div>'
     + '<p class="entry-eyebrow">'+esc(D.labelEntry)+'</p>'
     + '<h1 class="entry-title"><em>'+esc(D.entryTitle)+'</em></h1>'
-    + '<p class="entry-sub">'+esc(D.entrySub)+'</p>'
     + '<div class="picks">'
-    +   '<button class="pick family" data-go="familyStart"><span class="face">🧑‍💼</span>'
-    +     '<span class="pick-copy"><b>'+esc(D.roleFamilyT)+'</b><span>'+esc(D.roleFamilyD)+'</span></span>'
-    +     '<span class="go">›</span></button>'
-    +   '<button class="pick elder" data-go="elderPair"><span class="face">👵</span>'
-    +     '<span class="pick-copy"><b>'+esc(D.roleElderT)+'</b><span>'+esc(D.roleElderD)+'</span></span>'
-    +     '<span class="go">›</span></button>'
+    +   '<button class="pick family" data-go="familyStart">'
+    +     '<img src="otter-family.jpg" alt="" width="520" height="360">'
+    +     '<b>'+esc(D.roleFamilyT)+'</b><span>'+esc(D.roleFamilyD)+'</span></button>'
+    +   '<button class="pick elder" data-go="elderPair">'
+    +     '<img src="otter-nana.jpg" alt="" width="520" height="360">'
+    +     '<b>'+esc(D.roleElderT)+'</b><span>'+esc(D.roleElderD)+'</span></button>'
     + '</div>'
     + '</div>';
 }
 
 function viewFamilyStart(){
-  return '<section class="family-start"><div class="family-start-head"><p class="eyebrow">'+esc(D.fsTitle)+'</p>'
+  return '<section class="family-start"><div class="family-start-head">'
     + '<p class="h1">'+esc(D.fsTitle)+'</p>'
     + '<p class="sub">'+esc(D.fsSub)+'</p></div>'
     + '<div class="roles">'
-    + '<button class="role family" data-go="create"><span class="face">✨</span>'
-    +   '<span><b>'+esc(D.fsCreateT)+'</b><span>'+esc(D.fsCreateD)+'</span></span></button>'
-    + '<button class="role family" data-go="joinFamily"><span class="face">🔑</span>'
-    +   '<span><b>'+esc(D.fsJoinT)+'</b><span>'+esc(D.fsJoinD)+'</span></span></button>'
+    + '<button class="role" data-go="create">'
+    +   '<img src="otter-create.jpg" alt="">'
+    +   '<span class="role-txt"><b>'+esc(D.fsCreateT)+'</b><span>'+esc(D.fsCreateD)+'</span></span></button>'
+    + '<button class="role" data-go="joinFamily">'
+    +   '<img src="otter-join.jpg" alt="">'
+    +   '<span class="role-txt"><b>'+esc(D.fsJoinT)+'</b><span>'+esc(D.fsJoinD)+'</span></span></button>'
     + '</div>'
     + '<button class="link" data-go="entry">'+esc(D.back)+'</button></section>';
 }
@@ -2604,12 +2609,16 @@ function viewObMe(){
 }
 
 function viewCode(){
-  return '<p class="eyebrow">'+esc(D.codeTitle)+'</p>'
-    + '<p class="h1">'+esc(D.codeTitle)+'</p>'
-    + '<p class="sub">'+esc(D.codeSub)+'</p>'
+  return '<section class="family-start codepage">'
+    + '<div class="family-start-head">'
+    +   '<p class="h1">'+esc(D.codeTitle)+'</p>'
+    +   '<p class="sub">'+esc(D.codeSub)+'</p></div>'
     + '<div class="codebox"><b>'+St.code+'</b><span>'+esc(D.codeNote)+'</span></div>'
-    + '<div class="spacer"></div>'
-    + '<button class="btn" data-go="enterFamily">'+esc(D.goFamily)+'</button>';
+    + '<div class="fs-foot">'
+    +   '<button class="btn" data-go="enterFamily">'+esc(D.goFamily)+'</button>'
+    +   '<button class="link" data-go="obMe">'+esc(D.back)+'</button>'
+    + '</div>'
+    + '</section>';
 }
 
 function viewJoin(){
@@ -3227,6 +3236,7 @@ function viewStandby(){
   var d=dayParts(), t=todayTodo(), n=todayNews();
 
   var h='<div class="e-home">'
+    + '<img class="e-banner" src="otter-standby.jpg" alt="" width="760" height="760">'
     + '<div class="e-date"><small>'+esc(D.eTodayT)+'</small>'
     +   '<b id="elderDateTitle">'+esc(d.date)+' '+esc(d.week)+'</b>'
     +   '<span id="elderHomeClock">'+esc(d.part)+' · '+clockNow()+'</span></div>';
@@ -3373,8 +3383,10 @@ function streetViewVisual(routeStep){
   if(routeStep&&routeStep.photoUrl){
     photoHtml='<div class="place-photo-badge"><img src="'+esc(routeStep.photoUrl)+'" alt="Place"></div>';
   }
+  var illus='<img class="sv-illus" src="otter-guide.jpg" alt="">';
+  var pill='<span class="sv-pill">'+esc(routeStep&&routeStep.landmark?routeStep.landmark:D.mapHome)+'</span>';
   if(!point||!Number.isFinite(point.lat)||!Number.isFinite(point.lng)||!key){
-    return '<div class="visuals-panel"><div class="sv-fallback"><span>'+esc(routeStep&&routeStep.landmark?routeStep.landmark:D.mapHome)+'</span></div>'+photoHtml+'</div>';
+    return '<div class="visuals-panel">'+illus+pill+photoHtml+'</div>';
   }
   var params=[
     'size=800x500',
@@ -3383,7 +3395,9 @@ function streetViewVisual(routeStep){
   ];
   if(routeStep&&routeStep.maneuver&&routeStep.maneuver!=="straight") params.push('fov=100');
   var svUrl='https://maps.googleapis.com/maps/api/streetview?'+params.join('&');
-  return '<div class="visuals-panel"><img class="sv-bg" src="'+esc(svUrl)+'" alt="Street View" loading="lazy">'+photoHtml+'</div>';
+  return '<div class="visuals-panel">'+illus
+    + '<img class="sv-bg" src="'+esc(svUrl)+'" alt="" loading="lazy" onerror="this.remove()">'
+    + photoHtml+'</div>';
 }
 
 function guideText(item){ return item&&typeof item==="object"?item.text:String(item||""); }
@@ -3436,7 +3450,7 @@ function viewESettings(){
 }
 
 function viewArrived(){
-  return '<div class="e-hello"><div class="e-ring" style="background:var(--green-soft);color:var(--green)">✓</div>'
+  return '<div class="e-hello"><img class="e-scene" src="otter-arrived.jpg" alt="" width="760" height="760">'
     + '<p class="e-h1">'+esc(D.eHomeT)+'</p><p class="e-copy">'+esc(D.eHomeD)+'</p></div>'
     + '<button class="e-btn soft" data-go="ackHome">'+esc(D.eGot)+'</button>';
 }
@@ -3498,6 +3512,7 @@ function render(s){
   if(isElder && !App.demoLocation) startGps();
   else if(!isElder) stopGps();
   screen.classList.toggle("elder", isElder);
+  screen.dataset.route = App.route;
   view.classList.toggle("pad0", App.route==="family");
   view.className = (isElder ? "e-view" : "view") + (App.route==="family" ? " pad0" : "");
   view.innerHTML = body;
@@ -4705,7 +4720,9 @@ document.addEventListener("click", async function(e){
     case "elderPair":  await startElderDevice(); App.joinAs="elder"; App.err=""; App.route="join"; render(); break;
     case "pair": await pair(el("codeIn").value); break;
 
-    case "obMe": App.route="obMe"; render(); break;
+    case "obMe":
+      if(!App.editingPerson && St && St.people && St.people[0]) App.editingPerson=St.people[0].id;
+      App.route="obMe"; render(); break;
     case "backPerson": backFromPerson(); render(); break;
     case "setHomeFromGps": setHomeFromGps(); break;
     case "fillElderSample": await fillElderSample(); break;

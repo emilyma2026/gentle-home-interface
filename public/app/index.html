@@ -855,7 +855,7 @@ input,textarea,select{font:inherit}
 -->
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4"></script>
-<script src="/app/maps-config.js" onerror="window.MAPS_CONFIG={key:''}"></script>
+<script src="/app/maps-config.js" onerror="window.MAPS_CONFIG={key:''};window.__MAPS_CONFIG_MISSING__=true"></script>
 <script src="/app/supabase-config.js"></script>
 <script src="/app/supabase-store.js"></script>
 <script src="/app/voice.js"></script>
@@ -1681,10 +1681,10 @@ function ensureHomePointFromAddress(){
     });
     home=null;
   }
-  // Maps JS API 不可用（无 key、加载失败、或 API 未启用）：仅本地 demo 模式走模拟坐标
+  // Maps JS API 不可用（无 key、加载失败、或 API 未启用）：本地 demo 或线上缺失配置文件时走模拟坐标
   if(!window.Navigation || typeof window.Navigation.geocodeAddress!=="function" ||
      !(window.MAPS_CONFIG&&window.MAPS_CONFIG.key)){
-    if(!LOCAL_DEMO) return Promise.resolve(null);
+    if(!LOCAL_DEMO && !window.__MAPS_CONFIG_MISSING__) return Promise.resolve(null);
     var demoPoint=demoBestGuessPoint(address);
     if(demoPoint){
       setHomePoint(demoPoint);
@@ -1769,7 +1769,7 @@ function initHomeMap(){
         App.homeGeocodeResolvedAddress=addr;
       }
       syncSchematic("picker");
-      if(status) status.textContent=(LOCAL_DEMO&&fb)?D.mapReady:(shouldUseDemoFallback(err)?D.mapFallback:(err&&err.message)||D.mapMissing);
+      if(status) status.textContent=((LOCAL_DEMO||window.__MAPS_CONFIG_MISSING__)&&fb)?D.mapReady:(shouldUseDemoFallback(err)||window.__MAPS_CONFIG_MISSING__?D.mapFallback:(err&&err.message)||D.mapMissing);
     });
 }
 function mapStepPoint(location){

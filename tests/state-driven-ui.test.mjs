@@ -259,6 +259,55 @@ test("ending the in-app call extracts its transcript instead of always inserting
   assert.equal(state.call.phase, "ended");
 });
 
+test("the memory chat keeps a saveable proposal when the AI endpoint is unavailable", async () => {
+  const source = between("function fallbackChatResult(", "function chatSaveProp(");
+  const input = { value: "Something to do today" };
+  const context = {
+    App: {
+      chat: {
+        voiceActive: false,
+        draft: "",
+        msgs: [],
+        busy: false,
+        seedPend: null,
+      },
+    },
+    D: {
+      chatFallback:
+        "Smart sorting is temporarily unavailable, so I kept your wording. Check it before saving.",
+    },
+    St: { lang: "en", elder: { name: "Mom" }, people: [] },
+    aiAsk: async () => null,
+    aiJSON: () => null,
+    el: (id) => (id === "chatIn" ? input : null),
+    render: () => {},
+    todayKey: () => "2026-08-29",
+  };
+
+  vm.runInNewContext(source, context);
+  await context.chatSend();
+
+  assert.equal(context.App.chat.busy, false);
+  assert.equal(context.App.chat.msgs[1].role, "ai");
+  assert.equal(context.App.chat.msgs[2].role, "prop");
+  assert.equal(context.App.chat.msgs[2].item.type, "todo");
+  assert.equal(context.App.chat.msgs[2].item.what, "Something to do today");
+  assert.equal(context.App.chat.msgs[2].item.date, "2026-08-29");
+});
+
+test("memory chat fallback keeps pending-question answers as facts", () => {
+  const source = between("function fallbackChatResult(", "async function chatSend(");
+  const context = {
+    D: { chatFallback: "Kept your wording" },
+    todayKey: () => "2026-08-29",
+  };
+  vm.runInNewContext(source, context);
+
+  const result = context.fallbackChatResult("She visits today", false, true);
+  assert.equal(result.items[0].type, "fact");
+  assert.equal(result.items[0].text, "She visits today");
+});
+
 test("the comparison route embeds both roles for the same family", () => {
   assert.doesNotMatch(routeSource, /typeof window/);
   assert.match(routeSource, /Route\.useSearch\(\)/);

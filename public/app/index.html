@@ -1000,6 +1000,7 @@ zh:{
   chatSeed:"{elder}问了「{q}」，记忆里没有。你知道答案吗？",
   chatThinking:"正在整理……",
   chatFailed:"刚才没连上，再说一次试试。",
+  chatFallback:"智能整理暂时不可用，我先按原话整理好了，请确认后保存。",
   chatSaved:"已经存进记忆", chatSave:"存进记忆", chatDrop:"不用了",
   chatTips:["老人最近在忙什么","提醒老人今天要做的事","老人认识的一个人"],
   pendingToChat:"用助手补充",
@@ -1210,6 +1211,7 @@ en:{
   chatSeed:"{elder} asked \"{q}\" and it is not in memory. Do you know the answer?",
   chatThinking:"Sorting it out…",
   chatFailed:"That didn't go through. Try saying it again.",
+  chatFallback:"Smart sorting is temporarily unavailable, so I kept your wording. Check it before saving.",
   chatSaved:"Saved to memory", chatSave:"Save to memory", chatDrop:"Not this one",
   chatTips:["What the elder has been doing","Something to do today","Someone the elder knows"],
   pendingToChat:"Use the assistant",
@@ -4247,6 +4249,18 @@ function openChat(pendId){
   render();
 }
 
+/* AI 断线时仍保留用户原话，让家人确认后再写入记忆库。 */
+function fallbackChatResult(text, zh, preferFact){
+  var raw=String(text||"").trim();
+  var todoCue = zh
+    ? /(今天|明天|后天|提醒|记得|待办|要去|需要|应该|预约|买|取|拿|打电话|吃药|复诊)/.test(raw)
+    : /\b(today|tomorrow|tonight|remind|remember to|to-?do|need(?:s)? to|have to|has to|must|should|appointment|buy|pick up|call|take (?:medicine|medication|pills?)|visit)\b/i.test(raw);
+  var item = !preferFact && todoCue
+    ? {type:"todo", date:todayKey(), when:"", where:"", what:raw.slice(0,40)}
+    : {type:"fact", text:raw.slice(0,120)};
+  return {reply:D.chatFallback, items:[item]};
+}
+
 async function chatSend(){
   if(App.chat.voiceActive){ App.chat.voiceActive=false; stopSpeech(); }
   var box=el("chatIn");
@@ -4279,7 +4293,7 @@ async function chatSend(){
 
   App.chat.busy=false;
   var got=aiJSON(out);
-  if(!got){ App.chat.msgs.push({role:"ai", text:D.chatFailed}); render(); return; }
+  if(!got) got=fallbackChatResult(text,zh,!!App.chat.seedPend);
   if(got.reply) App.chat.msgs.push({role:"ai", text:String(got.reply).slice(0,120)});
 
   var items = Array.isArray(got.items) ? got.items : [];

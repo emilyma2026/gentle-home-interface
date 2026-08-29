@@ -24,6 +24,22 @@ function aiProxyPlugin(): Plugin {
   };
 }
 
+// 比赛技术要求：/api/daytona 把代码丢进 Daytona 隔离沙盒执行。key 只留服务端。
+function daytonaProxyPlugin(): Plugin {
+  return {
+    name: "companion-daytona-proxy",
+    apply: "serve",
+    async configureServer(server) {
+      const { daytonaHandler } = await import("./server/daytona.mjs");
+      const handle = daytonaHandler(process.env);
+      server.middlewares.use("/api/daytona", (req, res, next) => {
+        if (req.method !== "POST") return next();
+        handle(req, res);
+      });
+    },
+  };
+}
+
 export default defineConfig({
   tanstackStart: {
     // Redirect TanStack Start's bundled server entry to src/server.ts (our SSR error wrapper).
@@ -31,6 +47,6 @@ export default defineConfig({
     server: { entry: "server" },
   },
   vite: {
-    plugins: [aiProxyPlugin()],
+    plugins: [aiProxyPlugin(), daytonaProxyPlugin()],
   },
 });

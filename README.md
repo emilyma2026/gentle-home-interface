@@ -54,6 +54,20 @@ AI_MODEL=gemini-2.5-flash
 部署时请在托管平台提供同路径的接口，或复用同一个模块。
 没有配置任何 key 时，三处都会回落到不依赖模型的固定行为，功能不中断。
 
+## Daytona 沙盒
+
+比赛技术要求：代码在 Daytona 隔离沙盒里执行。走服务端 `/api/daytona`，key 只留服务端。
+在 .env 里配置：
+
+```
+DAYTONA_API_KEY=你的key   # app.daytona.io/dashboard/keys
+DAYTONA_TARGET=us         # 可选，us / eu
+```
+
+`POST /api/daytona`，body `{ "code": "print(1+1)" }`（不传则跑默认自检片段）。
+handler 会建沙盒 → 跑 Python → 删沙盒，返回 `{ ok, sandboxId, exitCode, result }`。
+本地 `npm run dev` 由 `server/daytona.mjs` 处理；没配 key 时返回 `{ ok: false, skipped: true }`，不影响其余功能。
+
 ## 构建
 
 ```sh

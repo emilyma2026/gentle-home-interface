@@ -2786,7 +2786,6 @@ function viewJoin(){
     + '<p class="h1">'+esc(D.joinTitle)+'</p>'
     + '<p class="sub">'+esc(forElder?D.joinSubE:D.joinSubF)+'</p>'
     + '<input class="codein" id="codeIn" inputmode="numeric" maxlength="6" value="'+esc(App.joinCode||'')+'" placeholder="'+esc(D.joinPh)+'">'
-    + '<p class="demo-sample">'+esc(D.demoCode)+' · <b>'+demoCode+'</b></p>'
     + (App.err?'<p class="err">'+esc(App.err)+'</p>':'')
     + '<div style="height:16px"></div>'
     + '<button class="btn'+(forElder?' warm':'')+'" data-go="pair">'+esc(D.next)+'</button>';

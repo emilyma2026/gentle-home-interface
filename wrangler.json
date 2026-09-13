@@ -1,6 +1,7 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "rememberus",
+  "main": "server/local-live-worker.mjs",
   "compatibility_date": "2026-09-13",
-  "assets": { "directory": "./dist", "not_found_handling": "single-page-application" }
+  "assets": { "directory": "./dist", "binding": "ASSETS", "run_worker_first": ["/api/live/*"], "not_found_handling": "single-page-application" }
 }

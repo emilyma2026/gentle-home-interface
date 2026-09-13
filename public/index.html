@@ -12,6 +12,6 @@ for(const role of compare?['family','elder']:['']){
  if(role){const label=document.createElement('label');label.textContent=role==='family'?'Family side':'Elder side';article.append(label);}
  const frame=document.createElement('iframe'),params=new URLSearchParams({localDemo:'1'});
  if(role){params.set('embedded','1');params.set('dualRole',role);params.set('code',code);}
- frame.title=role?'Remember Us '+role+' side':'Remember Us prototype';frame.src='/app/index.html?'+params;article.append(frame);
+ frame.title=role?'Remember Us '+role+' side':'Remember Us prototype';frame.allow='microphone';frame.src='/app/index.html?'+params;article.append(frame);
 }
 </script></body></html>

@@ -87,18 +87,21 @@ export async function handleLiveRequest(request, env = {}, fetchImpl = fetch) {
   const origin = request.headers.get("origin");
   if (origin && origin !== new URL(request.url).origin) return reply(403, { error: "ORIGIN_NOT_ALLOWED" });
   const token = (request.headers.get("authorization") || "").match(/^Bearer\s+(.+)$/i)?.[1];
-  if (!token) return reply(401, { error: "AUTH_REQUIRED" });
+  const localFamily = env.LOCAL_FAMILY_MODE === "true";
+  if (!token && !localFamily) return reply(401, { error: "AUTH_REQUIRED" });
   let body;
   try {
     const raw = await request.text();
     if (raw.length > MAX_BODY) return reply(413, { error: "REQUEST_TOO_LARGE" });
     body = JSON.parse(raw);
   } catch { return reply(400, { error: "INVALID_JSON" }); }
-  if (!body || !UUID.test(body.familyId || "")) return reply(400, { error: "INVALID_FAMILY" });
+  if (!body || !(localFamily ? /^\d{6}$/.test(body.familyId || "") : UUID.test(body.familyId || ""))) return reply(400, { error: "INVALID_FAMILY" });
   if (path.endsWith("/session") && (typeof body.sdp !== "string" || !body.sdp.startsWith("v=0"))) return reply(400, { error: "INVALID_SDP" });
   if (!clean(env.OPENAI_API_KEY, 2000)) return reply(503, { error: "LIVE_KEY_MISSING" });
   try {
-    const family = await readFamily(body, token, env, fetchImpl);
+    const family = localFamily
+      ? { state: { lang: body.lang === "en" ? "en" : "zh", facts: confirmedLiveFacts({facts:body.facts}).map(f=>({...f,status:"done"})) } }
+      : await readFamily(body, token, env, fetchImpl);
     if (family.error) return family.error;
     if (path.endsWith("/query")) return await lookup(body, family.state, env, fetchImpl);
     const response = await fetchImpl("https://api.openai.com/v1/live/sessions", {

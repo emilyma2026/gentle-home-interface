@@ -12,10 +12,11 @@ test('all inline application and shell scripts compile',()=>{
 test('static app loads only local demo scripts and contains no configuration keys',()=>{
  const html=readFileSync(new URL('dist/app/index.html',root),'utf8');
  const sources=Array.from(html.matchAll(/<script[^>]*src="([^"]+)"/g),m=>m[1]);
- assert.deepEqual(sources,['/app/local-store.js','/app/local-demo.js']);
+ assert.deepEqual(sources,['/app/local-store.js','/app/local-demo.js','/app/live-voice.js']);
  assert.doesNotMatch(html,/sb_publishable_|sk-proj-/);
- for(const name of ['maps-config.js','supabase-config.js','supabase-store.js','live-voice.js','voice.js','navigation.js'])assert.equal(existsSync(new URL('dist/app/'+name,root)),false);
+ for(const name of ['maps-config.js','supabase-config.js','supabase-store.js','voice.js','navigation.js'])assert.equal(existsSync(new URL('dist/app/'+name,root)),false);
+ assert.equal(existsSync(new URL('dist/app/singapore-demo-map.png',root)),true);
  const config=JSON.parse(readFileSync(new URL('wrangler.json',root),'utf8'));
- assert.equal(config.main,undefined);assert.equal(config.assets.directory,'./dist');
- assert.match(readFileSync(new URL('dist/_headers',root),'utf8'),/connect-src 'none'/);
+ assert.equal(config.main,'server/local-live-worker.mjs');assert.equal(config.assets.directory,'./dist');
+ assert.match(readFileSync(new URL('dist/_headers',root),'utf8'),/connect-src 'self'/);
 });

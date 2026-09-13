@@ -8,6 +8,25 @@ const state = { lang: "en", facts: [
   { id: "confirmed", status: "done", type: "fact", text: "Peter will visit on Sunday." },
   { id: "draft", status: "open", type: "fact", text: "UNCONFIRMED" },
 ], people: [{ nick: "Peter", phone: "PRIVATE_PHONE", photo: "PRIVATE_PHOTO" }] };
+test('local-family Live session reaches OpenAI without Supabase or a user JWT',async()=>{
+ const calls=[];
+ const res=await runtime.handleLiveRequest(request('session',{familyId:'123456',lang:'en',sdp:'v=0\r\n'},''),{OPENAI_API_KEY:'test-secret',LOCAL_FAMILY_MODE:'true'},async(url,options)=>{
+  calls.push({url,options});return Response.json({session:{id:'real-session'},transport:{sdp:'answer'}},{status:201});
+ });
+ assert.equal(res.status,201);assert.equal(calls.length,1);
+ assert.equal(calls[0].url,'https://api.openai.com/v1/live/sessions');
+ assert.equal(JSON.parse(calls[0].options.body).session.model,'gpt-live-1');
+ assert.doesNotMatch(await res.text(),/test-secret/);
+});
+test('local-family lookup sends only confirmed records and returns the stored answer',async()=>{
+ let sent;
+ const res=await runtime.handleLiveRequest(request('query',{familyId:'123456',facts:state.facts,people:state.people,transcript:[{role:'user',text:'When is Peter coming?'}]},''),{OPENAI_API_KEY:'test-secret',LOCAL_FAMILY_MODE:'true'},async(url,options)=>{
+  assert.ok(url.startsWith('https://api.openai.com/'));sent=options.body;
+  return Response.json({choices:[{message:{content:JSON.stringify({question:'When is Peter coming?',factId:'confirmed',needsFamily:false})}}]});
+ });
+ assert.equal(res.status,200);assert.equal((await res.json()).answer,'Peter will visit on Sunday.');
+ assert.doesNotMatch(sent,/PRIVATE_PHONE|PRIVATE_PHOTO|UNCONFIRMED/);
+});
 function request(path, body, token = "user-token") {
   return new Request("http://localhost/api/live/" + path, {
     method: "POST", headers: { "content-type": "application/json", origin: "http://localhost", ...(token ? { authorization: "Bearer " + token } : {}) },

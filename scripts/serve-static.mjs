@@ -1,10 +1,18 @@
 import http from 'node:http';
 import {readFile,stat} from 'node:fs/promises';
 import path from 'node:path';
+import {handleLiveRequest} from '../server/live-runtime.mjs';
+try{process.loadEnvFile('.env');}catch(error){if(error.code!=='ENOENT')throw error;}
 const root=path.resolve('dist'),port=Number(process.env.PORT||8080);
 const types={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.jpg':'image/jpeg','.png':'image/png','.svg':'image/svg+xml','.wav':'audio/wav','.css':'text/css','.ico':'image/x-icon','.woff2':'font/woff2'};
 http.createServer(async(req,res)=>{
  try{
+  if(req.url.startsWith('/api/live/')){
+    const chunks=[];let size=0;
+    for await(const chunk of req){size+=chunk.length;if(size>65536){res.writeHead(413);res.end();return;}chunks.push(chunk);}
+    const response=await handleLiveRequest(new Request('http://'+req.headers.host+req.url,{method:req.method,headers:req.headers,...(req.method!=='GET'&&req.method!=='HEAD'?{body:Buffer.concat(chunks)}:{})}),{...process.env,LOCAL_FAMILY_MODE:'true'});
+    res.writeHead(response.status,Object.fromEntries(response.headers));res.end(await response.text());return;
+  }
   let pathname=decodeURIComponent(new URL(req.url,'http://localhost').pathname);
   let file=path.resolve(root,'.'+pathname);
   if(file!==root&&!file.startsWith(root+path.sep)){res.writeHead(403);res.end();return;}

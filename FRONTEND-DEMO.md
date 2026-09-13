@@ -13,7 +13,7 @@ Open **Start local demo** to create a Singapore sample and open family and elder
 ## Simulation boundaries
 
 - **Live chat is real.** Starting it uses the microphone and sends audio to OpenAI. Personal questions send only confirmed text records and the conversation transcript through the Live lookup endpoint. Photos, phone numbers and unconfirmed drafts are excluded. Unknown questions are saved locally for family confirmation. Suggestions still support local record lookup and browser read-aloud without starting Live.
-- Maps use `public/app/singapore-demo-map.png`, the generated Singapore illustration. Its markers and 800 m circle are baked into the picture and do not track the simulated coordinates. Location, guidance and weather remain simulated. Use Settings → Demo control to simulate leaving and returning home.
+- Maps use `public/app/singapore-map-base.png` with interactive SVG overlays. Drag the elder pin outside the circle to trigger the elder warning and family alert; drag back inside to clear it. Resize the safe area with its circle handle or the radius slider. Settings → Demo control also offers Simulate going out / Back home. Map coordinates and distances are simulated.
 - In-app calls use the existing recorded demonstration; they do not contact another device. Phone links, if configured by the user, still open the device dialer.
 - Family editors retain manual entry and rule-based fallbacks. AI extraction and real voice input are unavailable.
 - No cross-device sync, real authentication, push notifications, or cloud backup. Do not store real sensitive personal information in a shared demo browser.

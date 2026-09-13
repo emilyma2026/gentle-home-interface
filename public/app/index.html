@@ -474,6 +474,9 @@ input,textarea,select{font:inherit}
 .mapbox{position:relative; display:block; width:100%; min-height:186px; border-radius:var(--r-md);
   overflow:hidden; background:#F3F1F4; box-shadow:var(--sh-card)}
 .mapbox.mappick{touch-action:none; cursor:crosshair}
+.mapbox .interactive-demo-map{height:auto!important;aspect-ratio:1000/667}
+.setup-map:has(.interactive-demo-map){height:auto;aspect-ratio:1000/667}
+.interactive-demo-map [tabindex]:focus{outline:3px solid #815d39}
 .mapbox svg{display:block; width:100%; height:auto}
 .mapbox .tip{position:absolute; left:10px; bottom:9px; padding:4px 10px; border-radius:99px;
   background:rgba(23,22,26,.72); color:#fff; font-size:10.5px; pointer-events:none; z-index:2}
@@ -948,6 +951,7 @@ input,textarea,select{font:inherit}
 <script>window.FRONTEND_ONLY=true;window.LIVE_ENABLED=true;window.MAPS_CONFIG={key:''};</script>
 <script src="/app/local-store.js"></script>
 <script src="/app/local-demo.js"></script>
+<script src="/app/interactive-map.js"></script>
 <script src="/app/live-voice.js"></script>
 <script>
 (function(){
@@ -2227,7 +2231,7 @@ function mapHost(kind){
 
 /* 示意图降级：把经纬度投影成 260x150 的画布 */
 function schematicSVG(kind){
-  if(window.FRONTEND_ONLY)return '<img class="demo-map-image" src="/app/singapore-demo-map.png" alt="Singapore illustrative demo map, not live location or a real route" style="display:block;width:100%;height:100%;object-fit:contain;background:#f4eedf">';
+  if(window.FRONTEND_ONLY)return DemoMap.markup(homeOf(St),locOf(St),rangeM(St),St.lang==='en');
   var home=homeOf(St), here=locOf(St), r=rangeM(St), out=isOut(St);
   var cx=130, cy=75, rpx=52, ppm=rpx/Math.max(r,1);
   var east=(here.lng-home.lng)*metersPerDegLng(home.lat);
@@ -2251,6 +2255,7 @@ function schematicSVG(kind){
 
 /* 家人端只读地图 / 首次设置的选点地图，共用一个占位符 */
 function mapBox(kind){
+  if(window.FRONTEND_ONLY)return '<div class="mapbox" data-gmap="'+kind+'"></div>';
   var tip = kind==="picker" ? D.mapTipPick : D.mapTipLive;
   return '<div class="mapbox'+(kind==="picker"?" mappick":"")+'" data-gmap="'+kind+'">'
     + '<span class="tip">'+esc(tip)+'</span></div>';
@@ -3683,7 +3688,8 @@ function render(s){
   syncElderLive();
 
   var activeEditor=document.activeElement;
-  var editingLocally=activeEditor&&activeEditor.matches&&activeEditor.matches("[data-f],[data-todo],[data-item-in]");
+  var editingLocally=activeEditor&&activeEditor.matches&&activeEditor.matches("[data-f],[data-todo],[data-item-in],#rangeSlider,#rangeNum");
+  if(window.DemoMap&&DemoMap.dragging)return;
   if(typing||editingLocally){ patchLight(); return; }
 
   var screen=el("screen"), view=el("view"), body="", isElder=false, chrome="";
@@ -3770,6 +3776,11 @@ function applyRange(v, persist){
   if(sl && document.activeElement!==sl) sl.value=v;
   if(nu && document.activeElement!==nu) nu.value=v;
   if(sl) sl.style.setProperty("--pct", Math.round((v-200)/1800*100)+"%");
+  if(window.FRONTEND_ONLY&&St){
+    document.querySelectorAll('[data-demo-map]').forEach(function(svg){DemoMap.paint(svg,homeOf(St),locOf(St),v,St.lang==='en');});
+    if(persist)queueUpdate(function(x){x.elder.radius=String(v);x.home=x.home||{};x.home.radiusM=v;applyDemoRisk(x);});
+    return v;
+  }
   if(St){ St.elder.radius=String(v); St.home=St.home||{}; St.home.radiusM=v; }
   if(App.homeMapController) App.homeMapController.setRadius(v);
   if(persist){
@@ -4167,39 +4178,37 @@ function setLoc(x,y){
   });
   if(started && App.route==="elder" && window.Voice) window.Voice.speak(D.riskLeaving,{lang:St.lang});
 }
-function setDemoLocation(outside){
-  App.demoLocation=true;
-  stopGps();
-  queueUpdate(function(s){
-    var home=homePoint(s)||homeOf(s), radius=Math.max(200,rangeM(s)||800);
-    var point=outside?offsetLL(home,radius+320,80):home;
-    s.loc={lat:point.lat,lng:point.lng,source:"demo",status:"ready",updatedAt:new Date().toISOString()};
-    s.locReported=true;
-    s.risk=s.risk||{};
-    s.risk.distanceM=outside?radius+320:0;
-    s.risk.outsideCount=outside?3:0;
-    s.risk.state=outside?"leaving":"safe";
-    s.risk.reason=outside?"outside_safe_radius":"inside_safe_radius";
-    App.guideRouteRequested=false;
-    App.guideRouteStatus="idle";
-    App.guideRouteError="";
-    if(outside){
+function applyDemoRisk(s){
+  var d=DemoMap.distance(homeOf(s),locOf(s)),outside=d>rangeM(s);
+  s.locReported=true;s.risk=s.risk||{};
+  var wasOutside=s.risk.state==='leaving'||s.risk.state==='guiding';
+  s.risk.distanceM=Math.round(d);s.risk.outsideCount=outside?3:0;
+  s.risk.reason=outside?'outside_safe_radius':'inside_safe_radius';
+  if(outside){
+    s.risk.state=s.guide.active?'guiding':'leaving';
+    if(!wasOutside){
       s.risk.triggeredAt=new Date().toISOString();
-      s.guide.active=false; s.guide.done=false; s.guide.step=0; s.guide.instructions=[]; s.guide.routeId="";
-      requestBoundaryAlert(s);
-      s.alertCleared=false;
-      var seen=false;
-      for(var i=0;i<s.timeline.length;i++) if(s.timeline[i].kind==="guide"&&s.timeline[i].active) seen=true;
-      if(!seen) s.timeline.push({t:clockNow(),date:todayKey(),kind:"guide",active:true});
-    }else{
-      s.guide.pending=false;
-      s.guide.active=false; s.guide.done=false; s.guide.step=0; s.guide.instructions=[]; s.guide.routeId="";
-      s.alertCleared=true;
-      for(var j=0;j<s.timeline.length;j++) if(s.timeline[j].kind==="guide") delete s.timeline[j].active;
+      s.guide.active=false;s.guide.done=false;s.guide.step=0;s.guide.instructions=[];s.guide.routeId='';
+      requestBoundaryAlert(s);s.alertCleared=false;
+      if(!s.timeline.some(function(t){return t.kind==='guide'&&t.active;}))s.timeline.push({t:clockNow(),date:todayKey(),kind:'guide',active:true});
     }
-  });
-  if(outside&&App.route==="elder") render();
+  }else{
+    s.risk.state='safe';s.guide.pending=false;s.guide.active=false;s.guide.done=false;s.guide.step=0;s.guide.instructions=[];s.guide.routeId='';s.alertCleared=true;
+    s.timeline.forEach(function(t){if(t.kind==='guide')delete t.active;});
+  }
 }
+function setDemoPoint(point){
+  App.demoLocation=true;stopGps();App.guideRouteRequested=false;App.guideRouteStatus='idle';App.guideRouteError='';
+  queueUpdate(function(s){s.loc={lat:point.lat,lng:point.lng,source:'demo',status:'ready',updatedAt:new Date().toISOString()};applyDemoRisk(s);});
+}
+function setDemoLocation(outside){
+  var home=homePoint(St)||homeOf(St);
+  setDemoPoint(outside?offsetLL(home,rangeM(St)+320,80):home);
+}
+DemoMap.bind(document,{
+  state:function(){return St?{home:homeOf(St),point:locOf(St),radius:rangeM(St),en:St.lang==='en'}:null;},
+  position:setDemoPoint,radius:function(v){applyRange(v,true);},cancel:function(){render();}
+});
 function advanceGuide(){
   if(!St||!St.guide||!St.guide.active) return;
   var nextText="", advanced=false, completed=false;

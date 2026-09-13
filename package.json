@@ -10,7 +10,7 @@
     "preview": "node scripts/serve-static.mjs",
     "lint": "eslint .",
     "format": "prettier --write .",
-    "test": "node --test tests/local-store.test.mjs tests/static-demo.test.mjs tests/live-runtime.test.mjs tests/live-voice.test.mjs"
+    "test": "node --test tests/interactive-map.test.mjs tests/local-store.test.mjs tests/static-demo.test.mjs tests/live-runtime.test.mjs tests/live-voice.test.mjs"
   },
   "dependencies": {
     "@ai-sdk/openai": "^4.0.45",

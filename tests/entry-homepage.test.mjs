@@ -391,6 +391,7 @@ test("Switch role persists the elder session reset and refreshes the page", asyn
   let signedOut = 0;
   let reloads = 0;
   const context = {
+    Connection: {pendingAction:false}, setTimeout, clearTimeout, syncActionAvailability: () => {},
     App: {
       route: "elder", tab: 2, qa: true, pick: true, eset: true,
       qaVoiceActive: true, qaVoiceText: "question", qaVoiceErr: "error",
@@ -430,6 +431,7 @@ test("family sign out leaves a fixed-role frame without changing shared data", a
   let destination = "";
   const state = { facts: [{ text: "Sunday visit" }], guide: { active: true } };
   const context = {
+    Connection: {pendingAction:false}, setTimeout, clearTimeout, syncActionAvailability: () => {},
     App: {}, St: state, EMBEDDED: true, EMBED_ROLE: "family",
     storeRole: () => "family",
     Store: { signOut: async () => { signedOut += 1; } },
@@ -467,6 +469,7 @@ test("elder pairing persists the paired state before entering the elder screen",
   const state = { paired: false, lang: "zh" };
   const events = [];
   const context = {
+    Connection: {pendingAction:false}, setTimeout, clearTimeout, syncActionAvailability: () => {},
     EMBED_ROLE: "",
     App: { joinAs: "elder", err: "old error", paired: false, route: "join" },
     D: { joinErr: "not found" },

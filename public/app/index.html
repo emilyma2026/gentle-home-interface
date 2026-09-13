@@ -2763,12 +2763,12 @@ function viewJoin(){
   var h='<p class="eyebrow'+(forElder?' warm':'')+'">'+esc(forElder?D.roleElderT:D.fsJoinT)+'</p>'
     + '<p class="h1">'+esc(D.joinTitle)+'</p>'
     + '<p class="sub">'+esc(forElder?D.joinSubE:D.joinSubF)+'</p>'
-    + '<input class="codein" id="codeIn" inputmode="numeric" maxlength="6" value="'+demoCode+'" placeholder="'+esc(D.joinPh)+'">'
+    + '<input class="codein" id="codeIn" inputmode="numeric" maxlength="6" value="'+esc(App.joinCode||demoCode)+'" placeholder="'+esc(D.joinPh)+'">'
     + '<p class="demo-sample">'+esc(D.demoCode)+' · <b>'+demoCode+'</b></p>'
     + (App.err?'<p class="err">'+esc(App.err)+'</p>':'')
     + '<div style="height:16px"></div>'
     + '<button class="btn'+(forElder?' warm':'')+'" data-go="pair">'+esc(D.next)+'</button>';
-  h+='<div class="spacer"></div><button class="link" data-go="entry">'+esc(D.back)+'</button>';
+  h+='<div class="spacer"></div><button class="link" data-go="cancelJoin">'+esc(D.back)+'</button>';
   return h;
 }
 
@@ -4805,28 +4805,69 @@ function readPhoto(file, cb){
 async function pair(code){
   code=String(code||"").trim();
   if(!/^\d{6}$/.test(code)){ App.err=D.joinErr; render(); return; }
-  await runPendingAction(async function(){
+  if(Connection.pendingAction) return;
+  Connection.restoreGeneration=(Connection.restoreGeneration||0)+1; Connection.restoring=false;
+  App.joinCode=code; App.err="";
+  var attempt={cancelled:false}, timer;
+  Connection.joinAttempt=attempt; Connection.pendingAction=true;
+  syncActionAvailability();
+  function current(){return Connection.joinAttempt===attempt&&!attempt.cancelled;}
+  var cancelled=new Promise(function(resolve){attempt.release=resolve;});
+  var deadline=new Promise(function(resolve){
+    timer=setTimeout(function(){
+      if(current()){
+        attempt.cancelled=true; Store.resetSession(); St=null;
+        App.err=lang==='en'?'Joining timed out. Please retry, or go back.':'加入家庭超时，请重试或返回。';
+        setConnectionStatus('error');
+      }
+      resolve();
+    },20000);
+  });
+  var work=(async function(){
     try{
       var role=EMBED_ROLE||App.joinAs;
       await Store.attach(code,role);
+      if(!current()) return;
       St=Store.get();
-      App.err="";
+      if(!St) throw new Error('FAMILY_UNAVAILABLE');
+      Connection.authenticated=true; Connection.initFailed=false;
       if(role==="elder"){
         await persistUpdate(function(s){ s.paired=true; });
+        if(!current()) return;
         rememberDevice("elder",code,null);
-        App.paired=true; App.route="elder"; render();
-      } else {
+        App.paired=true; App.route="elder";
+      }else{
         var p=newPerson();
         await persistUpdate(function(s){ s.people.push(p); });
+        if(!current()) return;
         rememberDevice("family",code,p.id);
-        App.editingPerson=p.id; App.speak=0; App.route="obMe"; render();
+        App.editingPerson=p.id; App.speak=0; App.route="obMe";
       }
+      App.err="";
     }catch(error){
-      if(error&&error.code==="FAMILY_NOT_FOUND") App.err=D.joinErr;
-      else reportStoreError(error);
-      render();
+      if(!current()) return;
+      App.err=error&&error.code==="FAMILY_NOT_FOUND"?D.joinErr:(lang==='en'?'Could not join this family. Please retry, or go back.':'暂时无法加入家庭，请重试或返回。');
+      reportStoreError(error);
     }
-  });
+  })();
+  try{await Promise.race([work,deadline,cancelled]);}
+  finally{
+    clearTimeout(timer);
+    if(Connection.joinAttempt===attempt){
+      Connection.joinAttempt=null; Connection.pendingAction=false;
+      render(); syncActionAvailability();
+    }
+  }
+}
+function cancelJoin(){
+  var attempt=Connection.joinAttempt;
+  if(attempt){attempt.cancelled=true;attempt.release();}
+  Connection.restoreGeneration=(Connection.restoreGeneration||0)+1; Connection.restoring=false;
+  Connection.joinAttempt=null;Connection.pendingAction=false;
+  if(Store) Store.resetSession();
+  St=null;clearDevice();App.err="";
+  App.route=App.joinAs==='elder'?'entry':'familyStart';
+  setConnectionStatus('synced');render();syncActionAvailability();
 }
 
 async function startElderDevice(){
@@ -4853,6 +4894,7 @@ function resetElderModeSession(s){
 }
 
 async function hardExit(){
+  if(Connection.joinAttempt){cancelJoin();return;}
   var leavingRole=storeRole();
   stopSpeech();
   stopSubs();
@@ -5021,6 +5063,7 @@ document.addEventListener("click", async function(e){
     case "joinFamily": App.joinAs="family"; App.err=""; App.route="join"; render(); break;
     case "elderPair":  await startElderDevice(); App.joinAs="elder"; App.err=""; App.route="join"; render(); break;
     case "pair": await pair(el("codeIn").value); break;
+    case "cancelJoin": cancelJoin(); break;
 
     case "obMe":
       if(!App.editingPerson && St && St.people && St.people[0]) App.editingPerson=St.people[0].id;
@@ -5182,6 +5225,7 @@ function pollFamilyState(){
 async function connectAndRestore(){
   if(Connection.pendingAction || Connection.restoring) return;
   Connection.restoring=true;
+  var generation=Connection.restoreGeneration=(Connection.restoreGeneration||0)+1;
   Connection.initFailed=false;
   Connection.authenticated=false;
   setConnectionStatus("connecting");
@@ -5189,6 +5233,7 @@ async function connectAndRestore(){
   try{
     if(!Store) throw new Error("Supabase client unavailable");
     await Store.initialize();
+    if(generation!==Connection.restoreGeneration) return;
     var restored;
     if(EMBED_ROLE&&EMBED_CODE){
       await Store.attach(EMBED_CODE,EMBED_ROLE);
@@ -5196,6 +5241,7 @@ async function connectAndRestore(){
     }else{
       restored=await Store.restoreSelection();
     }
+    if(generation!==Connection.restoreGeneration) return;
     St=restored;
     Connection.authenticated=true;
     if(St){
@@ -5214,12 +5260,13 @@ async function connectAndRestore(){
     render(St);
     if(App.route==="elder") setTimeout(startGps,0);
   }catch(error){
+    if(generation!==Connection.restoreGeneration) return;
     Connection.authenticated=false;
     Connection.initFailed=true;
     setConnectionStatus(navigator.onLine===false?"offline":"error");
     render(St);
   }finally{
-    Connection.restoring=false;
+    if(generation===Connection.restoreGeneration) Connection.restoring=false;
   }
 }
 

@@ -289,6 +289,7 @@ test("entry loads the pinned Supabase browser runtime and adapter before the app
     "/app/supabase-config.js",
     "/app/supabase-store.js",
     "/app/voice.js",
+    "/app/live-voice.js",
     "/app/navigation.js",
   ]);
   assert.ok(appSource.indexOf(externalScripts[2]) < appSource.indexOf("(function(){"));

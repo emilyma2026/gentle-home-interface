@@ -11,10 +11,7 @@ export interface ExtractedTodo {
   confidence: number;
 }
 export interface ExtractionResult {
-  runtime: "daytona" | "direct" | "local-fallback" | "none";
-  sandboxId?: string;
-  reuse?: boolean;
-  previewLink?: string;
+  runtime: "direct" | "none";
   facts: ExtractedFact[];
   todos: ExtractedTodo[];
   dropped: Array<{ text: string; reason: string }>;
@@ -22,7 +19,6 @@ export interface ExtractionResult {
 }
 
 export const EXTRACT_SYSTEM: string;
-export function extractInSandbox(note: string, env?: Env): Promise<ExtractionResult>;
 export function extractDirect(
   note: string,
   env?: Env,

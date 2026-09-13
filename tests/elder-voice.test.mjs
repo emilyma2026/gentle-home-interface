@@ -17,7 +17,6 @@ function section(startMarker, endMarker) {
 const todoSection = section("function elderTodoText(", "function todoMeta(");
 const qaViewSection = section("function viewQa(){", "/* 老人不用记号码");
 const freeQuestionSection = section("async function askFree(", "async function ask(i){");
-const voiceSection = section("function beginElderVoice(){", "async function askFree(");
 const pendingSection = section("function pendingGrouped(){", "function confirmCard(){");
 const saveAnswerSection = section("function saveAnswer(", "function skipAnswer(");
 const i18nStart = appSource.indexOf("var I18N = {");
@@ -49,7 +48,7 @@ test("unconfirmed answer names the family member instead of guessing a pronoun",
   assert.doesNotMatch(i18n.zh.ansNoConfirm, /她|他/);
 });
 
-test("elder question view renders free-form text and a real hold-to-speak button", () => {
+test("elder question view renders free-form text and the live conversation panel", () => {
   assert.equal(qaViewSection.found, true);
   const output = vm.runInNewContext(`${qaViewSection.source}\nviewQa();`, {
     St: { thread: [{ role: "me", text: "When is Peter coming?" }] },
@@ -65,14 +64,15 @@ test("elder question view renders free-form text and a real hold-to-speak button
       eBack: "Back",
     },
     IC: { voice: "VOICE" },
+    livePanel: () => '<button data-go="toggleLive">Start live</button><div data-live-transcript="1"></div>',
     esc: (value) => String(value ?? ""),
     fill: (value, values) => String(value).replace(/\{(\w+)\}/g, (_, key) => values[key] ?? ""),
     tp: (value) => String(value).replace("{nick}", "Peter"),
   });
 
   assert.match(output, /When is Peter coming\?/);
-  assert.match(output, /<button[^>]+data-voice-hold="1"/);
-  assert.match(output, /data-qa-transcript="1"/);
+  assert.match(output, /<button[^>]+data-go="toggleLive"/);
+  assert.match(output, /data-live-transcript="1"/);
   assert.match(output, /data-ask="0"/);
 });
 
@@ -220,26 +220,4 @@ test("an unmatched free question syncs to the family instead of inventing an ans
   assert.equal(state.pending[0].question, "Where are my keys?");
   assert.equal(state.thread[1].key, "ansNoConfirm");
   assert.equal(state.thread[1].src, "srcUnk");
-});
-
-test("press-and-hold speech submits the recognized words, never sample content", () => {
-  assert.equal(voiceSection.found, true);
-  let heard = "";
-  let recognitionCallback;
-  const context = {
-    App: { qaVoiceActive: false, qaVoiceText: "", qaVoiceErr: "" },
-    D: { eVoiceNoMic: "No microphone", eVoiceFailed: "Try again" },
-    speechSupported: () => true,
-    startSpeech: (callback) => { recognitionCallback = callback; return true; },
-    stopSpeech: () => {},
-    patchQaVoice: () => {},
-    render: () => {},
-    askFree: (text) => { heard = text; },
-  };
-  vm.runInNewContext(voiceSection.source, context);
-  context.beginElderVoice();
-  recognitionCallback("Where are my keys?", true);
-
-  assert.equal(heard, "Where are my keys?");
-  assert.equal(context.App.qaVoiceText, "Where are my keys?");
 });

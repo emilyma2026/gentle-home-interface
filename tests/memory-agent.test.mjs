@@ -1,10 +1,8 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
 import { test } from "node:test";
 
 import { EXTRACT_SYSTEM, extractDirect, handleMemoryExtract } from "../server/memory-agent.mjs";
 
-const agentSrc = readFileSync(new URL("../server/sandbox/memory_agent.py", import.meta.url), "utf8");
 
 function openaiStub(payload) {
   return async () =>
@@ -19,10 +17,6 @@ const env = { OPENAI_API_KEY: "sk-test" };
 test("EXTRACT_SYSTEM is the single source of the extraction prompt", () => {
   assert.match(EXTRACT_SYSTEM, /facts/);
   assert.match(EXTRACT_SYSTEM, /due_hint/);
-  // the python agent injects it rather than carrying its own copy
-  assert.doesNotMatch(agentSrc, /你是阿尔茨海默症老人记忆助手的抽取模块/);
-  assert.match(agentSrc, /__EXTRACT_SYSTEM_B64__/);
-  assert.match(agentSrc, /__PAYLOAD_B64__/);
 });
 
 test("extractDirect normalizes categories, clamps confidence, filters sensitive", async () => {
@@ -46,13 +40,12 @@ test("extractDirect normalizes categories, clamps confidence, filters sensitive"
   assert.equal(out.todos[0].due_hint, "unspecified"); // 非法 due_hint -> unspecified
 });
 
-test("handleMemoryExtract falls back to direct when the sandbox is unavailable", async () => {
+test("handleMemoryExtract uses the AI provider directly", async () => {
   const req = new Request("http://x/api/memory/extract", {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify({ note: "她最喜欢的孙女是朵朵。" }),
   });
-  // 没有 DAYTONA_API_KEY -> extractInSandbox 抛 MissingDaytonaKeyError -> 走 extractDirect
   const res = await handleMemoryExtract(
     req,
     env,
@@ -62,7 +55,6 @@ test("handleMemoryExtract falls back to direct when the sandbox is unavailable",
   assert.equal(res.status, 200);
   assert.equal(body.ok, true);
   assert.equal(body.runtime, "direct");
-  assert.ok(body.sandboxFallback, "should record why the sandbox was skipped");
   assert.equal(body.facts[0].category, "person");
 });
 

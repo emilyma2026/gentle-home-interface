@@ -60,20 +60,55 @@ function aiProxyPlugin(): Plugin {
   };
 }
 
-// 本地 dev：把 Daytona 沙盒相关的服务端接口挂上（生产在 src/server.ts 里路由）
-function daytonaProxyPlugin(): Plugin {
+function liveProxyPlugin(): Plugin {
   return {
-    name: "companion-daytona-proxy",
+    name: "companion-live-proxy",
     apply: "serve",
     async configureServer(server) {
-      const { daytonaHandler } = await import("./server/daytona.mjs");
-      const { memoryAgentHandler } = await import("./server/memory-agent.mjs");
-      const daytona = daytonaHandler(process.env);
-      const memory = memoryAgentHandler(process.env);
-      server.middlewares.use("/api/daytona", (req, res, next) => {
-        if (req.method !== "POST") return next();
-        daytona(req, res);
+      const { handleLiveRequest } = await import("./server/live-runtime.mjs");
+      const { serverEnv } = await import("./server/ai-provider.mjs");
+      server.middlewares.use(async (req, res, next) => {
+        if (!req.url?.startsWith("/api/live/")) return next();
+        try {
+          const chunks: Buffer[] = [];
+          let size = 0;
+          for await (const chunk of req) {
+            size += chunk.length;
+            if (size > 65_536) {
+              res.writeHead(413, { "content-type": "application/json" });
+              res.end(JSON.stringify({ error: "REQUEST_TOO_LARGE" }));
+              return;
+            }
+            chunks.push(Buffer.from(chunk));
+          }
+          const headers = new Headers();
+          for (const [name, value] of Object.entries(req.headers)) {
+            if (typeof value === "string") headers.set(name, value);
+          }
+          const request = new Request(new URL(req.url, "http://" + req.headers.host), {
+            method: req.method || "GET", headers,
+            ...(req.method === "POST" ? { body: Buffer.concat(chunks).toString("utf8") } : {}),
+          });
+          const result = await handleLiveRequest(request, serverEnv());
+          res.writeHead(result.status, Object.fromEntries(result.headers));
+          res.end(await result.text());
+        } catch {
+          res.writeHead(502, { "content-type": "application/json" });
+          res.end(JSON.stringify({ error: "LIVE_UNAVAILABLE" }));
+        }
       });
+    },
+  };
+}
+
+// 本地开发的记忆抽取接口（生产在 src/server.ts 里路由）
+function memoryProxyPlugin(): Plugin {
+  return {
+    name: "companion-memory-proxy",
+    apply: "serve",
+    async configureServer(server) {
+      const { memoryAgentHandler } = await import("./server/memory-agent.mjs");
+      const memory = memoryAgentHandler(process.env);
       server.middlewares.use("/api/memory/extract", (req, res, next) => {
         if (req.method !== "POST") return next();
         memory(req, res);
@@ -87,6 +122,6 @@ export default defineConfig({
     server: { entry: "server" },
   },
   vite: {
-    plugins: [mapsConfigPlugin(), prototypeAssetsPlugin(), aiProxyPlugin(), daytonaProxyPlugin()],
+    plugins: [mapsConfigPlugin(), prototypeAssetsPlugin(), liveProxyPlugin(), aiProxyPlugin(), memoryProxyPlugin()],
   },
 });

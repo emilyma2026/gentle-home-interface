@@ -3,6 +3,7 @@ import "./lib/error-capture";
 import { consumeLastCapturedError } from "./lib/error-capture";
 import { renderErrorPage } from "./lib/error-page";
 import { handleAIRequest } from "../server/ai-runtime.mjs";
+import { handleLiveRequest } from "../server/live-runtime.mjs";
 import { handleMemoryExtract } from "../server/memory-agent.mjs";
 
 type ServerEntry = {
@@ -61,6 +62,9 @@ export default {
   async fetch(request: Request, env: unknown, ctx: unknown) {
     try {
       const pathname = new URL(request.url).pathname;
+      if (pathname.startsWith("/api/live/")) {
+        return await handleLiveRequest(request, runtimeEnvironment(env));
+      }
       if (pathname === "/api/ai") {
         return await handleAIRequest(request, runtimeEnvironment(env));
       }

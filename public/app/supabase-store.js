@@ -916,6 +916,7 @@
       signOut,
       resetSession,
       get: () => state,
+      familyId: () => activeSelection ? activeSelection.familyId : null,
       role: () => selectedRole,
       subscribe: (subscriber) => {
         subscribers.push(subscriber);

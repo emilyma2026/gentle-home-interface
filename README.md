@@ -39,7 +39,7 @@ node scripts/gen-maps-config.mjs
 
 ## AI 配置
 
-通话抽取、老人端问答、口述整理都走服务端 `/api/ai`，API key 只留在服务端，不进浏览器。
+通话抽取、文字快捷问答、口述整理走服务端 `/api/ai`，API key 只留在服务端，不进浏览器。老人连续语音陪伴使用下述独立的 Live 接口。
 在 .env 里配置其中一个即可，优先使用 Gemini：
 
 ```
@@ -54,44 +54,33 @@ AI_MODEL=gemini-2.5-flash
 部署时请在托管平台提供同路径的接口，或复用同一个模块。
 没有配置任何 key 时，三处都会回落到不依赖模型的固定行为，功能不中断。
 
-## Daytona 沙盒
+## 记忆抽取
 
-产品里"跑不可信代码 / 跑 AI agent"的活都放进 Daytona 隔离沙盒。key 只留服务端。
+`POST /api/memory/extract` 接收 `{ "note": "…" }`，通过服务端 AI 适配层直接抽取，
+返回 `{ ok, runtime, facts, todos, dropped, steps }`。
+配置服务端 `OPENAI_API_KEY` 或 `GEMINI_API_KEY` 即可；不需要额外的执行环境。
 
-```
-DAYTONA_API_KEY=你的key      # app.daytona.io/dashboard/keys
-DAYTONA_TARGET=us            # 可选，us / eu
-DAYTONA_SANDBOX=Remember_Us  # 可选，复用固定沙盒（停了自动拉起、跑完不删）；不设则每次新建即删
-```
+当前流程执行结构化抽取、字段归一化和敏感信息过滤，不包含独立的二次 grounding 核查。
+AI 调用失败时接口返回错误；空笔记直接返回空结果。
 
-### 记忆抽取 agent（主用途）
+## 连续语音陪伴（GPT-Live-1）
 
-家人写的照护笔记 → 沙盒里跑 `server/sandbox/memory_agent.py`：
+老人端「陪我说一会儿」打开后，点击「开始陪我说一会儿」授权麦克风。
+浏览器通过 WebRTC 将麦克风音频送入 `gpt-live-1`，直接播放模型音频，支持连续交谈和打断。
+不使用浏览器语音识别或文字朗读来模拟实时对话。文字快捷问题仍保留。
 
-1. **extractor** — LLM 结构化抽取，拆成 facts（person/preference/routine/event/response_script/other）
-   和 todos（today/tomorrow/this_week/unspecified）
-2. **grounding critic** — 第二遍 LLM 逐条核对"是不是笔记里明确写到的"，没依据的丢掉
-3. **sensitive filter** — 手机号 / 身份证 / 银行卡 / 密码类正则二次过滤
+- 服务端需要有 `gpt-live-1` 权限的 `OPENAI_API_KEY`；可选 `LIVE_LOOKUP_MODEL`（默认 `gpt-4o-mini`）负责家庭记录匹配。
+- `/api/live/session` 创建实时会话；`/api/live/query` 查询已确认家庭记录。两个接口都检查 Supabase 用户会话与家庭访问权限。
+- 未知问题成功保存后才告知老人已转给家人；家人答案在服务端核实后可回到当前语音会话。
+- 点击结束、离开页面、切换角色或网络故障会关闭麦克风。每次连续会话最长 10 分钟，可重新开始。
+- 浏览器需在 HTTPS 或 localhost 下运行并允许麦克风；若自动播放被阻止，点击「播放声音」。错误时明确提示，需手动重试。
+- Vite 开发和 `src/server.ts` 生产入口均已接入。部署时配置服务端密钥及 Supabase 环境变量，绝不要把 OpenAI 密钥放入 `VITE_*`。
 
-沙盒把 LLM 的不可信输出和外部 HTTP 调用关在隔离环境里，Worker / 主进程不直接碰。
-只用 Python 标准库，沙盒无需 pip install。
+自动测试覆盖会话协议、鉴权、已确认记录查询、麦克风释放及保存失败。真实音质、停顿与打断体验需要使用麦克风端到端试听。
 
-- **可视化 demo**：`npm run dev` 后打开 `/sandbox`，粘一段笔记点运行，看沙盒 ID、
-  pipeline 步骤、分类结果、grounding 丢弃项。
-- **接口**：`POST /api/memory/extract`，body `{ "note": "…" }` →
-  `{ ok, runtime, sandboxId, previewLink?, facts, todos, dropped, steps }`。
-  - `runtime: "daytona"` —— 真沙盒（本地 dev / 有 Daytona key）
-  - `runtime: "direct"` —— Cloudflare Worker 上 Daytona SDK 跑不起来时，回落到 AI 网关直跑
-  - `runtime: "local-fallback"` —— 无 Daytona key 时在本机跑同一个 Python
+参考：[Live WebRTC](https://developers.openai.com/api/docs/guides/voice-webrtc?api=live)、[客户端委派](https://developers.openai.com/api/docs/guides/live-delegation)。
 
-### 自检端点
-
-`POST /api/daytona`，body `{ "code": "print(1+1)" }` → 直接在沙盒里跑一段 Python，
-返回 `{ ok, mode, sandboxId, exitCode, result }`。仅 `npm run dev` 挂载。
-
-没配 `DAYTONA_API_KEY` 时相关端点返回 skipped / 回落，不影响其余功能。
-
-## 构建
+## 构建与检查
 
 ```sh
 npm run build

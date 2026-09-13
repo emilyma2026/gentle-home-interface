@@ -57,3 +57,11 @@ test('sign out blocks URL auto-join until an explicit attach, without deleting f
  await s.attach(code,'elder');assert.equal(s.wasSignedOut(code),false);assert.equal(s.role(),'elder');
  await s.signOut();assert.equal(s.get(),null);assert.equal(s.role(),null);
 });
+
+test('comparison requires setup and pairing before restoring the elder',async()=>{
+ const {client}=fixture(),s=client();const code=await s.create('en');
+ assert.equal(s.canPair(code),false);assert.equal(s.canRestoreElder(code),false);
+ await s.update(x=>{x.setup=true;});assert.equal(s.canPair(code),true);assert.equal(s.canRestoreElder(code),false);
+ await s.update(x=>{x.paired=true;});assert.equal(s.canRestoreElder(code),true);
+ await s.update(x=>{x.setup=false;});assert.equal(s.canRestoreElder(code),false);
+});

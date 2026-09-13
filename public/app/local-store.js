@@ -51,6 +51,8 @@
       initialize:async()=>{status();return {id:'local-demo'};}, create,attach,update,refresh,
       restoreSelection:async()=>{const id=storage.getItem('local-code');return id&&read(id)?attach(id,storage.getItem('local-role')||'family'):null;},
       resetFamily:()=>update(draft=>{const fresh=newFamily(code,draft.lang);Object.keys(draft).forEach(k=>delete draft[k]);Object.assign(draft,fresh);}),
+      canPair:id=>!!read(id)?.setup,
+      canRestoreElder:id=>{const s=read(id);return !!(s?.setup&&s?.paired);},
       wasSignedOut:id=>storage.getItem("signed-out:"+id)==="1",
       resetSession,signOut:async()=>{if(code)storage.setItem("signed-out:"+code,"1");version++;resetSession();emit();status();},
       get:()=>state,familyId:()=>code,role:()=>role,

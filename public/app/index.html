@@ -1520,7 +1520,7 @@ if(window.LIVE_ENABLED){I18N.en.eListening='Live voice companion';I18N.zh.eListe
 var Store=null;
 
 function connectionCopy(state){
-  if(window.FRONTEND_ONLY && state==='synced') return lang==='en'?'Local demo · this browser only':'本地演示 · 仅此浏览器';
+  if(window.FRONTEND_ONLY && state==='synced') return lang==='en'?'Demo · this browser only':'演示 · 仅此浏览器';
   var copy=D||I18N[lang]||I18N.zh;
   var keys={connecting:"syncConnecting",loading:"syncLoading",saving:"syncSaving",offline:"syncOffline",error:"syncError",synced:"syncSynced"};
   return copy[keys[state]||"syncError"];
@@ -3237,7 +3237,7 @@ function isSameCall(s,snapshot){
 function enforceEmbeddedRole(){
   if(!EMBED_ROLE||!St||!Connection.authenticated) return;
   App.paired=false;
-  App.route=EMBED_ROLE==='elder'?'elder':(!St.setup?'obElder':App.route==='obMe'?'obMe':'family');
+  App.route=EMBED_ROLE==='elder'?'elder':(App.route==='obMe'?'obMe':!St.setup?'obElder':'family');
   App.joinAs=EMBED_ROLE;
 }
 function requestBoundaryAlert(s){
@@ -3738,7 +3738,7 @@ function render(s){
   view.classList.toggle("pad0", App.route==="family");
   view.className = (isElder ? "e-view" : "view") + (App.route==="family" ? " pad0" : "");
   view.innerHTML = body;
-  if(St&&St.demoScenario==='singapore') view.insertAdjacentHTML('afterbegin','<p class="eyebrow">'+(St.lang==='en'?'Local demo · Simulated location & weather':'本地演示 · 模拟位置与天气')+'</p>');
+  if(St&&St.demoScenario==='singapore') view.insertAdjacentHTML('afterbegin','<p class="eyebrow">'+(St.lang==='en'?'Simulated location & weather':'模拟位置与天气')+'</p>');
   patchLiveTranscript();
   if(App.route==="family" || (isElder && sc==="boundary")) mountMaps();
 
@@ -4882,6 +4882,7 @@ async function pair(code){
   var work=(async function(){
     try{
       var role=EMBED_ROLE||App.joinAs;
+      if(role==="elder"&&!Store.canPair(code)){App.err=lang==="en"?"Ask your family to finish setup before pairing this phone.":"请先让家人完成资料设置，再配对这台手机。";return;}
       await Store.attach(code,role);
       if(!current()) return;
       St=Store.get();
@@ -5314,11 +5315,12 @@ async function connectAndRestore(){
     await Store.initialize();
     if(generation!==Connection.restoreGeneration) return;
     var restored;
-    if(EMBED_ROLE&&EMBED_CODE&&!Store.wasSignedOut(EMBED_CODE)){
+    if(EMBED_ROLE&&EMBED_CODE&&!Store.wasSignedOut(EMBED_CODE)&&(EMBED_ROLE!=="elder"||Store.canRestoreElder(EMBED_CODE))){
       await Store.attach(EMBED_CODE,EMBED_ROLE);
       restored=Store.get();
     }else{
       restored=await Store.restoreSelection();
+      if(restored&&EMBED_ROLE==="elder"&&(!restored.setup||!restored.paired)){Store.resetSession();restored=null;}
     }
     if(generation!==Connection.restoreGeneration) return;
     St=restored;
@@ -5333,7 +5335,7 @@ async function connectAndRestore(){
       if(role==="family"&&!St.setup) App.route="obElder";
     }else{
       clearDevice();
-      App.route="entry"; App.editingPerson=null; App.paired=false;
+      App.route=EMBED_ROLE==="elder"&&!Store.wasSignedOut(EMBED_CODE)?"join":"entry"; App.joinAs=EMBED_ROLE||"family";App.joinCode=""; App.editingPerson=null; App.paired=false;
       setConnectionStatus("synced");
     }
     render(St);

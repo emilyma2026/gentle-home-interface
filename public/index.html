@@ -1,11 +1,11 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Remember Us · Local demo</title>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Remember Us · Demo</title>
 <style>*{box-sizing:border-box}body{margin:0;color:#3a2c22;background:#fffaf5;font:16px system-ui,sans-serif}main{height:100dvh;display:flex;flex-direction:column}header{flex:0 0 auto;white-space:nowrap;overflow-x:auto;z-index:10;background:#fffaf5;padding:12px 24px;display:flex;align-items:center;gap:16px;border-bottom:1px solid #d8cec4}header span{flex:1;color:#796b5d;font-size:14px}header button{flex:none;border:1px solid #d8cec4;border-radius:22px;padding:9px 14px;background:#fffaf5;color:#655331;font:inherit;font-size:14px;cursor:pointer}header button:disabled{opacity:.45;cursor:default}a{color:#655331}section{flex:1;min-height:0;display:flex}article{position:relative;flex:1;min-width:0}article+article{border-left:1px solid #d8cec4}label{position:absolute;top:10px;left:12px;z-index:1;background:#eee8da;padding:8px 15px;border-radius:25px;font-weight:700}iframe{width:100%;height:100%;border:0;display:block}@media(max-width:760px){section.compare{overflow-x:auto}section.compare article{min-width:370px}header span{display:none}}</style></head>
 <body><main id="root"></main><script>
 const q=new URLSearchParams(location.search),code=(q.get('code')||'').replace(/^"|"$/g,'');
 const compare=['1','true'].includes(q.get('compare'))&&/^\d{6}$/.test(code);
 const root=document.getElementById('root');
-const header=document.createElement('header');header.innerHTML='<strong>Remember Us</strong><span>Local demo</span><button data-action="lang">中文</button><button data-action="reset" disabled>Reset demo</button><button data-action="compare" disabled>Compare both sides</button><button data-action="exit">Switch role</button><button data-action="localSample">Start local demo</button>'+(compare?'<a href="/">Exit comparison</a>':'');root.append(header);
+const header=document.createElement('header');header.innerHTML='<strong>Remember Us</strong><span>Demo</span><button data-action="lang">中文</button><button data-action="reset" disabled>Reset demo</button><button data-action="compare" disabled>Compare both sides</button><button data-action="exit">Switch role</button><button data-action="localSample">Start demo</button>'+(compare?'<a href="/">Exit comparison</a>':'');root.append(header);
 const frames=[],states=new Map();
 window.addEventListener('message',event=>{
  if(event.origin!==location.origin||!frames.some(f=>f.contentWindow===event.source)||event.data?.type!=='remember-state')return;

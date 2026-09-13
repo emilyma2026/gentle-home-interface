@@ -3,9 +3,11 @@ import fs from "node:fs";
 import vm from "node:vm";
 import { test } from "node:test";
 
-function fixture(mediaPromise) {
-  const peers = [], requests = [], statuses = [], transcripts = [];
-  const track = { stopped: false, stop() { this.stopped = true; } };
+function fixture(mediaPromise, settings = {}) {
+  const peers = [], requests = [], statuses = [], transcripts = [], inputs = [], mediaRequests = [];
+  let tick;
+  const track = new EventTarget();
+  Object.assign(track, { stopped: false, readyState: "live", label: "Test microphone", stop() { this.stopped = true; } });
   const stream = { getTracks: () => [track], getAudioTracks: () => [track] };
   class Peer extends EventTarget {
     constructor() { super(); this.iceGatheringState = "complete"; this.connectionState = "new"; peers.push(this); }
@@ -21,16 +23,24 @@ function fixture(mediaPromise) {
     close() { this.connectionState = "closed"; }
   }
   class Audio { play() { return Promise.resolve(); } pause() {} }
-  const context = { window: {}, navigator: { mediaDevices: { getUserMedia: () => mediaPromise || Promise.resolve(stream) } },
+  const context = { window: {}, navigator: { mediaDevices: { getUserMedia: (constraints) => { mediaRequests.push(constraints); return mediaPromise || Promise.resolve(stream); } } },
     RTCPeerConnection: Peer, Audio, MediaStream: class {}, setTimeout, clearTimeout, AbortController, AbortSignal, console,
+    setInterval(fn) { tick = fn; return 1; }, clearInterval() { tick = null; },
+    Date: { now: () => settings.now || 0 },
     fetch: async (url, options) => { requests.push({ url, options }); return Response.json({ session: { id: "live_opaque" }, transport: { type: "webrtc", sdp: "answer" } }); },
   };
   const source = fs.existsSync(new URL("../public/app/live-voice.js", import.meta.url)) ? fs.readFileSync(new URL("../public/app/live-voice.js", import.meta.url), "utf8") : "";
+  context.window.AudioContext = class {
+    state = "running";
+    createMediaStreamSource() { return { connect() {}, disconnect() {} }; }
+    createAnalyser() { return { fftSize: 256, getByteTimeDomainData(a) { a.fill(settings.sound ? 144 : 128); }, disconnect() {} }; }
+    close() { return Promise.resolve(); }
+  };
   vm.runInNewContext(source, context);
   assert.equal(typeof context.window.createLiveVoice, "function", "Live browser transport must be implemented");
-  const client = context.window.createLiveVoice({ getToken: async () => "token", getFamilyId: () => "family", getLanguage: () => "en", onState: (s) => statuses.push(s), onTranscript: (r) => transcripts.push(r) });
+  const client = context.window.createLiveVoice({ getToken: async () => "token", getFamilyId: () => "family", getLanguage: () => "en", getDeviceId: () => settings.deviceId || "", onInput: (v) => inputs.push(v), onState: (s) => statuses.push(s), onTranscript: (r) => transcripts.push(r) });
   const emit = (value) => { const event = new Event("message"); event.data = JSON.stringify(value); peers.at(-1).channel.dispatchEvent(event); };
-  return { client, peers, requests, track, stream, emit, statuses, transcripts };
+  return { client, peers, requests, track, stream, emit, statuses, transcripts, inputs, mediaRequests, tick: () => tick?.() };
 }
 test("browser waits for session.started and sends microphone through WebRTC", async () => {
   const f = fixture();
@@ -76,5 +86,32 @@ test("transport failure stops audio capture and exposes a retryable error", asyn
   f.peers[0].dispatchEvent(new Event("connectionstatechange"));
   assert.equal(f.track.stopped, true);
   assert.equal(f.client.state().status, "error");
+  f.client.dispose();
+});
+
+
+test("selected microphone is used and its actual sound level is reported", async () => {
+  const f = fixture(null, {deviceId: "headset", sound: true});
+  await f.client.start(); f.tick();
+  assert.equal(f.mediaRequests[0].audio.deviceId.exact, "headset");
+  assert.ok(f.inputs.at(-1).level > 0);
+  assert.equal(f.inputs.at(-1).label, "Test microphone");
+  f.client.dispose();
+});
+
+test("silent microphone produces a useful warning without ending a connected session", async () => {
+  const settings = {now: 0}; const f = fixture(null, settings);
+  await f.client.start(); f.emit({type: "session.started"});
+  settings.now = 10000; f.tick();
+  assert.equal(f.inputs.at(-1).silent, true);
+  assert.equal(f.client.state().status, "connected");
+  f.client.dispose();
+});
+
+test("unplugging the input stops the conversation and reports a microphone error", async () => {
+  const f = fixture(); await f.client.start();
+  f.track.dispatchEvent(new Event("ended"));
+  assert.equal(f.client.state().error, "LIVE_MIC_ENDED");
+  assert.equal(f.peers[0].connectionState, "closed");
   f.client.dispose();
 });

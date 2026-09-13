@@ -901,6 +901,7 @@ input,textarea,select{font:inherit}
 [data-live-panel] .holdbar.live-mic{width:104px;height:104px;min-height:104px;margin:20px auto 14px;padding:0;border-radius:50%;position:relative}
 [data-live-panel] .holdbar.live-mic svg{width:44px;height:44px}
 [data-live-panel] .holdbar.live-mic > span{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap}
+.live-input-feedback{max-width:320px;margin:8px auto;text-align:center}.live-input-feedback meter{width:100%;height:14px;accent-color:var(--warm)}.live-input-feedback p{font-size:14px;line-height:1.4;color:var(--ink-2);margin:4px 0}.live-device{display:flex;align-items:center;gap:8px;margin:10px auto;font-size:14px;max-width:360px;color:var(--ink-2)}.live-device select{flex:1;min-width:0;padding:8px;border:1px solid var(--line);border-radius:12px;background:#fffaf3;color:var(--ink);font:inherit}
 [data-live-panel] .holdbar.live-mic.on{outline:3px solid var(--warm);outline-offset:6px}
 [data-live-panel] .holdbar.live-mic:focus-visible{outline:3px solid var(--ink);outline-offset:6px}
 .qa-conversation{min-height:120px;flex:1 1 0}
@@ -4237,21 +4238,43 @@ function factById(s,id){ for(var i=0;i<s.facts.length;i++) if(s.facts[i].id===id
 
 
 // Live companion integration shares the application state in this closure.
-var ElderLive = { client: null, family: null, lang: null, waiting: new Set(), checking: new Set() };
+var ElderLive = { client: null, family: null, lang: null, waiting: new Set(), checking: new Set(), deviceId:'', devices:[], input:null };
 function livePanel(){
   var s=ElderLive.client?ElderLive.client.state():{status:'idle'}, en=St.lang==='en';
   var active=s.status==='connecting'||s.status==='connected';
   var label=active?(en?'End conversation':'结束陪伴'):(en?'Talk with me':'开始陪我说一会儿');
   var hint=s.status==='connected'?(en?'I’m listening. You can interrupt me anytime.':'我在听，您随时可以打断我。'):s.status==='connecting'?(en?'Connecting…':'正在连接…'):s.status==='stopping'?(en?'Ending conversation…':'正在结束…'):(en?'AI voice companion. Starting turns on your microphone.':'AI 语音陪伴，开始后会使用麦克风。');
+  if(s.status==='connecting'&&s.stage==='microphone') hint=en?'Allow microphone access to begin.':'请允许麦克风权限后开始。';
   if(s.status==='error'){
     var errors={LIVE_KEY_MISSING:en?'OpenAI API key is not configured.':'尚未配置 OpenAI API Key。',LIVE_MIC_DENIED:en?'Microphone permission is needed. Allow it and try again.':'需要麦克风权限，请允许后重试。',LIVE_PROVIDER_FAILED:en?'Voice service could not connect. Check model access and try again.':'语音服务连接失败，请检查模型权限后重试。',AUTH_REQUIRED:en?'Please sign in again.':'请重新登录后再试。'};
+    errors.LIVE_MIC_TIMEOUT=en?'Microphone permission is still pending. Allow access and try again.':'还未获得麦克风权限，请允许后重试。';
+    errors.LIVE_MIC_MISSING=en?'This microphone is unavailable. Choose another below.':'找不到此麦克风，请在下方更换。';
+    errors.LIVE_MIC_BUSY=en?'Microphone could not start. Check your device or close other recording apps.':'麦克风无法启动，请检查设备或关闭其他录音应用。';
+    errors.LIVE_MIC_ENDED=en?'Microphone disconnected. Reconnect it and try again.':'麦克风已断开，请重新连接后再试。';
     hint=errors[s.error]||(en?'Connection interrupted. Tap to retry.':'连接中断，请点击重新开始。');
   }
-  return '<div data-live-panel="1"><button class="holdbar live-mic'+(active?' on':'')+'" data-go="toggleLive" aria-pressed="'+active+'"'+(s.status==='stopping'?' disabled':'')+'>'+IC.mic+'<span>'+esc(label)+'</span></button><p class="qa-heard" role="status">'+esc(hint)+'</p>'+(s.audioBlocked?'<button class="e-btn soft" data-go="playLive">'+(en?'Play voice':'点击播放声音')+'</button>':'')+'</div>';
+  return '<div data-live-panel="1"><button class="holdbar live-mic'+(active?' on':'')+'" data-go="toggleLive" aria-pressed="'+active+'"'+(s.status==='stopping'?' disabled':'')+'>'+IC.mic+'<span>'+esc(label)+'</span></button><p class="qa-heard" role="status">'+esc(hint)+'</p>'+liveInputControls()+(s.audioBlocked?'<button class="e-btn soft" data-go="playLive">'+(en?'Play voice':'点击播放声音')+'</button>':'')+'</div>';
 }
+function liveInputControls(){
+  var en=St.lang==='en', s=ElderLive.client?ElderLive.client.state():{status:'idle'};
+  var active=s.status==='connecting'||s.status==='connected'||s.status==='stopping';
+  var choices='<option value="">'+(en?'Default microphone':'默认麦克风')+'</option>';
+  choices+=ElderLive.devices.filter(function(d){return d.deviceId!=='default';}).map(function(d,i){return '<option value="'+esc(d.deviceId)+'"'+(d.deviceId===ElderLive.deviceId?' selected':'')+'>'+esc(d.label||(en?'Microphone ':'麦克风 ')+(i+1))+'</option>';}).join('');
+  return '<div class="live-input-feedback"'+(!active?' hidden':'')+'><meter data-live-level min="0" max="1" value="0" aria-label="'+(en?'Microphone volume':'麦克风音量')+'"></meter><p data-live-input role="status"></p></div><label class="live-device">'+(en?'Microphone':'麦克风')+'<select data-live-device'+(active?' disabled':'')+'>'+choices+'</select></label>';
+}
+function patchLiveInput(input){
+  ElderLive.input=input;
+  var meter=document.querySelector('[data-live-level]'), hint=document.querySelector('[data-live-input]');
+  if(meter) meter.value=input.level;
+  if(hint){
+    var en=St.lang==='en';
+    hint.textContent=input.muted?(en?'Microphone is muted. Check your device.':'麦克风暂时没有输入，请检查设备。'):input.silent?(en?'No sound detected. Check this microphone, or end the chat to choose another.':'暂未检测到声音。请检查麦克风，或结束后更换麦克风。'):(input.label||(en?'Microphone connected':'麦克风已连接'));
+  }
+}
+document.addEventListener('change',function(e){if(e.target.matches&&e.target.matches('[data-live-device]')) ElderLive.deviceId=e.target.value;});
 function patchElderLive(){
   var panel=document.querySelector('[data-live-panel]');
-  if(panel){ panel.outerHTML=livePanel(); patchLiveTranscript(); }
+  if(panel){ panel.outerHTML=livePanel(); patchLiveTranscript(); if(ElderLive.input) patchLiveInput(ElderLive.input); }
 }
 function patchLiveTranscript(){
   var node=document.querySelector('[data-live-transcript]');
@@ -4331,7 +4354,8 @@ function toggleElderLive(){
   if(ElderLive.client) ElderLive.client.dispose();
   stopSpeech(); if(window.speechSynthesis) window.speechSynthesis.cancel();
   ElderLive.family=Store.familyId(); ElderLive.lang=St.lang; ElderLive.waiting=new Set(); ElderLive.checking=new Set();
-  ElderLive.client=window.createLiveVoice({getToken:aiAccessToken,getFamilyId:function(){return ElderLive.family;},getLanguage:function(){return ElderLive.lang;},onState:patchElderLive,onTranscript:patchLiveTranscript,onDelegate:lookupElderLive});
+  ElderLive.input=null;
+  ElderLive.client=window.createLiveVoice({getToken:aiAccessToken,getFamilyId:function(){return ElderLive.family;},getLanguage:function(){return ElderLive.lang;},getDeviceId:function(){return ElderLive.deviceId;},onDevices:function(devices){ElderLive.devices=devices;patchElderLive();},onInput:patchLiveInput,onState:patchElderLive,onTranscript:patchLiveTranscript,onDelegate:lookupElderLive});
   void ElderLive.client.start();
 }
 window.addEventListener('pagehide',function(){if(ElderLive.client) ElderLive.client.dispose();});

@@ -49,3 +49,11 @@ test('form edits are visible immediately while the storage lock is pending',asyn
  await Promise.all([first,second]);
  assert.equal(store.get().time,'5 pm');assert.equal(store.get().what,'Drink water');
 });
+
+test('sign out blocks URL auto-join until an explicit attach, without deleting family data',async()=>{
+ const {client,data}=fixture(),s=client();const code=await s.create('en');
+ await s.signOut();assert.equal(s.wasSignedOut(code),true);assert.equal(await s.restoreSelection(),null);
+ assert.ok(data.has('remember-us:local-family:'+code));
+ await s.attach(code,'elder');assert.equal(s.wasSignedOut(code),false);assert.equal(s.role(),'elder');
+ await s.signOut();assert.equal(s.get(),null);assert.equal(s.role(),null);
+});

@@ -1311,9 +1311,9 @@ en:{
   tlAnswered:"Answered an earlier question",
   familyCodeT:"Family code", familyCodeD:"Share it with relatives or use it to pair the elder's phone",
   settingsT:"Settings", langRow:"Language", langRowV:"English",
-  logoutT:"Log out", logoutD:"Go back to the role picker. You will need the family code to sign in again.",
+  logoutT:"Sign out", logoutD:"Go back to the role picker. You will need the family code to sign in again.",
   logoutAsk:"Go back to the role picker? You will need the family code to sign in again.",
-  logoutElder:"Log out", logoutElderD:"Go back to the role picker. You will need the family code to sign in again.",
+  logoutElder:"Sign out", logoutElderD:"Go back to the role picker. You will need the family code to sign in again.",
   mapWaiting:"Waiting for the elder's phone to report its location", mapDenied:"Location permission has not been granted on the elder's phone",
 
   eGreet:"Hello", eGreetD:"Press the button below whenever you need me.",
@@ -3589,6 +3589,10 @@ function viewPick(){
 }
 
 function streetViewVisual(routeStep){
+  if(window.FRONTEND_ONLY){
+    var step=Math.max(0,Math.min(2,St.guide.step||0));
+    return '<div class="visuals-panel"><img class="sv-illus" src="/app/'+['guide-exercise.png','guide-shop.png','guide-home.png'][step]+'" alt="'+esc(D.guide[step].lm)+'"><span class="sv-pill">'+(St.lang==='en'?'Simulated street view':'模拟街景')+'</span></div>';
+  }
   var point=routeStep&&routeStep.end?routeStep.end:currentPoint(St);
   var key=window.MAPS_CONFIG&&window.MAPS_CONFIG.key?window.MAPS_CONFIG.key:"";
   var photoHtml="";
@@ -3755,6 +3759,7 @@ function render(s){
   if(!EMBEDDED&&St&&St.code) chrome+='<button class="chip" data-go="compare">'+esc(D.compareBtn)+'</button>';
   if(!EMBEDDED&&storeRole()) chrome+='<button class="chip" data-go="exit">'+esc(D.exitBtn)+'</button>';
   el("chrome").innerHTML=chrome;
+  if(window.parent!==window){el('chrome').style.display='none';window.parent.postMessage({type:'remember-state',code:St&&St.code||'',lang:St?St.lang:lang},location.origin);}
   el("hintLine").textContent = App.route==="elder" ? D.hintElder
     : (App.route==="family" ? D.hintFamily : D.hintEntry);
 
@@ -4945,6 +4950,16 @@ function resetElderModeSession(s){
 }
 
 async function hardExit(){
+  if(window.FRONTEND_ONLY){
+    Connection.restoreGeneration=(Connection.restoreGeneration||0)+1;Connection.restoring=false;
+    if(Connection.joinAttempt){Connection.joinAttempt.cancelled=true;Connection.joinAttempt.release();Connection.joinAttempt=null;}
+    Connection.pendingAction=false;stopElderLive();stopSpeech();stopSubs();stopGps();
+    if(document.activeElement&&document.activeElement.blur)document.activeElement.blur();typing=false;
+    App.route="entry";App.qa=false;App.eset=false;App.editingPerson=null;
+    await Store.signOut();clearDevice();St=null;
+    App.route='entry';App.tab=0;App.qa=false;App.pick=false;App.eset=false;App.editingPerson=null;App.paired=false;App.dev=false;App.err='';
+    Connection.authenticated=true;Connection.initFailed=false;setConnectionStatus('synced');render();return;
+  }
   if(Connection.joinAttempt){cancelJoin();return;}
   var leavingRole=storeRole();
   stopSpeech();
@@ -5232,7 +5247,7 @@ document.addEventListener("click", async function(e){
       break;
 
     case "logout":
-      if(confirm(D.logoutAsk)) await hardExit();
+      await hardExit();
       break;
 
     case "lang":
@@ -5299,7 +5314,7 @@ async function connectAndRestore(){
     await Store.initialize();
     if(generation!==Connection.restoreGeneration) return;
     var restored;
-    if(EMBED_ROLE&&EMBED_CODE){
+    if(EMBED_ROLE&&EMBED_CODE&&!Store.wasSignedOut(EMBED_CODE)){
       await Store.attach(EMBED_CODE,EMBED_ROLE);
       restored=Store.get();
     }else{
@@ -5334,6 +5349,11 @@ async function connectAndRestore(){
   }
 }
 
+window.addEventListener('message',function(event){
+  if(event.origin!==location.origin||event.source!==window.parent||!event.data||event.data.type!=='remember-command')return;
+  var action=event.data.action;if(!['lang','reset','exit','compare','localSample'].includes(action))return;
+  var button=document.createElement('button');button.hidden=true;button.dataset.go=action;document.body.appendChild(button);button.click();button.remove();
+});
 (function boot(){
   D=I18N[lang];
   render(St);

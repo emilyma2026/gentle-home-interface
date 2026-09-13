@@ -11,7 +11,7 @@
     async function attach(id,nextRole){
       const found=read(String(id));
       if(!found)throw new Error('Family not found in this browser. Create a local family first.');
-      code=String(id);role=nextRole;state=found;saveSelection();status();emit();return state;
+      storage.removeItem("signed-out:"+id);code=String(id);role=nextRole;state=found;saveSelection();status();emit();return state;
     }
     async function create(lang){
       let id;
@@ -51,7 +51,8 @@
       initialize:async()=>{status();return {id:'local-demo'};}, create,attach,update,refresh,
       restoreSelection:async()=>{const id=storage.getItem('local-code');return id&&read(id)?attach(id,storage.getItem('local-role')||'family'):null;},
       resetFamily:()=>update(draft=>{const fresh=newFamily(code,draft.lang);Object.keys(draft).forEach(k=>delete draft[k]);Object.assign(draft,fresh);}),
-      resetSession,signOut:async()=>{resetSession();emit();status();},
+      wasSignedOut:id=>storage.getItem("signed-out:"+id)==="1",
+      resetSession,signOut:async()=>{if(code)storage.setItem("signed-out:"+code,"1");version++;resetSession();emit();status();},
       get:()=>state,familyId:()=>code,role:()=>role,
       subscribe:fn=>{subscribers.add(fn);return()=>subscribers.delete(fn);},
     };

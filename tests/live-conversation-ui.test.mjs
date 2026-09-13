@@ -1,0 +1,23 @@
+import {test} from 'node:test';
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+import vm from 'node:vm';
+const html=readFileSync(new URL('../public/app/index.html',import.meta.url),'utf8');
+const start=html.indexOf('function patchLiveTranscript(){');
+const code=html.slice(start,html.indexOf('function stopElderLive()',start));
+test('live chat renders grouped, escaped bubbles above controls and hides suggestions',()=>{
+  const thread={scrollHeight:200,scrollTop:0};
+  const nodes={'[data-live-transcript]':{innerHTML:'',closest:()=>thread},'[data-qa-history]':{},'[data-qa-suggestions]':{}};
+  let status='connecting',rows=[];
+  const ctx={document:{querySelector:s=>nodes[s]},St:{lang:'en',thread:[]},ElderLive:{client:{state:()=>({status}),transcript:()=>rows}},esc:s=>s.replaceAll('&','&amp;').replaceAll('<','&lt;')};
+  vm.createContext(ctx);vm.runInContext(code,ctx);
+  ctx.patchLiveTranscript(); assert.equal(nodes['[data-qa-suggestions]'].hidden,true);
+  rows=[{role:'user',text:'Hi '},{role:'user',text:'there'},{role:'assistant',text:'<hello>'}];
+  status='connected';ctx.patchLiveTranscript();
+  assert.match(nodes['[data-live-transcript]'].innerHTML,/Hi there/);
+  assert.match(nodes['[data-live-transcript]'].innerHTML,/&lt;hello>/);
+  assert.equal((nodes['[data-live-transcript]'].innerHTML.match(/class="bub /g)||[]).length,2);
+  status='idle';ctx.patchLiveTranscript();assert.equal(nodes['[data-qa-suggestions]'].hidden,true);
+  rows=[];status='error';ctx.patchLiveTranscript();assert.equal(nodes['[data-qa-suggestions]'].hidden,false);
+  assert.equal(thread.scrollTop,200);
+});

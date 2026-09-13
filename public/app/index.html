@@ -583,6 +583,8 @@ input,textarea,select{font:inherit}
   color:#fff; display:grid; place-items:center; font-size:17px}
 .chat-bar .chat-mic{background:var(--blue-soft); color:var(--blue-d); box-shadow:inset 0 0 0 1px var(--line)}
 .chat-bar .chat-mic.on{background:var(--warm); color:#fff; box-shadow:none}
+.holdbar.live-mic{display:flex;align-items:center;justify-content:center;gap:12px;background:var(--warm);color:white;border:0;border-radius:24px;min-height:60px}
+.holdbar.live-mic svg{width:25px;height:25px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round}
 .chat-voice-status{min-height:18px; margin:5px 4px 0; color:var(--muted); font-size:11.5px; line-height:1.45}
 .chat-voice-status.err{color:var(--red)}
 .chat-bar button[disabled]{opacity:.45}
@@ -764,10 +766,10 @@ input,textarea,select{font:inherit}
 
 /* ---- 老人端设置入口与设置页 ---- */
 .e-quiet{align-self:center; display:inline-flex; align-items:center; gap:7px; margin:9px auto 0;
-  padding:8px 16px; border-radius:99px; background:transparent; color:var(--faint);
-  font-size:14px; font-weight:700}
+  padding:12px 20px; min-height:48px; border-radius:99px; background:var(--card); color:var(--ink-2);
+  font-size:18px; font-weight:700}
 .e-quiet:active{background:rgba(0,0,0,.04)}
-.e-quiet svg{width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:1.9;
+.e-quiet svg{width:22px; height:22px; fill:none; stroke:currentColor; stroke-width:1.9;
   stroke-linecap:round; stroke-linejoin:round}
 .e-set{display:flex; flex-direction:column; gap:10px}
 .e-setrow{display:flex; align-items:center; justify-content:space-between; gap:12px;
@@ -779,7 +781,7 @@ input,textarea,select{font:inherit}
 .e-danger{width:100%; margin-top:4px; padding:16px; border-radius:99px; background:#fff;
   color:var(--red); font-size:18px; font-weight:800; box-shadow:var(--sh-card)}
 .e-danger:active{background:var(--red-soft)}
-.e-setnote{margin:8px 4px 0; color:var(--faint); font-size:13px; line-height:1.5; text-align:center}
+.e-setnote{margin:8px 4px 0; color:var(--ink-2); font-size:16px; line-height:1.6; text-align:center}
 
 /* ---- 老人端：给家人打电话 ---- */
 .callpick{display:grid; gap:11px; margin:10px 0 4px}
@@ -805,7 +807,6 @@ input,textarea,select{font:inherit}
   border-radius:99px; background:var(--green-soft); color:var(--green); font-size:11.5px; font-weight:800}
 
 /* ================= 入口：手绘水獭封面 + 两个入口按钮 ================= */
-.screen:has(.entry){background:#F6E7CB url("otter-bg.jpg") top center / 100% 100% no-repeat}
 .view:has(> .entry){padding:0; background:transparent}
 .entry{flex:1 1 auto; display:flex; flex-direction:column; min-height:100%;
   padding-top:360px; padding-right:20px; padding-bottom:24px; padding-left:20px;
@@ -830,6 +831,84 @@ input,textarea,select{font:inherit}
 .pick:hover{box-shadow:0 18px 36px rgba(150,90,48,.3), 0 0 0 1px rgba(210,150,105,.42) inset}
 .pick span{display:block; margin-top:3px; padding:0 8px; font-size:11px; font-weight:600; color:#8B6B52; line-height:1.4}
 
+/* Shared onboarding visual language across both roles. The screen owns the
+   wallpaper so it stays still while its content scrolls. */
+:root{--paper:#FBEEDA;--card:#FFFCF8;--muted:#806C5A;--warm:#A97E50;
+  --blue:#A97E50;--blue-d:#795431;--r-lg:24px;--r-md:18px;
+  --sh-card:0 3px 14px rgba(94,63,38,.06),0 10px 22px rgba(94,63,38,.04)}
+.screen,.screen.elder,.screen[data-route]{
+  background:#FBEEDA url("onboard-bg.jpg") center / cover no-repeat}
+/* Keep the illustrated welcome cover above the shared wallpaper rule. */
+.screen:has(.entry){background:#F6E7CB url("otter-bg.jpg") top center / 100% 100% no-repeat}
+.f-head{background:transparent;padding-bottom:18px;margin-bottom:12px}
+.f-head .h1{font-size:25px;line-height:1.3}
+.view.pad0{padding-top:16px}
+.card,.map-card,.pcard,.talking-person,.person-row{background:var(--card);border-radius:var(--r-lg);box-shadow:var(--sh-card)}
+.btn,.btn.warm,.e-btn,.holdbar.live-mic{background:var(--warm);box-shadow:0 8px 18px rgba(121,84,49,.16);border-radius:28px}
+.btn{min-height:50px}
+.btn.ghost,.e-btn.soft{background:var(--card);color:var(--ink-2);box-shadow:var(--sh-card)}
+.btn.red,.e-btn.red{background:var(--red)}
+.e-btn{min-height:64px}
+.tabbar{background:var(--card);backdrop-filter:none;border-top:1px solid var(--line)}
+.tabbar button{min-height:48px;color:var(--muted);border-radius:16px}
+.tabbar button[aria-selected="true"]{background:var(--warm-soft);color:var(--blue-d)}
+.family-account{margin-top:24px;padding-top:18px;border-top:1px solid rgba(128,108,90,.2)}
+.family-signout{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;min-height:48px;border-radius:18px;color:var(--ink-2);font-size:14px;font-weight:700}
+.family-signout:hover{background:var(--warm-soft)}
+.family-signout svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.family-account p{margin:6px 0 0;text-align:center;color:var(--muted);font-size:12px;line-height:1.6}
+.paired-mark{width:88px;height:88px;display:grid;place-items:center;border-radius:28px;background:var(--green-soft);color:#4B7358}
+.paired-mark svg{width:44px;height:44px;fill:none;stroke:currentColor;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}
+.devbar .hd{min-height:48px;padding:10px 12px;border-radius:14px;background:var(--card);color:var(--ink-2);font-size:16px}
+.devbar .bd p{color:var(--ink-2);font-size:14px;line-height:1.6}
+/* Standby: compact, top-aligned content on the shared paper background. */
+.view:has(> .e-home){justify-content:flex-start;padding:4px 24px 14px;gap:8px}
+.view:has(> .e-home)::before{display:none}
+.e-home{gap:6px;flex:0 0 auto}
+.e-banner{height:82px;margin-bottom:0;background:transparent;object-position:center 30%}
+.e-date{margin:0;padding:4px 0 8px;background:transparent}
+.e-date small{opacity:1}
+.e-home .e-panel,.e-home .e-todo{padding:8px 12px;background:transparent;box-shadow:none}
+.e-home .e-panel b{font-size:18px;line-height:1.3}
+.e-home .e-panel p{margin-top:2px}
+.e-actions{display:grid;grid-template-columns:76px minmax(0,1fr);align-items:center;gap:8px 12px;margin-top:0;padding-top:2px}
+.e-actions .e-btn{margin:0!important;min-height:64px;padding:12px;font-size:19px}
+.e-actions .e-quiet{grid-column:1/-1;margin:0;justify-self:center;min-height:44px;padding:8px 18px;background:transparent}
+.tabbar .tab-ai button,.e-actions .elder-talk{background:var(--warm);color:#fff;border-radius:18px;box-shadow:0 6px 14px rgba(121,84,49,.16);display:grid;place-items:center}
+.tabbar .tab-ai button{flex:none;width:54px;height:54px}
+.e-actions .elder-talk{width:76px;height:72px;border-radius:24px}
+.elder-talk svg{width:34px;height:34px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+.view:has(> .e-home) .devbar{margin-top:0;padding-top:4px}
+/* Elder home: equal information rows and large, labelled voice actions. */
+.e-view:has(> .e-home){padding:30px 24px 28px;gap:20px}
+.e-home{gap:22px;flex:1 0 auto;justify-content:flex-start}
+.e-home > *{flex-shrink:0}
+.e-date{padding:0 0 8px}
+.e-date b{font-size:30px;line-height:1.25}
+.e-date span{font-size:18px}
+.e-home .e-panel,.e-home .e-todo{padding:0}
+.e-home .txt{min-width:0;flex:1}
+.e-home .txt small{display:block;font-size:15px;line-height:1.4;color:var(--ink-2);margin:0 0 4px;font-weight:600}
+.e-home .txt b{display:block;font-size:20px;line-height:1.35;font-weight:800}
+.e-home .txt p{font-size:16px;line-height:1.4}
+.e-home .e-read{align-self:stretch;width:100%;min-height:56px;margin-top:auto;padding:12px;display:flex;justify-content:center;align-items:center;gap:12px;border:1px solid var(--warm);border-radius:22px;color:var(--ink-2);font-size:20px;background:var(--card);box-shadow:none}
+.e-home .e-read svg{width:28px;height:28px;flex-shrink:0}
+.e-actions{grid-template-columns:repeat(2,minmax(0,1fr));gap:22px 14px;margin-top:0;flex:0 0 auto}
+.e-actions .e-btn,.e-actions .elder-talk{width:100%;height:104px;min-height:104px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;border-radius:24px;font-size:20px;line-height:1.2}
+.e-actions .e-btn.soft{border:1px solid var(--warm);box-shadow:none}
+.e-actions .e-btn svg{width:36px;height:36px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.e-actions .e-quiet{margin-top:2px}
+[data-live-panel] .holdbar.live-mic{width:104px;height:104px;min-height:104px;margin:20px auto 14px;padding:0;border-radius:50%;position:relative}
+[data-live-panel] .holdbar.live-mic svg{width:44px;height:44px}
+[data-live-panel] .holdbar.live-mic > span{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap}
+[data-live-panel] .holdbar.live-mic.on{outline:3px solid var(--warm);outline-offset:6px}
+[data-live-panel] .holdbar.live-mic:focus-visible{outline:3px solid var(--ink);outline-offset:6px}
+.qa-conversation{min-height:120px;flex:1 1 0}
+[data-live-transcript],[data-qa-history]{display:flex;flex-direction:column;gap:14px}
+[data-qa-history][hidden],[data-qa-suggestions][hidden]{display:none}
+[data-live-transcript] .bub{font-size:19px;overflow-wrap:anywhere;white-space:pre-wrap}
+[data-live-transcript] .bub small{display:block;font-size:13px;font-weight:700;color:var(--ink-2);margin-bottom:5px}
+[data-live-transcript] .bub p{margin:0;font-size:19px;line-height:1.5;font-weight:600}
 </style>
 </head>
 <body>
@@ -880,18 +959,18 @@ input,textarea,select{font:inherit}
    1. 文案与示例数据
    ===================================================================== */
 var SEED = {
-  zh:{ elderName:"妈妈", address:"广州市天河区兴华路 12 号 3 栋",
-       elderPhone:"139 0000 4488",
-       nick:"小雨", relation:"女儿", phone:"138 0000 7612",
-       recent:"现在在广州工作，一个人住。",
+  zh:{ elderName:"妈妈", address:"Toa Payoh Central, Singapore（示例）",
+       elderPhone:"",
+       nick:"小雨", relation:"女儿", phone:"",
+       recent:"现在在新加坡工作，一个人住。",
        hint:"你以前每天送她去三小上学，风雨无阻。",
-       spoken:"我是她女儿小雨，现在在广州工作，一个人住。我妈以前每天送我去三小上学，风雨无阻。" },
-  en:{ elderName:"Mom", address:"12 Xinghua Rd, Building 3, Guangzhou",
-       elderPhone:"139 0000 4488",
-       nick:"Yuki", relation:"Daughter", phone:"138 0000 7612",
-       recent:"Works in Guangzhou, lives independently.",
+       spoken:"我是她女儿小雨，现在在新加坡工作，一个人住。我妈以前每天送我去三小上学，风雨无阻。" },
+  en:{ elderName:"Mom", address:"Toa Payoh Central, Singapore (sample)",
+       elderPhone:"",
+       nick:"Yuki", relation:"Daughter", phone:"",
+       recent:"Works in Singapore, lives independently.",
        hint:"You walked me to No.3 Primary School every morning, rain or shine.",
-       spoken:"I'm Yuki, your daughter. I work in Guangzhou and live independently. You walked me to No.3 Primary School every morning, rain or shine." }
+       spoken:"I'm Yuki, your daughter. I work in Singapore and live independently. You walked me to No.3 Primary School every morning, rain or shine." }
 };
 
 var I18N = {
@@ -998,7 +1077,7 @@ zh:{
 
   alertT:"提醒", alertNone:"暂无提醒", alertNoneD:"{elder}在活动范围内，一切正常。",
   alertOnT:"正在协助{elder}回家",
-  dWhy:"触发原因", dWhyV:"超出活动范围后持续远离，系统已经开始语音引导。",
+  dWhy:"触发原因", dWhyV:"老人已超出设置的安全范围，系统已触发越界提醒。",
   dWhere:"当前位置", dProg:"引导进度", dProgV:"第 {n} 步 · 共 {total} 步",
   alertDoneT:"{elder}已经到家", dDoneV:"分步引导全程没有中断。",
 
@@ -1026,7 +1105,7 @@ zh:{
   mapWaiting:"等她的手机上报位置", mapDenied:"她的手机还没有允许定位",
 
   eGreet:"你好", eGreetD:"有事就按下面的按钮跟我说。",
-  eTalk:"说话", eBack:"不问了",
+  eTalk:"聊天", eBack:"不问了",
   sumMore:"还有 {n} 条，查看全部", sumLess:"收起",
   calT:"待办", calMonths:["1 月","2 月","3 月","4 月","5 月","6 月","7 月","8 月","9 月","10 月","11 月","12 月"],
   calWeek:["日","一","二","三","四","五","六"],
@@ -1208,7 +1287,7 @@ en:{
 
   alertT:"Alerts", alertNone:"No alerts", alertNoneD:"{elder} is inside the safe range. Everything is normal.",
   alertOnT:"Helping {elder} get home",
-  dWhy:"Why it fired", dWhyV:"The elder moved beyond the safe range and kept moving away. Voice guidance has started.",
+  dWhy:"Why it fired", dWhyV:"The elder moved outside the safe range, triggering an alert.",
   dWhere:"Current location", dProg:"Guidance progress", dProgV:"Step {n} of {total}",
   alertDoneT:"{elder} is home", dDoneV:"The step-by-step guidance completed without interruption.",
 
@@ -1236,7 +1315,7 @@ en:{
   mapWaiting:"Waiting for the elder's phone to report its location", mapDenied:"Location permission has not been granted on the elder's phone",
 
   eGreet:"Hello", eGreetD:"Press the button below whenever you need me.",
-  eTalk:"Talk", eBack:"Never mind",
+  eTalk:"Chat", eBack:"Never mind",
   sumMore:"{n} more, show all", sumLess:"Show less",
   calT:"Reminders", calMonths:["January","February","March","April","May","June","July","August","September","October","November","December"],
   calWeek:["S","M","T","W","T","F","S"],
@@ -1353,8 +1432,8 @@ function clearDevice(){
 function selectedMemberId(){ return sessionGet(SME); }
 
 var HOME={x:130,y:90}, MPP=13.33;
-/* 家的默认位置：广州天河。老人和家的坐标都用经纬度，距离用大圆公式。 */
-var HOME_LL={lat:23.1291, lng:113.3644};
+/* 家的默认位置：新加坡大巴窑。老人和家的坐标都用经纬度，距离用大圆公式。 */
+var HOME_LL={lat:1.3327, lng:103.8475};
 function metersPerDegLng(lat){ return 111320*Math.cos(lat*Math.PI/180); }
 function haversine(a,b){
   var R=6371000, t=Math.PI/180;
@@ -1440,7 +1519,7 @@ function connectionCopy(state){
 }
 function protectedActionSelector(){
   return '[data-f],[data-range],[data-ask],[data-voice-hold],[data-item-do],[data-item-edit],[data-item-skip],[data-item-save],[data-item-cancel],'
-    +'[data-go="create"],[data-go="pair"],[data-go="finishSetup"],[data-go="fillElderSample"],[data-go="fillPersonSample"],[data-go="clearPending"],'
+    +'[data-go="create"],[data-go="singaporeSample"],[data-go="pair"],[data-go="finishSetup"],[data-go="fillElderSample"],[data-go="fillPersonSample"],[data-go="clearPending"],'
     +'[data-go="call"],[data-go="answer"],[data-go="decline"],[data-go="hangup"],[data-go="arrived"],'
     +'[data-go="ackHome"],[data-go="walk"],[data-go="goHome"],[data-go="reset"],[data-go="speak"],[data-go="chatVoice"],[data-go="voiceAsk"],[data-go="callRecord"]';
 }
@@ -1499,8 +1578,17 @@ async function runPendingAction(action){
   finally{ Connection.pendingAction=false; syncActionAvailability(); }
 }
 
+function roleSessionStorage(storage,role){
+  if(!role) return storage;
+  var prefix="remember-us:"+role+":";
+  return {
+    getItem:function(key){return storage.getItem(prefix+key);},
+    setItem:function(key,value){storage.setItem(prefix+key,value);},
+    removeItem:function(key){storage.removeItem(prefix+key);}
+  };
+}
 try{
-  var browserSessionStorage=window.sessionStorage||window.localStorage;
+  var browserSessionStorage=roleSessionStorage(window.sessionStorage||window.localStorage,EMBED_ROLE);
   var SupabaseClient=window.supabase.createClient(
     window.SUPABASE_CONFIG.url,
     window.SUPABASE_CONFIG.publishableKey,
@@ -1876,7 +1964,8 @@ function buildElderWalkingSteps(route){
 function enrichElderWalkingSteps(steps){
   if(!window.Navigation||typeof window.Navigation.findNearbyPlaces!=="function") return Promise.resolve({steps:steps,places:[]});
   var cache={};
-  var jobs=steps.map(function(step){
+  var jobs=steps.map(function(step,index){
+    if(index>=12) return Promise.resolve([]);
     if(step.isDestination) return Promise.resolve([]);
     var key=step.end.lat.toFixed(5)+","+step.end.lng.toFixed(5);
     if(!cache[key]) cache[key]=window.Navigation.findNearbyPlaces(step.end,{radius:130,maxResultCount:1,language:St.lang}).catch(function(){ return []; });
@@ -1898,19 +1987,28 @@ function enrichElderWalkingSteps(steps){
   });
 }
 function initGuideMap(){
+  if(App.route!=="elder"||!St||!St.guide.active||App.boundarySaving||App.boundarySyncFailed) return;
   var home=homePoint(St), current=currentPoint(St);
   if(!home || !current || !window.Navigation) return;
-  if(App.guideRouteRequested && St&&St.guide&&St.guide.routeId) return;
+  if(App.guideRouteRequested) return;
+  if(window.Navigation.distanceMeters(current,home)>5000){
+    App.guideRouteRequested=true; App.guideRouteStatus="error";
+    App.guideRouteError=St.lang==='en'?'Home is too far away for walking guidance. Please contact family and check the home location.':'家的位置过远，请联系家人核对地址，不要按步行导航前往。';
+    render(); return;
+  }
   App.guideMapElement=el("guideMap")||null;
   App.guideMapController=null;
   App.guideRouteRequested=true;
   App.guideRouteStatus="loading";
   App.guideRouteError="";
+  var routeFamily=St.code;
   window.Navigation.routeHome(current,home)
     .then(function(route){
+      if(!St||St.code!==routeFamily||!St.guide.active) return;
       var steps=buildElderWalkingSteps(route);
       if(!steps.length) throw new Error("route_steps_missing");
       return enrichElderWalkingSteps(steps).then(function(enriched){
+        if(!St||St.code!==routeFamily||!St.guide.active) return;
         App.guideRouteStatus="ready";
         App.guideRouteError="";
         queueUpdate(function(s){ s.guide.instructions=enriched.steps; s.guide.routeId="google-walking"; s.guide.step=0; });
@@ -1918,11 +2016,12 @@ function initGuideMap(){
       });
     })
     .catch(function(error){
+      if(!St||St.code!==routeFamily||!St.guide.active) return;
       if(shouldUseDemoFallback(error)){
         fallbackMockRoute(current, home);
         return;
       }
-      App.guideRouteRequested=false;
+      App.guideRouteRequested=true;
       App.guideRouteStatus="error";
       App.guideRouteError=(error&&error.message)||D.routeFailed;
       render();
@@ -2014,14 +2113,14 @@ function applyGpsPosition(position){
     if(distance>rangeM(s)){
       s.risk.outsideCount=Number(s.risk.outsideCount||0)+1;
       if(s.risk.outsideCount<3){ s.risk.state="safe"; s.risk.reason="checking_position"; return; }
-      s.risk.state=(oldRisk==="safe"||oldRisk==="returned")?"leaving":"guiding";
+      s.risk.state=s.guide.active?"guiding":"leaving";
       s.risk.reason="outside_safe_radius";
       if(oldRisk==="safe"||oldRisk==="returned"){
         s.risk.triggeredAt=new Date().toISOString(); speak=true;
         s.alertCleared=false;
         App.guideRouteRequested=false;
         App.guideRouteStatus="idle"; App.guideRouteError="";
-        s.guide.active=true; s.guide.done=false; s.guide.step=0;
+        requestBoundaryAlert(s);
         var seen=false; for(var i=0;i<s.timeline.length;i++) if(s.timeline[i].kind==="guide"&&s.timeline[i].active) seen=true;
         if(!seen) s.timeline.push({t:clockNow(),date:todayKey(),kind:"guide",active:true});
       }
@@ -2030,6 +2129,7 @@ function applyGpsPosition(position){
       s.risk.state="guiding"; s.risk.reason="near_home_waiting_confirmation";
     } else {
       s.risk.outsideCount=0;
+      s.guide.pending=false;
       s.risk.state="safe"; s.risk.reason="inside_safe_radius";
     }
   });
@@ -2039,6 +2139,7 @@ function applyGpsPosition(position){
   if(speak && App.route==="elder" && window.Voice) window.Voice.speak(D.riskLeaving,{lang:St.lang});
 }
 function startGps(){
+  if(App.demoLocation || (St&&St.demoScenario==='singapore')) return;
   if(!window.Navigation || window.Navigation.isWatching() || App.gpsStartPending) return;
   App.gpsStartPending=true;
   App.gpsStatus="starting"; App.gpsError=""; render();
@@ -2166,7 +2267,7 @@ function mountMaps(){
         requestAnimationFrame(function(){
           if(!Maps.inst[kind]) return;
           window.google.maps.event.trigger(Maps.inst[kind],"resize");
-          Maps.inst[kind].setCenter(homeOf(St));
+          syncMap(kind);
         });
       }
     });
@@ -2213,6 +2314,11 @@ function syncMap(kind){
     map.setCenter(home);
   }
   map.setZoom(r>1200?14:(r>600?15:16));
+  if(kind==='view' && St.locReported){
+    var bounds=new g.LatLngBounds(); bounds.extend(home); bounds.extend(locOf(St));
+    var circleBounds=Maps.circle[kind].getBounds(); if(circleBounds) bounds.union(circleBounds);
+    map.fitBounds(bounds,24);
+  }
 }
 
 function commitHome(lat,lng){
@@ -2400,7 +2506,7 @@ function startGeo(){
     queueUpdate(function(s){
       s.loc=next; s.locReported=true; s.locAt=now;
       if(!s.guide.active && !s.guide.done && distOf(s) > rangeM(s)){
-        s.guide.active=true; s.guide.step=0; s.alertCleared=false;
+        requestBoundaryAlert(s);
         s.timeline.push({ t:clockNow(), date:todayKey(), kind:"guide" });
       }
     });
@@ -2458,7 +2564,7 @@ var App = {
   guideRouteStatus:"idle"
 };
 var St=null, D=null, lang="en", langTouched=false;
-var DEMO_CODE="527487";
+var DEMO_CODE="202473";
 var subTimer=null, speakTimer=null, typing=false;
 
 function showNotice(message){
@@ -2666,7 +2772,7 @@ function viewJoin(){
 }
 
 function viewPaired(){
-  return '<div class="e-hello"><div class="e-ring" style="background:var(--green-soft);color:var(--green)">✓</div>'
+  return '<div class="e-hello"><div class="paired-mark" aria-hidden="true"><svg viewBox="0 0 32 32"><path d="m7 16 6 6L25 10"/></svg></div>'
     + '<p class="e-h1">'+esc(D.pairedT)+'</p><p class="e-copy">'+esc(D.pairedD)+'</p></div>'
     + '<button class="e-btn" data-go="enterElder">'+esc(D.goElder)+'</button>';
 }
@@ -2682,6 +2788,7 @@ function riskState(){
 function statusText(){
   if(St.call.phase==="ringing") return D.stRing;
   if(St.call.phase==="talking") return D.stTalk;
+  if(St.guide.pending && !St.guide.active) return St.lang==='en'?'Outside safe area · waiting for navigation confirmation':'已超出安全范围 · 等待确认回家导航';
   if(St.risk && (St.risk.state==="leaving" || St.risk.state==="guiding")) return D.riskFamily;
   if(St.guide.active) return fill(D.stGuide,{n:St.guide.step+1});
   if(riskState()==="done") return D.stArrived;
@@ -2738,7 +2845,7 @@ function alertSheet(){
     + (on
       ? '<dl class="detail"><dt>'+esc(D.dWhy)+'</dt><dd>'+esc(D.dWhyV)+'</dd>'
         + '<dt>'+esc(D.dWhere)+'</dt><dd>'+esc(fill(D.mapDist,{n:distOf(St)}))+'</dd>'
-        + '<dt>'+esc(D.dProg)+'</dt><dd>'+esc(fill(D.dProgV,{n:Math.min(St.guide.step+1,guideTotal(St)),total:guideTotal(St)}))+'</dd></dl>'
+        + '<dt>'+esc(D.dProg)+'</dt><dd>'+esc(St.guide.pending&&!St.guide.active?(St.lang==='en'?'Waiting for navigation confirmation':'等待老人确认回家导航'):fill(D.dProgV,{n:Math.min(St.guide.step+1,guideTotal(St)),total:guideTotal(St)}))+'</dd></dl>'
       : '<dl class="detail ok"><dt>✓ '+esc(D.tileAlertDone)+'</dt><dd>'+esc(D.dDoneV)+'</dd></dl>')
     + '<div class="map-card">'+mapSVG()+'</div>'
     + familyCallActionsHTML()
@@ -3046,6 +3153,10 @@ function tabPeople(){
   h+='<div class="card" style="margin-top:14px"><b style="font-size:13.5px">'+esc(D.familyCodeT)+'</b>'
    + '<p style="margin:4px 0 10px;color:var(--muted);font-size:11.5px">'+esc(D.familyCodeD)+'</p>'
    + '<div class="codebox" style="margin:0;padding:16px"><b style="font-size:30px">'+St.code+'</b>'+copyCodeButton()+'</div></div>';
+  h+='<div class="family-account"><button class="family-signout" type="button" data-go="logout">'
+    + '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4H4v16h5M9 12h11m-4-4 4 4-4 4"/></svg>'
+    + esc(St.lang==='en'?'Sign out':'退出登录')+'</button><p>'
+    + esc(St.lang==='en'?'Only this device signs out. Your family information stays saved.':'仅退出此设备，家庭资料仍会保留。')+'</p></div>';
   return h;
 }
 
@@ -3068,7 +3179,7 @@ function tabbar(){
   for(var i=0;i<4;i++){
     if(i===2){
       /* 中间凸起的助手入口，有待补充时带红点 */
-      h+='<span class="tab-ai"><button data-go="openChat" aria-label="'+esc(D.aiTab)+'">'+IC.spark+'</button>'
+      h+='<span class="tab-ai"><button data-go="openChat" aria-label="'+esc(D.aiTab)+'">'+IC.mic+'</button>'
        + (St.pending.length?'<span class="dot"></span>':'')+'</span>';
     }
     var dot="";
@@ -3100,10 +3211,52 @@ function isSameCall(s,snapshot){
   return s.call.personId===snapshot.personId&&s.call.dir===snapshot.dir;
 }
 
+function enforceEmbeddedRole(){
+  if(!EMBED_ROLE||!St||!Connection.authenticated) return;
+  App.paired=false;
+  App.route=EMBED_ROLE==='elder'?'elder':(!St.setup?'obElder':App.route==='obMe'?'obMe':'family');
+  App.joinAs=EMBED_ROLE;
+}
+function requestBoundaryAlert(s){
+  if(s.guide.active) return;
+  s.guide.pending=true; s.guide.active=false; s.guide.done=false; s.guide.step=0;
+  s.risk=s.risk||{}; s.risk.state='leaving'; s.risk.reason='outside_safe_radius';
+  s.alertCleared=false;
+}
+function viewBoundaryAlert(){
+  var en=St.lang==='en', radius=routeDistanceText(rangeM(St)), distance=routeDistanceText(distOf(St));
+  return '<div class="sheet-mask"><section class="sheet" role="dialog" aria-modal="true" aria-labelledby="boundaryTitle" data-stop="1">'
+    + '<h3 id="boundaryTitle">'+(en?'You are outside your familiar area':'您已走出熟悉的范围')+'</h3>'
+    + '<p class="e-copy">'+esc(en?'You are '+distance+' from home, outside the '+radius+' safe area. Stay somewhere safe. We can help you get home.':'您距离家约 '+distance+'，已超出 '+radius+' 的安全范围。请先在安全的地方停留，我们可以陪您回家。')+'</p>'
+    + '<div class="map-card">'+mapBox('view')+'</div>'
+    + '<p class="e-copy" style="font-size:15px">'+(en?'This alert syncs to your family’s app when connected.':'连接正常时，越界提醒会同步到家人端。')+'</p>'
+    + '<button class="e-btn" data-go="confirmBoundary">'+(en?'Guide me home & notify family':'导航回家并提醒家人')+'</button>'
+    + '<button class="e-btn soft" data-go="openPick">'+(en?'Call family first':'先联系家人')+'</button>'
+    + (St.demoScenario==='singapore'?'<button class="link" data-go="goHome">'+(en?'Demo: reset home location':'演示：恢复到家位置')+'</button>':'')+'</section></div>';
+}
+async function confirmBoundaryNavigation(){
+  if(App.boundarySaving) return;
+  if(!homePoint(St)||!currentPoint(St)){ showNotice(St.lang==='en'?'Home and current location are needed.':'需要先确认家的位置和当前位置。'); return; }
+  App.boundarySaving=true;
+  try{
+    await persistUpdate(function(s){
+      if((!s.guide.pending&&!App.boundarySyncFailed)||!isOut(s)) return;
+      s.guide.pending=false; s.guide.active=true; s.guide.done=false; s.guide.step=0;
+      s.risk=s.risk||{}; s.risk.state='guiding'; s.alertCleared=false;
+      s.risk.familyNotifiedAt=new Date().toISOString();
+    });
+    App.qa=false; App.pick=false; App.eset=false;
+    App.guideRouteRequested=false; App.guideRouteStatus='idle'; App.guideRouteError='';
+    App.boundarySyncFailed=false;
+  }catch(_error){ App.boundarySyncFailed=true; showNotice(St.lang==='en'?'Could not sync with family. Please retry.':'暂时无法同步给家人，请重试。'); }
+  finally{ App.boundarySaving=false; render(); }
+}
+
 function elderScreen(){
   if(App.paired) return "paired";
   if(St.call.phase==="ringing") return callDir(St)==="out" ? "calling" : "ringing";
   if(St.call.phase==="talking") return "talking";
+  if((St.guide.pending || App.boundarySaving || App.boundarySyncFailed) && !App.pick && isOut(St)) return "boundary";
   if(St.guide.active) return "guide";
   if(St.guide.done) return "arrived";
   if(App.pick) return "pick";
@@ -3273,10 +3426,9 @@ function homeSummaryText(){
 
 function viewStandby(){
   ensureWeather();
-  var d=dayParts(), t=todayTodo(), n=todayNews(), canGuide=!!(homePoint(St)&&currentPoint(St));
+  var d=dayParts(), t=todayTodo(), n=todayNews();
 
   var h='<div class="e-home">'
-    + '<img class="e-banner" src="otter-standby.jpg" alt="" width="760" height="760">'
     + '<div class="e-date"><small>'+esc(D.eTodayT)+'</small>'
     +   '<b id="elderDateTitle">'+esc(d.date)+' '+esc(d.week)+'</b>'
     +   '<span id="elderHomeClock">'+esc(d.part)+' · '+clockNow()+'</span></div>';
@@ -3321,12 +3473,11 @@ function viewStandby(){
    + '</div>';
 
   h+='<div class="e-actions">'
-   + '<button class="e-btn" data-go="openQa">'+esc(D.eTalk)+'</button>'
-   + '<button class="e-btn soft" data-go="openPick" style="margin-top:10px">'+esc(D.eCallFamily)+'</button>'
-   + (canGuide?'<button class="e-btn soft" data-go="openGuide" style="margin-top:10px">'+esc(D.eGuideStart)+'</button>':'')
+   + '<button class="e-btn elder-talk" data-go="openQa" aria-label="'+esc(D.eTalk)+'">'+IC.mic+'<span>'+esc(D.eTalk)+'</span></button>'
+   + '<button class="e-btn soft" data-go="openPick">'+IC.phoneUp+'<span>'+esc(D.eCallFamily)+'</span></button>'
    + elderSettingsEntry()
    + '</div>';
-  return h+devBar();
+  return h;
 }
 
 function callerCard(){
@@ -3382,8 +3533,8 @@ function viewQa(){
   for(var k=0;k<D.asks.length;k++) asks+='<button class="askbtn" data-ask="'+k+'">'+esc(D.asks[k])+'</button>';
   var voiceLabel=App.voiceBusy?D.voiceStop:D.voiceAsk;
   return '<p class="eyebrow warm" style="margin-top:8px">'+esc(D.eListening)+'</p>'
-    + '<div class="thread">'+th+'</div>'
-    + '<div class="asks">'+asks+'</div>'
+    + '<div class="thread qa-conversation"><div data-qa-history="1">'+th+'</div><div data-live-transcript="1"></div></div>'
+    + '<div class="asks" data-qa-suggestions="1">'+asks+'</div>'
     + livePanel()
     + '<button class="e-btn soft" data-go="closeQa">'+esc(D.eBack)+'</button>';
 }
@@ -3485,7 +3636,7 @@ function viewESettings(){
     + '<div class="spacer"></div>'
     + '<button class="e-danger" data-go="logout">'+esc(D.logoutElder)+'</button>'
     + '<p class="e-setnote">'+esc(D.logoutElderD)+'</p>'
-    + '<button class="e-btn soft" data-go="closeESet" style="margin-top:12px">'+esc(D.eSetBack)+'</button>';
+    + '<button class="e-btn soft" data-go="closeESet" style="margin-top:12px">'+esc(D.eSetBack)+'</button>'+devBar();
 }
 
 function viewArrived(){
@@ -3509,6 +3660,7 @@ function devBar(){
    ===================================================================== */
 function render(s){
   if(s!==undefined) St=s;
+  enforceEmbeddedRole();
   D = I18N[St ? St.lang : lang] || I18N.en;
   syncElderLive();
 
@@ -3519,7 +3671,8 @@ function render(s){
   var screen=el("screen"), view=el("view"), body="", isElder=false, chrome="";
   el("clock").textContent = clockNow();
 
-  if(App.route==="entry")            body=viewEntry();
+  if(EMBED_ROLE && !Connection.authenticated) body='<p class="e-copy" role="status">'+esc(connectionCopy(Connection.state))+'</p>';
+  else if(App.route==="entry")       body=viewEntry();
   else if(App.route==="familyStart") body=viewFamilyStart();
   else if(App.route==="obElder")     body=viewObElder();
   else if(App.route==="obMe")        body=viewObMe();
@@ -3531,6 +3684,7 @@ function render(s){
     body = sc==="paired"?viewPaired() : sc==="ringing"?viewRinging() : sc==="calling"?viewCalling()
          : sc==="talking"?viewTalking() : sc==="pick"?viewPick() : sc==="qa"?viewQa()
          : sc==="esettings"?viewESettings()
+         : sc==="boundary"?viewStandby()+viewBoundaryAlert()
          : sc==="guide"?viewGuide() : sc==="arrived"?viewArrived() : viewStandby();
   }
   else if(App.route==="family"){
@@ -3556,8 +3710,9 @@ function render(s){
   view.classList.toggle("pad0", App.route==="family");
   view.className = (isElder ? "e-view" : "view") + (App.route==="family" ? " pad0" : "");
   view.innerHTML = body;
+  if(St&&St.demoScenario==='singapore') view.insertAdjacentHTML('afterbegin','<p class="eyebrow">'+(St.lang==='en'?'Singapore sample · Simulated location':'新加坡示例 · 模拟位置')+'</p>');
   patchLiveTranscript();
-  if(App.route==="family") mountMaps();
+  if(App.route==="family" || (isElder && sc==="boundary")) mountMaps();
 
   /* 家人端底部 tab bar 在 view 之外 */
   var old=screen.querySelector(".tabbar"); if(old) old.remove();
@@ -3581,7 +3736,7 @@ function render(s){
   bindInputs();
   bindRange();
   if(App.route==="obElder") initHomeMap();
-  if(App.route==="elder" && St && St.guide && St.guide.active) initGuideMap();
+  if(App.route==="elder" && St && St.guide && St.guide.active && !App.boundarySaving && !App.boundarySyncFailed) initGuideMap();
   var th=view.querySelector(".thread"); if(th) th.scrollTop=th.scrollHeight;
   syncSubs();
   syncCallAudio(false);
@@ -3766,6 +3921,10 @@ async function fillElderSample(){
     s.home={lat:HOME_LL.lat,lng:HOME_LL.lng,label:seed.address,radiusM:800};
     s.homeSet=true;
     s.elder.radius="800";
+    s.demoScenario='singapore'; s.timezone='Asia/Singapore';
+    s.loc={lat:HOME_LL.lat,lng:HOME_LL.lng,source:'demo',status:'ready'}; s.locReported=true;
+    s.guide={active:false,pending:false,done:false,step:0,instructions:[],routeId:''};
+    s.risk={state:'safe',outsideCount:0,distanceM:0}; s.alertCleared=true;
   });
   render();
 }
@@ -3981,13 +4140,13 @@ function setLoc(x,y){
   queueUpdate(function(s){
     s.loc.x=x; s.loc.y=y;
     if(!s.guide.active && !s.guide.done && distOf(s)>rangeM(s)){
-      s.guide.active=true; s.guide.step=0;
+      requestBoundaryAlert(s);
       s.alertCleared=false;
       s.timeline.push({t:clockNow(),date:todayKey(),kind:"guide"});
       started=true;
     }
   });
-  if(started && App.route==="elder" && window.Voice) window.Voice.speak(D.guide[0].copy,{lang:St.lang});
+  if(started && App.route==="elder" && window.Voice) window.Voice.speak(D.riskLeaving,{lang:St.lang});
 }
 function setDemoLocation(outside){
   App.demoLocation=true;
@@ -4008,17 +4167,19 @@ function setDemoLocation(outside){
     if(outside){
       s.risk.triggeredAt=new Date().toISOString();
       s.guide.active=false; s.guide.done=false; s.guide.step=0; s.guide.instructions=[]; s.guide.routeId="";
+      requestBoundaryAlert(s);
       s.alertCleared=false;
       var seen=false;
       for(var i=0;i<s.timeline.length;i++) if(s.timeline[i].kind==="guide"&&s.timeline[i].active) seen=true;
       if(!seen) s.timeline.push({t:clockNow(),date:todayKey(),kind:"guide",active:true});
     }else{
+      s.guide.pending=false;
       s.guide.active=false; s.guide.done=false; s.guide.step=0; s.guide.instructions=[]; s.guide.routeId="";
       s.alertCleared=true;
       for(var j=0;j<s.timeline.length;j++) if(s.timeline[j].kind==="guide") delete s.timeline[j].active;
     }
   });
-  if(outside&&App.route==="elder") setTimeout(function(){ initGuideMap(); render(); },0);
+  if(outside&&App.route==="elder") render();
 }
 function advanceGuide(){
   if(!St||!St.guide||!St.guide.active) return;
@@ -4086,7 +4247,7 @@ function livePanel(){
     var errors={LIVE_KEY_MISSING:en?'OpenAI API key is not configured.':'尚未配置 OpenAI API Key。',LIVE_MIC_DENIED:en?'Microphone permission is needed. Allow it and try again.':'需要麦克风权限，请允许后重试。',LIVE_PROVIDER_FAILED:en?'Voice service could not connect. Check model access and try again.':'语音服务连接失败，请检查模型权限后重试。',AUTH_REQUIRED:en?'Please sign in again.':'请重新登录后再试。'};
     hint=errors[s.error]||(en?'Connection interrupted. Tap to retry.':'连接中断，请点击重新开始。');
   }
-  return '<div data-live-panel="1"><button class="holdbar'+(active?' on':'')+'" data-go="toggleLive" aria-pressed="'+active+'"'+(s.status==='stopping'?' disabled':'')+'>'+esc(label)+'</button><p class="qa-heard" role="status">'+esc(hint)+'</p>'+(s.audioBlocked?'<button class="e-btn soft" data-go="playLive">'+(en?'Play voice':'点击播放声音')+'</button>':'')+'<div data-live-transcript="1" style="max-height:170px;overflow:auto;white-space:pre-wrap;font-size:18px;line-height:1.6"></div></div>';
+  return '<div data-live-panel="1"><button class="holdbar live-mic'+(active?' on':'')+'" data-go="toggleLive" aria-pressed="'+active+'"'+(s.status==='stopping'?' disabled':'')+'>'+IC.mic+'<span>'+esc(label)+'</span></button><p class="qa-heard" role="status">'+esc(hint)+'</p>'+(s.audioBlocked?'<button class="e-btn soft" data-go="playLive">'+(en?'Play voice':'点击播放声音')+'</button>':'')+'</div>';
 }
 function patchElderLive(){
   var panel=document.querySelector('[data-live-panel]');
@@ -4094,10 +4255,29 @@ function patchElderLive(){
 }
 function patchLiveTranscript(){
   var node=document.querySelector('[data-live-transcript]');
-  if(!node||!ElderLive.client) return;
-  var rows=ElderLive.client.transcript(), text='', role=null;
-  rows.slice(-40).forEach(function(row){ if(role!==row.role){ text+='\n'+(row.role==='user'?(St.lang==='en'?'You: ':'您：'):'AI：'); role=row.role; } text+=row.text; });
-  node.textContent=text.trim(); node.scrollTop=node.scrollHeight;
+  if(!node) return;
+  var rows=ElderLive.client?ElderLive.client.transcript():[];
+  var status=ElderLive.client?ElderLive.client.state().status:'idle';
+  var started=rows.length>0||status==='connecting'||status==='connected'||status==='stopping';
+  var suggestions=document.querySelector('[data-qa-suggestions]');
+  var history=document.querySelector('[data-qa-history]');
+  if(suggestions) suggestions.hidden=started||!!(St.thread&&St.thread.length);
+  if(history) history.hidden=started;
+  node.innerHTML=liveTranscriptHTML(rows,St.lang==='en');
+  var thread=node.closest('.thread');
+  if(thread) thread.scrollTop=thread.scrollHeight;
+}
+function liveTranscriptHTML(rows,en){
+  var groups=[];
+  rows.forEach(function(row){
+    var role=row.role==='user'?'user':'assistant', last=groups[groups.length-1];
+    if(last&&last.role===role) last.text+=row.text;
+    else groups.push({role:role,text:row.text});
+  });
+  return groups.slice(-40).map(function(row){
+    return '<div class="bub '+(row.role==='user'?'me':'ai')+'"><small>'
+      +(row.role==='user'?(en?'You':'您'):'AI')+'</small><p>'+esc(row.text)+'</p></div>';
+  }).join('');
 }
 function stopElderLive(){ if(ElderLive.client) ElderLive.client.stop(); }
 function syncElderLive(){
@@ -4603,10 +4783,10 @@ async function pair(code){
   if(!/^\d{6}$/.test(code)){ App.err=D.joinErr; render(); return; }
   await runPendingAction(async function(){
     try{
-      await Store.attach(code,App.joinAs);
+      var role=EMBED_ROLE||App.joinAs;
+      await Store.attach(code,role);
       St=Store.get();
       App.err="";
-      var role=App.joinAs;   // 用户在入口页选了什么就进什么
       if(role==="elder"){
         await persistUpdate(function(s){ s.paired=true; });
         rememberDevice("elder",code,null);
@@ -4661,6 +4841,10 @@ async function hardExit(){
   App.callNeedsPlay=false; App.editingPerson=null; App.paired=false;
   clearDevice(); stopGps(); App.demoLocation=false; St=null;
   try{ if(Store) await Store.signOut(); }catch(error){ reportStoreError(error); }
+  if(EMBED_ROLE && window.location && typeof window.location.replace==="function"){
+    window.location.replace("/app/index.html?embedded=1");
+    return;
+  }
   if(!EMBEDDED && window.location && typeof window.location.reload==="function"){
     window.location.reload();
     return;
@@ -4897,6 +5081,7 @@ document.addEventListener("click", async function(e){
     case "openESet": App.eset=true; App.qa=false; App.pick=false; render(); break;
     case "closeESet": App.eset=false; render(); break;
     case "openGuide":
+      if(isOut(St) && !St.guide.active){ queueUpdate(requestBoundaryAlert); break; }
       if(homePoint(St)&&currentPoint(St)){
         queueUpdate(function(s){ s.guide.active=true; s.guide.done=false; s.guide.step=0; });
         App.qa=false; App.pick=false; App.eset=false;
@@ -4904,6 +5089,7 @@ document.addEventListener("click", async function(e){
         initGuideMap();
       }
       break;
+    case "confirmBoundary": await confirmBoundaryNavigation(); break;
     case "prevGuide": retreatGuide(); break;
     case "arrived": arrived(); break;
     case "ackHome": queueUpdate(function(s){ s.guide.done=false; }); break;
@@ -4970,7 +5156,8 @@ function pollFamilyState(){
 }
 
 async function connectAndRestore(){
-  if(Connection.pendingAction) return;
+  if(Connection.pendingAction || Connection.restoring) return;
+  Connection.restoring=true;
   Connection.initFailed=false;
   Connection.authenticated=false;
   setConnectionStatus("connecting");
@@ -4978,7 +5165,6 @@ async function connectAndRestore(){
   try{
     if(!Store) throw new Error("Supabase client unavailable");
     await Store.initialize();
-    Connection.authenticated=true;
     var restored;
     if(EMBED_ROLE&&EMBED_CODE){
       await Store.attach(EMBED_CODE,EMBED_ROLE);
@@ -4987,9 +5173,11 @@ async function connectAndRestore(){
       restored=await Store.restoreSelection();
     }
     St=restored;
+    Connection.authenticated=true;
     if(St){
       lang=St.lang||lang;
       var role=EMBED_ROLE||storeRole()||"family";
+      App.paired=false;
       var member=sessionGet(SCODE)===St.code?selectedMemberId():null;
       if(!EMBED_ROLE) rememberDevice(role,St.code,role==="family"?member:null);
       App.route=role==="elder"?"elder":"family";
@@ -5002,9 +5190,12 @@ async function connectAndRestore(){
     render(St);
     if(App.route==="elder") setTimeout(startGps,0);
   }catch(error){
+    Connection.authenticated=false;
     Connection.initFailed=true;
     setConnectionStatus(navigator.onLine===false?"offline":"error");
     render(St);
+  }finally{
+    Connection.restoring=false;
   }
 }
 

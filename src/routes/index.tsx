@@ -70,6 +70,7 @@ function Index() {
               Family side
             </span>
             <iframe
+              key={`family-${code}`}
               src={frameSrc("family")}
               title="Remember Us family side"
               allow="microphone; geolocation"
@@ -81,6 +82,7 @@ function Index() {
               Elder side
             </span>
             <iframe
+              key={`elder-${code}`}
               src={frameSrc("elder")}
               title="Remember Us elder side"
               allow="microphone; geolocation"

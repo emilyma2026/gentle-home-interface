@@ -166,12 +166,13 @@ test("alerts are derived from current risk and a fresh departure reopens a clear
     todayKey: () => "2026-08-24",
     render: () => {},
   };
-  vm.runInNewContext(`${riskSource}\n${gpsSource}`, context);
+  vm.runInNewContext(`${riskSource}\n${between("function requestBoundaryAlert(", "function viewBoundaryAlert(")}\n${gpsSource}`, context);
 
   assert.equal(context.riskState(), "none", "historical timeline rows do not keep an alert alive");
   context.applyGpsPosition({ coords: { latitude: 2, longitude: 2, accuracy: 5 } });
   assert.equal(state.alertCleared, false);
-  assert.equal(state.guide.active, true);
+  assert.equal(state.guide.active, false);
+  assert.equal(state.guide.pending, true);
   assert.equal(context.riskState(), "on");
 });
 
@@ -375,7 +376,7 @@ test("family maps mount after rendering and prefer the active warning dialog", a
   assert.equal(pageSlot.inserted, "");
 
   const renderSource = between("function render(s){", "/* 滑块与数字框联动");
-  assert.match(renderSource, /view\.innerHTML = body;[\s\S]*App\.route==="family"\) mountMaps\(\)/);
+  assert.match(renderSource, /view\.innerHTML = body;[\s\S]*App\.route==="family" \|\| \(isElder && sc==="boundary"\)\) mountMaps\(\)/);
 });
 
 test("the comparison route embeds both roles for the same family", () => {

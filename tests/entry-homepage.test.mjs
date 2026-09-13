@@ -161,7 +161,7 @@ test("family pages keep safe gutters and align their overview at the top", () =>
   assert.equal(familyStyles["padding-left"], "22px");
   assert.equal(familyStyles["padding-right"], "22px");
   assert.equal(familyStyles["justify-content"], "flex-start");
-  assert.equal(familyStyles["padding-top"], "8px");
+  assert.equal(familyStyles["padding-top"], "16px");
   assert.match(familyStyles["padding-bottom"], /clamp\(/);
 });
 
@@ -399,6 +399,7 @@ test("Switch role persists the elder session reset and refreshes the page", asyn
     St: state,
     Store: { signOut: async () => { signedOut += 1; } },
     EMBEDDED: false,
+    EMBED_ROLE: "",
     window: { location: { reload: () => { reloads += 1; } } },
     storeRole: () => "elder",
     stopSpeech: () => {},
@@ -424,6 +425,27 @@ test("Switch role persists the elder session reset and refreshes the page", asyn
   assert.equal(context.App.callNeedsPlay, false);
 });
 
+test("family sign out leaves a fixed-role frame without changing shared data", async () => {
+  let signedOut = 0;
+  let destination = "";
+  const state = { facts: [{ text: "Sunday visit" }], guide: { active: true } };
+  const context = {
+    App: {}, St: state, EMBEDDED: true, EMBED_ROLE: "family",
+    storeRole: () => "family",
+    Store: { signOut: async () => { signedOut += 1; } },
+    stopSpeech() {}, stopSubs() {}, stopGps() {}, clearDevice() {},
+    persistUpdate: () => assert.fail("family sign out must not mutate shared state"),
+    reportStoreError: (error) => { throw error; },
+    window: { location: { replace: (url) => { destination = url; } } },
+  };
+  await vm.runInNewContext(`${hardExitSource}\nhardExit();`, context);
+  assert.equal(signedOut, 1);
+  assert.equal(destination, "/app/index.html?embedded=1");
+  assert.equal(state.guide.active, true);
+  assert.equal(state.facts[0].text, "Sunday visit");
+  assert.equal(context.St, null);
+});
+
 test("the app polls shared family state when Realtime cannot connect", async () => {
   assert.ok(pollSource, "pollFamilyState must exist");
   let refreshes = 0;
@@ -445,6 +467,7 @@ test("elder pairing persists the paired state before entering the elder screen",
   const state = { paired: false, lang: "zh" };
   const events = [];
   const context = {
+    EMBED_ROLE: "",
     App: { joinAs: "elder", err: "old error", paired: false, route: "join" },
     D: { joinErr: "not found" },
     Store: {

@@ -117,16 +117,16 @@ test("sample actions fill only their own onboarding fields", async () => {
   await vm.runInNewContext(`${actionsSource}\nfillElderSample();`, context);
   assert.deepEqual(
     [state.elder.name, state.elder.phone, state.elder.address, state.elder.radius],
-    ["Mom", "139 0000 4488", "12 Xinghua Rd, Building 3, Guangzhou", "800"],
+    ["Mom", "", "Toa Payoh Central, Singapore (sample)", "800"],
   );
   assert.equal(state.people[0].nick, "");
 
   await vm.runInNewContext(`${actionsSource}\nfillPersonSample();`, context);
   assert.deepEqual(
     [state.people[0].nick, state.people[0].relation, state.people[0].phone],
-    ["Yuki", "Daughter", "138 0000 7612"],
+    ["Yuki", "Daughter", ""],
   );
-  assert.equal(state.people[0].recent, "Works in Guangzhou, lives independently.");
+  assert.equal(state.people[0].recent, "Works in Singapore, lives independently.");
   assert.equal(state.people[0].hint, "You walked me to No.3 Primary School every morning, rain or shine.");
   assert.equal(state.people[0].photo, "photo");
 });

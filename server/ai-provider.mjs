@@ -43,14 +43,16 @@ export function aiHandler(env) {
       res.writeHead(405, { "content-type": "application/json" });
       return res.end(JSON.stringify({ error: "METHOD_NOT_ALLOWED" }));
     }
-    let raw = "";
+    const chunks = [];
+    let size = 0;
     req.on("data", (c) => {
-      raw += c;
-      if (raw.length > 200_000) req.destroy();
+      size += c.length;
+      if (size > 200_000) return req.destroy();
+      chunks.push(c);
     });
     req.on("end", async () => {
       try {
-        const body = JSON.parse(raw || "{}");
+        const body = JSON.parse(Buffer.concat(chunks).toString("utf8") || "{}");
         if (typeof body.user !== "string" || !body.user.trim()) {
           res.writeHead(400, { "content-type": "application/json" });
           return res.end(JSON.stringify({ error: "EMPTY_PROMPT" }));

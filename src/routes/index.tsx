@@ -2,13 +2,13 @@ import { createFileRoute } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/")({
   validateSearch: (search: Record<string, unknown>) => {
-    const compare = search.compare === "1" || search.compare === 1 || search.compare === true;
+    const rawCompare = search["compare"];
+    const rawCode = search["code"];
+    const rawLocalDemo = search["localDemo"];
+    const compare = rawCompare === "1" || rawCompare === 1 || rawCompare === true;
     const code =
-      typeof search.code === "string" || typeof search.code === "number"
-        ? String(search.code)
-        : "";
-    const localDemo =
-      search.localDemo === "1" || search.localDemo === 1 || search.localDemo === true;
+      typeof rawCode === "string" || typeof rawCode === "number" ? String(rawCode) : "";
+    const localDemo = rawLocalDemo === "1" || rawLocalDemo === 1 || rawLocalDemo === true;
 
     return {
       ...(compare && /^\d{6}$/.test(code) ? { compare: true, code } : {}),

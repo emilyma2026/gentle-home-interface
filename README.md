@@ -2,7 +2,7 @@
 
 面向阿尔茨海默症家庭的双端陪伴界面。家人端用于维护老人信息与家庭设置，老人端通过六位家庭码配对后使用简化界面。
 
-当前项目尚未部署线上版本。
+线上：https://alzheimer-assistant.yuxuan-zhou2003.workers.dev （Cloudflare Workers，手动 `wrangler deploy`）
 
 ## 项目仓库
 
@@ -56,24 +56,40 @@ AI_MODEL=gemini-2.5-flash
 
 ## Daytona 沙盒
 
-比赛技术要求：代码在 Daytona 隔离沙盒里执行。走服务端 `/api/daytona`，key 只留服务端。
-在 .env 里配置：
+产品里"跑不可信代码 / 跑 AI agent"的活都放进 Daytona 隔离沙盒。key 只留服务端。
 
 ```
 DAYTONA_API_KEY=你的key      # app.daytona.io/dashboard/keys
 DAYTONA_TARGET=us            # 可选，us / eu
-DAYTONA_SANDBOX=Remember_Us  # 可选，复用固定沙盒
+DAYTONA_SANDBOX=Remember_Us  # 可选，复用固定沙盒（停了自动拉起、跑完不删）；不设则每次新建即删
 ```
 
-`POST /api/daytona`，body `{ "code": "print(1+1)" }`（不传则跑默认自检片段），
-返回 `{ ok, mode, sandboxId, exitCode, result }`。
+### 记忆抽取 agent（主用途）
 
-- 设了 `DAYTONA_SANDBOX`：复用该沙盒（`mode: "reuse"`），停了自动拉起，跑完不删，
-  文件系统在多次调用间保留；每次调用是独立 Python 进程，内存变量不跨调用。
-- 没设：每次新建一个沙盒，跑完即删（`mode: "ephemeral"`）。
+家人写的照护笔记 → 沙盒里跑 `server/sandbox/memory_agent.py`：
 
-本地 `npm run dev` 由 `server/daytona.mjs` 处理；改 `.env` 后需重启 dev。
-没配 key 时返回 `{ ok: false, skipped: true }`，不影响其余功能。
+1. **extractor** — LLM 结构化抽取，拆成 facts（person/preference/routine/event/response_script/other）
+   和 todos（today/tomorrow/this_week/unspecified）
+2. **grounding critic** — 第二遍 LLM 逐条核对"是不是笔记里明确写到的"，没依据的丢掉
+3. **sensitive filter** — 手机号 / 身份证 / 银行卡 / 密码类正则二次过滤
+
+沙盒把 LLM 的不可信输出和外部 HTTP 调用关在隔离环境里，Worker / 主进程不直接碰。
+只用 Python 标准库，沙盒无需 pip install。
+
+- **可视化 demo**：`npm run dev` 后打开 `/sandbox`，粘一段笔记点运行，看沙盒 ID、
+  pipeline 步骤、分类结果、grounding 丢弃项。
+- **接口**：`POST /api/memory/extract`，body `{ "note": "…" }` →
+  `{ ok, runtime, sandboxId, previewLink?, facts, todos, dropped, steps }`。
+  - `runtime: "daytona"` —— 真沙盒（本地 dev / 有 Daytona key）
+  - `runtime: "direct"` —— Cloudflare Worker 上 Daytona SDK 跑不起来时，回落到 AI 网关直跑
+  - `runtime: "local-fallback"` —— 无 Daytona key 时在本机跑同一个 Python
+
+### 自检端点
+
+`POST /api/daytona`，body `{ "code": "print(1+1)" }` → 直接在沙盒里跑一段 Python，
+返回 `{ ok, mode, sandboxId, exitCode, result }`。仅 `npm run dev` 挂载。
+
+没配 `DAYTONA_API_KEY` 时相关端点返回 skipped / 回落，不影响其余功能。
 
 ## 构建
 

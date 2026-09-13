@@ -60,16 +60,23 @@ function aiProxyPlugin(): Plugin {
   };
 }
 
+// 本地 dev：把 Daytona 沙盒相关的服务端接口挂上（生产在 src/server.ts 里路由）
 function daytonaProxyPlugin(): Plugin {
   return {
     name: "companion-daytona-proxy",
     apply: "serve",
     async configureServer(server) {
       const { daytonaHandler } = await import("./server/daytona.mjs");
-      const handle = daytonaHandler(process.env);
+      const { memoryAgentHandler } = await import("./server/memory-agent.mjs");
+      const daytona = daytonaHandler(process.env);
+      const memory = memoryAgentHandler(process.env);
       server.middlewares.use("/api/daytona", (req, res, next) => {
         if (req.method !== "POST") return next();
-        handle(req, res);
+        daytona(req, res);
+      });
+      server.middlewares.use("/api/memory/extract", (req, res, next) => {
+        if (req.method !== "POST") return next();
+        memory(req, res);
       });
     },
   };

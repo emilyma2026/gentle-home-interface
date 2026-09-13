@@ -1,0 +1,14 @@
+# 统一行尾为 LF，避免 Windows 检出后满屏 prettier/prettier "Delete ␍"
+* text=auto eol=lf
+
+# 二进制资产不做行尾转换
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.webp binary
+*.ico binary
+*.wav binary
+*.mp3 binary
+*.woff binary
+*.woff2 binary
+*.pptx binary

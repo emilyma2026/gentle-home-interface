@@ -77,14 +77,16 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Lovable App" },
-      { name: "description", content: "Lovable Generated Project" },
-      { name: "author", content: "Lovable" },
-      { property: "og:title", content: "Lovable App" },
-      { property: "og:description", content: "Lovable Generated Project" },
+      { title: "Remember Us · Family Memory Companion" },
+      {
+        name: "description",
+        content:
+          "面向阿尔茨海默症家庭的双端陪伴界面：老人端识别与安心应答，家人端维护记忆与提醒。",
+      },
+      { property: "og:title", content: "Remember Us · Family Memory Companion" },
+      { property: "og:description", content: "A warm two-phone prototype linked by a shared family code." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:site", content: "@Lovable" },
     ],
     links: [
       {

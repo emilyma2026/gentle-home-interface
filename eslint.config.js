@@ -6,10 +6,20 @@ import reactRefresh from "eslint-plugin-react-refresh";
 import tseslint from "typescript-eslint";
 
 export default tseslint.config(
-  { ignores: ["dist", ".output", ".vinxi"] },
+  { ignores: ["dist", ".output", ".vinxi", ".wrangler", "src/routeTree.gen.ts"] },
+  {
+    // 服务端 / 测试 / 构建脚本的 .mjs / .js —— Node 环境，走 JS recommended
+    extends: [js.configs.recommended],
+    files: ["server/**/*.mjs", "tests/**/*.mjs", "scripts/**/*.mjs", "*.{js,mjs}"],
+    languageOptions: {
+      ecmaVersion: 2023,
+      sourceType: "module",
+      globals: { ...globals.node, ...globals.browser },
+    },
+  },
   {
     extends: [js.configs.recommended, ...tseslint.configs.recommended],
-    files: ["**/*.{ts,tsx}"],
+    files: ["src/**/*.{ts,tsx}"],
     languageOptions: {
       ecmaVersion: 2020,
       globals: globals.browser,

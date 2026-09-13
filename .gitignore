@@ -50,3 +50,4 @@ Assets/*
 Remember Us_*.pptx
 Remember Us_*.pptx.inspect.ndjson
 Landing page background.png
+__pycache__/

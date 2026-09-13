@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as MemoryLabRouteImport } from './routes/memory-lab'
+import { Route as SandboxRouteImport } from './routes/sandbox'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -22,31 +23,40 @@ const MemoryLabRoute = MemoryLabRouteImport.update({
   path: '/memory-lab',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SandboxRoute = SandboxRouteImport.update({
+  id: '/sandbox',
+  path: '/sandbox',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/memory-lab': typeof MemoryLabRoute
+  '/sandbox': typeof SandboxRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/memory-lab': typeof MemoryLabRoute
+  '/sandbox': typeof SandboxRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/memory-lab': typeof MemoryLabRoute
+  '/sandbox': typeof SandboxRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/memory-lab'
+  fullPaths: '/' | '/memory-lab' | '/sandbox'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/memory-lab'
-  id: '__root__' | '/' | '/memory-lab'
+  to: '/' | '/memory-lab' | '/sandbox'
+  id: '__root__' | '/' | '/memory-lab' | '/sandbox'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   MemoryLabRoute: typeof MemoryLabRoute
+  SandboxRoute: typeof SandboxRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -65,12 +75,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MemoryLabRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/sandbox': {
+      id: '/sandbox'
+      path: '/sandbox'
+      fullPath: '/sandbox'
+      preLoaderRoute: typeof SandboxRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   MemoryLabRoute: MemoryLabRoute,
+  SandboxRoute: SandboxRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

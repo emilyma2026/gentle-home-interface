@@ -945,13 +945,9 @@ input,textarea,select{font:inherit}
   再用 audio.currentTime 驱动 call.line，即可换成真实通话音频。
 -->
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4"></script>
-<script src="/app/maps-config.js" onerror="window.MAPS_CONFIG={key:''};window.__MAPS_CONFIG_MISSING__=true"></script>
-<script src="/app/supabase-config.js"></script>
-<script src="/app/supabase-store.js"></script>
-<script src="/app/voice.js"></script>
-<script src="/app/live-voice.js"></script>
-<script src="/app/navigation.js"></script>
+<script>window.FRONTEND_ONLY=true;window.MAPS_CONFIG={key:''};</script>
+<script src="/app/local-store.js"></script>
+<script src="/app/local-demo.js"></script>
 <script>
 (function(){
 "use strict";
@@ -1463,7 +1459,7 @@ function locOf(s){ return asLL(s ? s.loc : null, homeOf(s)); }
 function newFamily(code, lang){
   return {
     code:code, lang:lang, rev:0,
-    setup:false, paired:false,
+    setup:false, paired:false, demoScenario:'singapore',
     elder:{ name:"", pronouns:"auto", phone:"", address:"",
             home:{ lat:HOME_LL.lat, lng:HOME_LL.lng }, radius:"800" },
     home:{ lat:HOME_LL.lat, lng:HOME_LL.lng, label:"", radiusM:800 },
@@ -1473,9 +1469,9 @@ function newFamily(code, lang){
     call:{ phase:"idle", personId:null, line:-1, transcript:"" },
     lastCaller:null,
     thread:[], askCounts:{},
-    loc:{ lat:HOME_LL.lat, lng:HOME_LL.lng },
+    loc:{ lat:HOME_LL.lat, lng:HOME_LL.lng, source:'demo',status:'ready' },
     guide:{ active:false, step:0, done:false },
-    alertCleared:false, locReported:false, homeSet:false, timezone:""
+    alertCleared:false, locReported:true, homeSet:false, timezone:"Asia/Singapore"
   };
 }
 
@@ -1508,12 +1504,17 @@ function localDemoElderRequested(){
   }catch(_error){ return false; }
   return false;
 }
-var LOCAL_DEMO=localDemoRequested();
+var LOCAL_DEMO=window.FRONTEND_ONLY || localDemoRequested();
+if(window.FRONTEND_ONLY){
+  Object.assign(I18N.en,{eWeatherLive:'Demo weather',mapTipLive:'Simulated location',mapNote:'Local Singapore sample. Not a real location.',eListening:'Local demo chat',eSpeaking:'Demo reply',syncConnecting:'Opening local demo',syncLoading:'Opening local family',syncSaving:'Saving in this browser',syncError:'Local data unavailable. Please retry.',eInApp:'Simulated call in this browser',eGuiding:'Simulated guidance',eVoiceNoMic:'Local demo uses typed input. Tap a question or enter a message.'});
+  Object.assign(I18N.zh,{eWeatherLive:'模拟天气',mapTipLive:'模拟位置',mapNote:'新加坡本地示例，不是真实位置。',eListening:'本地模拟对话',eSpeaking:'模拟回复',syncConnecting:'正在打开本地演示',syncLoading:'正在打开本地家庭',syncSaving:'正在保存到此浏览器',syncError:'本地数据不可用，请重试。',eInApp:'此浏览器中的模拟通话',eGuiding:'模拟导航',eVoiceNoMic:'本地演示使用文字输入，请点击问题或输入消息。'});
+}
 
 var Connection={state:"connecting", authenticated:false, initFailed:false, pendingAction:false};
 var Store=null;
 
 function connectionCopy(state){
+  if(window.FRONTEND_ONLY && state==='synced') return lang==='en'?'Local demo · this browser only':'本地演示 · 仅此浏览器';
   var copy=D||I18N[lang]||I18N.zh;
   var keys={connecting:"syncConnecting",loading:"syncLoading",saving:"syncSaving",offline:"syncOffline",error:"syncError",synced:"syncSynced"};
   return copy[keys[state]||"syncError"];
@@ -1553,6 +1554,7 @@ function setConnectionStatus(state,message,useMessage){
    因为 join_family 对已存在的成员不会改角色，同一设备换身份时会拿到旧值。 */
 function storeRole(){ return EMBED_ROLE || sessionGet(SROLE) || (Store&&Store.role?Store.role():null); }
 function reportStoreError(error){
+  if(window.FRONTEND_ONLY){setConnectionStatus('error',error&&error.message||'Unable to save local data.',true);return null;}
   var copy=D||I18N[lang]||I18N.zh;
   if(error&&error.code==="REVISION_CONFLICT") setConnectionStatus("error",copy.syncConflict,true);
   else if(Connection.state!=="offline") setConnectionStatus("error");
@@ -1590,14 +1592,8 @@ function roleSessionStorage(storage,role){
 }
 try{
   var browserSessionStorage=roleSessionStorage(window.sessionStorage||window.localStorage,EMBED_ROLE);
-  var SupabaseClient=window.supabase.createClient(
-    window.SUPABASE_CONFIG.url,
-    window.SUPABASE_CONFIG.publishableKey,
-    {auth:{storage:browserSessionStorage,persistSession:true,autoRefreshToken:true,detectSessionInUrl:false}}
-  );
-  window.SupabaseClient=SupabaseClient;
-  Store=window.createSupabaseStore({
-    client:SupabaseClient,
+  var SupabaseClient=null;
+  Store=window.createLocalStore({
     newFamily:newFamily,
     storage:browserSessionStorage,
     onStatus:setConnectionStatus
@@ -1992,6 +1988,16 @@ function initGuideMap(){
   var home=homePoint(St), current=currentPoint(St);
   if(!home || !current || !window.Navigation) return;
   if(App.guideRouteRequested) return;
+  if(window.FRONTEND_ONLY){
+    App.guideRouteRequested=true;App.guideRouteStatus='ready';App.guideRouteError='';
+    if(St.guide.instructions&&St.guide.instructions.length)return;
+    queueUpdate(function(s){
+      s.guide.routeId='local-demo';s.guide.instructions=D.guide.map(function(item,index){
+        var fraction=(index+1)/D.guide.length;
+        return {text:item.copy,landmark:item.lm,isDestination:index===D.guide.length-1,end:{lat:current.lat+(home.lat-current.lat)*fraction,lng:current.lng+(home.lng-current.lng)*fraction},source:'demo'};
+      });
+    });return;
+  }
   if(window.Navigation.distanceMeters(current,home)>5000){
     App.guideRouteRequested=true; App.guideRouteStatus="error";
     App.guideRouteError=St.lang==='en'?'Home is too far away for walking guidance. Please contact family and check the home location.':'家的位置过远，请联系家人核对地址，不要按步行导航前往。';
@@ -2140,6 +2146,7 @@ function applyGpsPosition(position){
   if(speak && App.route==="elder" && window.Voice) window.Voice.speak(D.riskLeaving,{lang:St.lang});
 }
 function startGps(){
+  if(window.FRONTEND_ONLY) return;
   if(App.demoLocation || (St&&St.demoScenario==='singapore')) return;
   if(!window.Navigation || window.Navigation.isWatching() || App.gpsStartPending || App.gpsStatus==="error") return;
   App.gpsStartPending=true;
@@ -2371,6 +2378,7 @@ function weatherTip(temp, bucket){
   return D.eTipWarm;
 }
 function ensureWeather(force){
+  if(window.FRONTEND_ONLY){Weather.state='ready';Weather.data={temp:32,bucket:'clear',timezone:'Asia/Singapore'};return;}
   if(!St) return;
   if(!St.homeSet&&!St.locReported){ Weather.state="missing"; Weather.data=null; return; }
   var point=St.locReported?locOf(St):homeOf(St);
@@ -2420,6 +2428,7 @@ function aiAccessToken(){
 }
 
 function aiAsk(opts){
+  if(window.FRONTEND_ONLY) return Promise.resolve(null);
   var ctrl = window.AbortController ? new AbortController() : null;
   var timer = setTimeout(function(){ if(ctrl) ctrl.abort(); }, opts.timeout || 15000);
   return aiAccessToken().then(function(token){
@@ -2457,9 +2466,11 @@ function aiJSON(text){
    ===================================================================== */
 var Speech={ rec:null, active:false };
 function speechSupported(){
+  if(window.FRONTEND_ONLY)return false;
   return !!(window.SpeechRecognition || window.webkitSpeechRecognition);
 }
 function startSpeech(onText, onFail){
+  if(window.FRONTEND_ONLY){onFail('nomic');return false;}
   var Ctor = window.SpeechRecognition || window.webkitSpeechRecognition;
   if(!Ctor){ onFail("nomic"); return false; }
   try{
@@ -2495,6 +2506,7 @@ function stopSpeech(){
 var Geo={ watchId:null, lastAt:0, denied:false };
 
 function startGeo(){
+  if(window.FRONTEND_ONLY)return;
   if(Geo.watchId!==null || !navigator.geolocation) return;
   Geo.watchId = navigator.geolocation.watchPosition(function(pos){
     var now=Date.now();
@@ -3595,7 +3607,7 @@ function guideLandmark(item){ return item&&typeof item==="object"&&item.landmark
 function guideTotal(s){ return s&&s.guide&&s.guide.instructions&&s.guide.instructions.length?s.guide.instructions.length:3; }
 function guideHomeDistance(point){
   var home=homePoint(St);
-  return home&&point&&window.Navigation ? window.Navigation.distanceMeters(point,home) : null;
+  return home&&point&&window.Navigation ? Math.round(window.Navigation.distanceMeters(point,home)) : null;
 }
 
 function viewGuide(){
@@ -3711,7 +3723,7 @@ function render(s){
   view.classList.toggle("pad0", App.route==="family");
   view.className = (isElder ? "e-view" : "view") + (App.route==="family" ? " pad0" : "");
   view.innerHTML = body;
-  if(St&&St.demoScenario==='singapore') view.insertAdjacentHTML('afterbegin','<p class="eyebrow">'+(St.lang==='en'?'Singapore sample · Simulated location':'新加坡示例 · 模拟位置')+'</p>');
+  if(St&&St.demoScenario==='singapore') view.insertAdjacentHTML('afterbegin','<p class="eyebrow">'+(St.lang==='en'?'Local demo · Simulated location & weather':'本地演示 · 模拟位置与天气')+'</p>');
   patchLiveTranscript();
   if(App.route==="family" || (isElder && sc==="boundary")) mountMaps();
 
@@ -3727,6 +3739,7 @@ function render(s){
   lab.querySelector("span").textContent = who + (St && St.code ? " · " + St.code : "");
 
   chrome=EMBEDDED?'':'<button class="chip" data-go="lang">'+esc(D.langBtn)+'</button>';
+  if(window.FRONTEND_ONLY&&!St&&!EMBEDDED)chrome+='<button class="chip" data-go="localSample">'+(lang==='en'?'Start local demo':'打开本地示例')+'</button>';
   if(!EMBEDDED&&St&&St.code) chrome+='<button class="chip" data-go="reset">'+esc(D.resetBtn)+'</button>';
   if(!EMBEDDED&&St&&St.code) chrome+='<button class="chip" data-go="compare">'+esc(D.compareBtn)+'</button>';
   if(!EMBEDDED&&storeRole()) chrome+='<button class="chip" data-go="exit">'+esc(D.exitBtn)+'</button>';
@@ -3839,7 +3852,7 @@ function bindPendingAnswers(){
 function bindTodos(){
   var ns=el("view").querySelectorAll("[data-todo]");
   Array.prototype.forEach.call(ns,function(n){
-    n.addEventListener("change",function(){
+    n.addEventListener(window.FRONTEND_ONLY?"input":"change",function(){
       var parts=n.getAttribute("data-todo").split("|");
       var value=n.value, current=factById(St,parts[0]);
       var expected=current?current[parts[1]]:undefined;
@@ -3866,7 +3879,7 @@ function bindInputs(){
   bindChat();
   var ns=el("view").querySelectorAll("[data-f]");
   Array.prototype.forEach.call(ns,function(n){
-    n.addEventListener("change",function(){
+    n.addEventListener(window.FRONTEND_ONLY?"input":"change",function(){
       var path=n.getAttribute("data-f");
       var value=n.value, personId=App.editingPerson, expected=getPath(path);
       typing=true;
@@ -4240,6 +4253,10 @@ function factById(s,id){ for(var i=0;i<s.facts.length;i++) if(s.facts[i].id===id
 // Live companion integration shares the application state in this closure.
 var ElderLive = { client: null, family: null, lang: null, waiting: new Set(), checking: new Set(), deviceId:'', devices:[], input:null };
 function livePanel(){
+  if(window.FRONTEND_ONLY){
+    var en=St.lang==='en';
+    return '<div data-live-panel="1"><p class="qa-heard">'+(en?'Local simulated chat · no AI connection. Type a message; replies use saved family records.':'本地模拟对话 · 未连接 AI。输入问题后，从已保存的家庭记录中回答。')+'</p><form data-local-chat style="display:flex;gap:8px;margin:12px 0"><input name="message" aria-label="'+(en?'Message':'消息')+'" placeholder="'+(en?'Type a message…':'输入想说的话……')+'" maxlength="160" required style="min-width:0;flex:1;border:1px solid #aa8054;border-radius:20px;padding:14px;background:#fffaf5"><button class="e-btn" style="width:auto;padding:12px" type="submit">'+(en?'Send':'发送')+'</button></form><button class="holdbar live-mic" data-go="toggleLive">'+IC.mic+'<span>'+(en?'Play demo':'播放示例')+'</span></button></div>';
+  }
   var s=ElderLive.client?ElderLive.client.state():{status:'idle'}, en=St.lang==='en';
   var active=s.status==='connecting'||s.status==='connected';
   var label=active?(en?'End conversation':'结束陪伴'):(en?'Talk with me':'开始陪我说一会儿');
@@ -4348,6 +4365,7 @@ async function lookupElderLive(task){
   return null;
 }
 function toggleElderLive(){
+  if(window.FRONTEND_ONLY){void askFree(St.lang==='en'?'When is Yuki coming?':'小雨什么时候来？');return;}
   var s=ElderLive.client&&ElderLive.client.state().status;
   if(s==='connected'||s==='connecting'){stopElderLive();return;}
   if(s==='stopping') return;
@@ -4360,6 +4378,11 @@ function toggleElderLive(){
 }
 window.addEventListener('pagehide',function(){if(ElderLive.client) ElderLive.client.dispose();});
 document.addEventListener('visibilitychange',function(){if(document.hidden) stopElderLive();});
+document.addEventListener('submit',function(event){
+  if(!event.target.matches('[data-local-chat]'))return;
+  event.preventDefault();var field=event.target.elements.message,question=field.value.trim();
+  if(question){field.value='';void askFree(question).catch(reportStoreError);}
+});
 
 async function matchFreeQuestion(s,questionText){
   var src=s.facts||[], candidates=[], normalized=String(questionText||"").trim().toLowerCase();
@@ -4386,6 +4409,16 @@ async function matchFreeQuestion(s,questionText){
 async function askFree(question){
   question=String(question||"").trim().slice(0,160);
   if(!question) return;
+  if(window.FRONTEND_ONLY){
+    var found=(St.facts||[]).find(function(f){return f.status==='done'&&String(f.question||'').trim().toLowerCase()===question.toLowerCase();});
+    var answer=found?factLine(found):(St.lang==='en'?'This local demo has no confirmed answer yet. I have added your question to the family view in this browser.':'本地演示中还没有确认的答案。我已将问题加入此浏览器的家人端。');
+    await persistUpdate(function(s){
+      s.thread.push({role:'me',text:question},{role:'ai',key:'ansRaw',src:found?'srcFact':'srcUnk',text:answer});
+      if(!found&&!s.pending.some(function(p){return p.question===question;}))s.pending.push({id:'local-'+Date.now(),question:question});
+    });
+    if(window.Voice)void window.Voice.speak(answer,{lang:St.lang});
+    return;
+  }
   var matched=await matchFreeQuestion(St,question), pending=null;
   queueUpdate(function(s){
     s.thread.push({role:"me",text:question});
@@ -4414,7 +4447,8 @@ async function askFree(question){
   });
 }
 
-async function ask(i){
+async function ask(i,questionText){
+  if(window.FRONTEND_ONLY){await askFree(questionText||tp(D.asks[i]));return;}
   /* i===0/1 且没有绑定答案（factForAsk）时，同类已确认条目可能不止一条——比如通话抽取
      出了好几条不同话题的 fact，此时"取最新一条"经常文不对题，改成让 AI 从里面挑出
      真正回答了这道题的那条。这一步必须在 queueUpdate 外先做完，因为它是异步的，而
@@ -5043,6 +5077,19 @@ document.addEventListener("click", async function(e){
   }
 
   switch(g("data-go")){
+    case "localSample":
+      await runPendingAction(async function(){
+        var code=await Store.create(lang),seed=SEED[lang]||SEED.en;
+        await Store.update(function(s){
+          s.setup=true;s.paired=true;s.homeSet=true;
+          s.elder={name:seed.elderName,pronouns:'she',phone:'',address:seed.address,home:{lat:HOME_LL.lat,lng:HOME_LL.lng},radius:'800'};
+          s.home.label=seed.address;
+          s.people=[{id:'demo-yuki',nick:seed.nick,relation:seed.relation,phone:'',recent:seed.recent,hint:seed.hint}];
+          s.facts=[{id:'demo-visit',type:'fact',status:'done',origin:'family',ask:0,question:lang==='en'?'When is Yuki coming?':'小雨什么时候来？',text:lang==='en'?'Yuki will visit on Sunday at 3 pm.':'小雨星期日下午三点来看您。'}];
+        });
+        rememberDevice('family',code,'demo-yuki');
+        window.top.location.href='/?compare=1&code='+code;
+      });break;
     case "copyCode": await copyFamilyCode(); break;
     case "entry": await hardExit(); break;
     case "familyStart": App.route="familyStart"; render(); break;
@@ -5274,7 +5321,7 @@ async function connectAndRestore(){
   D=I18N[lang];
   render(St);
   connectAndRestore();
-  window.addEventListener("offline",function(){ setConnectionStatus("offline"); });
+  window.addEventListener("offline",function(){ setConnectionStatus(window.FRONTEND_ONLY?"synced":"offline"); });
   setInterval(patchLiveTime, 20000);
   setInterval(pollFamilyState, 2000);
 })();

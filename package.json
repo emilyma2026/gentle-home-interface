@@ -4,12 +4,13 @@
   "sideEffects": false,
   "type": "module",
   "scripts": {
-    "dev": "vite dev",
-    "build": "vite build",
-    "build:dev": "vite build --mode development",
-    "preview": "vite preview",
+    "dev": "node scripts/build-static.mjs && node scripts/serve-static.mjs",
+    "build": "node scripts/build-static.mjs",
+    "build:dev": "node scripts/build-static.mjs",
+    "preview": "node scripts/serve-static.mjs",
     "lint": "eslint .",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "test": "node --test tests/local-store.test.mjs tests/static-demo.test.mjs"
   },
   "dependencies": {
     "@ai-sdk/openai": "^4.0.45",

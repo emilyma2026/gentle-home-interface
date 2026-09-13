@@ -2141,7 +2141,7 @@ function applyGpsPosition(position){
 }
 function startGps(){
   if(App.demoLocation || (St&&St.demoScenario==='singapore')) return;
-  if(!window.Navigation || window.Navigation.isWatching() || App.gpsStartPending) return;
+  if(!window.Navigation || window.Navigation.isWatching() || App.gpsStartPending || App.gpsStatus==="error") return;
   App.gpsStartPending=true;
   App.gpsStatus="starting"; App.gpsError=""; render();
   ensureHomePointFromAddress().then(function(){
@@ -2150,7 +2150,7 @@ function startGps(){
     window.Navigation.start(applyGpsPosition,function(positionError){
       App.gpsStatus="error";
       App.gpsError=positionError&&positionError.code==="permission_denied"?D.gpsDenied:D.gpsFailed;
-      if(St){ queueUpdate(function(s){ s.loc=s.loc||{}; s.loc.status="error"; }); }
+      if(St && (!St.loc || St.loc.status!=="error")){ queueUpdate(function(s){ s.loc=s.loc||{}; s.loc.status="error"; }); }
       render();
     });
   });
